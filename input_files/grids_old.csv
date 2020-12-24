@@ -1,0 +1,41 @@
+#frequency,dimension id,gridpoints,max years in one file,notes,file_size (MB)
+#monthly,,,,,
+mon,scalar,1,5000,scalar time series,0.2288818359
+mon,2Datmos,27840,1000,Atmos grid- 145*192,1274.4140625
+mon,2Docean,108000,250,300*360 ocean grid,1235.9619140625
+mon,2DHiocean,1555200,250,1080*1440 ocean grid,1235.9619140625
+mon,3Docean,5400000,5,Ocean grid with 50 vertical levels,1235.9619140625
+mon,3Dm,1057920,25,Atmos grid with 38 (model) height levels,1210.693359375
+mon,3Dp17,473280,50,atmos grid with 17 pressure levels,1083.251953125
+mon,oline,15,5000,dimension for different ocean straits,3.4332275391
+mon,2Db_rho,72000,500,Ocean grid: Lat+ rho depth(80 levels) +3 basins,1647.94921875
+mon,2Db,45000,500,Ocean grid: Lat+ depth +3 basins,1029.9682617188
+mon,1Db,900,5000,Ocean grid: Lat+3 basins,205.9936523438
+mon,3Dtile9,194880,100,Atmos grid with 9 tiles for moses,892.08984375
+mon,3Dsoil4,111360,100,Atmos grid with 4 soil levels for moses,509.765625
+mon,3Dtile17,473280,100,Atmos grid with 17 tiles for cable,2166.50390625
+mon,3Dsoil6,167040,100,Atmos grid with 6 soil levels for cable,764.6484375
+#daily,,,,,
+day,2Docean,108000,10,ocean grid,1503.7536621094
+day,2Datmos,27840,25,atmos grid,969.0856933594
+day,3Dp8,222720,5,Atmos grid with 8 pressure levels,1550.537109375
+#6hr,,,,,
+6hr,3Dp3,83520,1,Atmos grid with 3 pressure levels,465.1611328125
+6hr,2Datmos,27840,10,atmos grid,1550.537109375
+6hr,3Dm,1057920,1,Atmos grid with 38 height levels,5892.041015625
+#3hr,,,,,
+3hr,2Datmos,27840,5,atoms grid,1550.537109375
+3hr,2Docean,108000,1,ocean grid,1203.0029296875
+#climatologies,,,,,
+monClim,2Docean,108000,50,ocean grid,4.9438476563
+monClim,3Docean,5400000,50,Ocean grid with 50 vertical levels,247.1923828125
+monClim,3Dm,1057920,5000,Atmos grid with 38 height levels,48.427734375
+#fx,,,,,
+fx,2Docean,108000,100000,,
+fx,2DHiocean,1555200,100000,,
+fx,3Docean,5400000,100000,,
+fx,2Datmos,27840,100000,,
+"#monthly- one time only, gridpoints may not be correct here",,,,,
+mon,firsttime,27840,100000,first time taken for time invariant fields,
+#yr,,,,,
+yr,any,1,1000,unknown,1
