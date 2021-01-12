@@ -67,6 +67,13 @@ PI-4xco2-02,/g/data/p66/cm2704/archive/PI-4xco2-02/history,input_files/json/PI-4
 AM-01,/g/data/p66/cm2704/archive/AM-01/history,input_files/json/AM-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,2014,ESM,amip-r1
 AM-02,/g/data/p66/cm2704/archive/AM-02/history,input_files/json/AM-02.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,2014,ESM,amip-r2
 AM-03,/g/data/p66/cm2704/archive/AM-03/history,input_files/json/AM-03.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,2014,ESM,amip-r3
+AM-04,/g/data/p66/cm2704/archive/AM-04/history,input_files/json/AM-04.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,1979,ESM,amip-r4
+AM-05,/g/data/p66/cm2704/archive/AM-05/history,input_files/json/AM-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,1979,ESM,amip-r5
+AM-06,/g/data/p66/cm2704/archive/AM-06/history,input_files/json/AM-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,1979,ESM,amip-r6
+AM-07,/g/data/p66/cm2704/archive/AM-07/history,input_files/json/AM-07.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,1979,ESM,amip-r7
+AM-08,/g/data/p66/cm2704/archive/AM-08/history,input_files/json/AM-08.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,1979,ESM,amip-r8
+AM-09,/g/data/p66/cm2704/archive/AM-09/history,input_files/json/AM-09.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,1979,ESM,amip-r9
+AM-10,/g/data/p66/cm2704/archive/AM-10/history,input_files/json/AM-10.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,1979,ESM,amip-r10
 HI-05,/g/data/p66/cm2704/archive/HI-05/history,input_files/json/HI-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,1850,ESM,historical-r1
 HI-06,/g/data/p66/cm2704/archive/HI-06/history,input_files/json/HI-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,historical-r2
 HI-07,/g/data/p66/cm2704/archive/HI-07/history,input_files/json/HI-07.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,historical-r3

@@ -33,13 +33,13 @@
 #export EXP_TO_PROCESS=omip2_cm2         #CM2-omip2 (OMIP)
 #export EXP_TO_PROCESS=025deg_jra55_iaf_cycle1         #OM2-025-omip2 (OMIP)
 #ESM1.5
-export EXP_TO_PROCESS=PI-01         #ESM-piControl PI-01,PI-02(ext)
+#export EXP_TO_PROCESS=PI-01         #ESM-piControl PI-01,PI-02(ext)
 #export EXP_TO_PROCESS=PI-slice-HI-05  #ESM-piControl-30yrslice
 #export EXP_TO_PROCESS=PI-EDC-01      #ESM-esm-piControl
 #export EXP_TO_PROCESS=PI-slice-HIE03  #ESM-esm-piControl-30yrslice
 #export EXP_TO_PROCESS=PI-1pct-01       #ESM-1pctCO2
 #export EXP_TO_PROCESS=PI-4xco2-02       #ESM-abrupt-4xCO2  PI-4xco2-01,02
-#export EXP_TO_PROCESS=AM-01        #ESM-amip    AM-01,02,03
+export EXP_TO_PROCESS=AM-04        #ESM-amip    AM-01,02,03
 #export EXP_TO_PROCESS=HI-25        #ESM-historical   HI-05..34
 #export EXP_TO_PROCESS=HI-EDC-03      #ESM-esmhist     HI-EDC-03,04,06..13
 #export EXP_TO_PROCESS=SSP-126-06      #ESM-ssp126     SSP-126-05..14
@@ -136,25 +136,27 @@ python ./subroutines/database_manager.py
 echo -e '\ncreating job...'
 
 NUM_ROWS=$( cat $OUT_DIR/database_count.txt )
-if (($NUM_ROWS <= 24)); then
+if (($NUM_ROWS <= 28)); then
   NUM_CPUS=$NUM_ROWS
 else
-  NUM_CPUS=24
+  NUM_CPUS=28
 fi
-NUM_MEM=$(echo "${NUM_CPUS} * 16" | bc)
-#NUM_MEM=$NUM_CPUS
+NUM_MEM=$(echo "${NUM_CPUS} * 64" | bc)
 if ((${NUM_MEM} >= 192)); then
-  NUM_MEM=192
+  NUM_MEM=1020
 fi
+#
+NUM_CPUS=28
+NUM_MEM=1020
 echo number of cpus to to be used: ${NUM_CPUS}
 echo total amount of memory to be used: ${NUM_MEM}Gb
 
 cat << EOF > $APP_JOB
 #!/bin/bash
 #PBS -P p66
-#PBS -q normal
+#PBS -q hugemembw
 #PBS -l storage=scratch/p66+gdata/p66+gdata/hh5+gdata/access
-#PBS -l ncpus=${NUM_CPUS},walltime=24:00:00,mem=${NUM_MEM}Gb,wd
+#PBS -l ncpus=${NUM_CPUS},walltime=12:00:00,mem=${NUM_MEM}Gb,wd
 #PBS -j oe
 #PBS -o ${JOB_OUTPUT}
 #PBS -e ${JOB_OUTPUT}
