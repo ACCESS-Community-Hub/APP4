@@ -3,31 +3,21 @@
 
 echo -e "setting up environment..."
 
-if [[ -z $1 ]]; then 
-  echo "no environment specified"
-  exit
-fi
-
 module purge
 module use /g/data/hh5/public/modules
 module use ~access/modules
 module load pbs
 module load parallel
 
-if [ $1 = "claire" ]; then
-  # Claire's CMOR env
-  module load conda/analysis27-18.10
-  export PYTHONPATH=${PYTHONPATH}:/g/data1/p66/ars599/python2.7/site-packages
-  export LD_LIBRARY_PATH=/short/p66/ct5255/conda/envs/CMOR/lib:${LD_LIBRARY_PATH}
-elif [ $1 = "publication" ]; then
-  # CMIP6-pub env
-  module load conda
-  export PATH=${PATH}:/g/data3/hh5/public/apps/miniconda3/envs/cmip6-publication/bin:/g/data3/hh5/public/apps/miniconda3/bin
-  source activate cmip6-publication
-else
-  echo unknown environment specified
-  exit
-fi
+# Claire's CMOR env
+#module load conda/analysis27-18.10
+#export PYTHONPATH=${PYTHONPATH}:/g/data1/p66/ars599/python2.7/site-packages
+#export LD_LIBRARY_PATH=/short/p66/ct5255/conda/envs/CMOR/lib:${LD_LIBRARY_PATH}
+
+# CMIP6-pub env
+module load conda
+export PATH=${PATH}:/g/data3/hh5/public/apps/miniconda3/envs/cmip6-publication/bin:/g/data3/hh5/public/apps/miniconda3/bin
+source activate cmip6-publication
 
 module list
 python -V
@@ -48,16 +38,17 @@ export COMPLETED_LIST=${APP_DIR}/input_files/completed_lists/completed_${EXP_TO_
 
 # Outputs:
 export MAIN_DIR=/g/data/p66/CMIP6
+# Default mode
+if $DEFAULT_MODE; then
+  export MAIN_DIR=$OUTPUT_LOC
+fi
 export OUT_DIR=${MAIN_DIR}/APP_job_files/${EXP_TO_PROCESS}
 # Output subdirectories
 export VARIABLE_MAPS=${OUT_DIR}/variable_maps
 export SUCCESS_LISTS=${OUT_DIR}/success_lists
-#export JOB_SCRIPTS=${OUT_DIR}/job_scripts
 export CMOR_LOGS=${OUT_DIR}/cmor_logs
 export VAR_LOGS=${OUT_DIR}/variable_logs
 # Output files
-#export MULTI_LIST=${OUT_DIR}/multi_list.csv
-#export JOB_LIST=${OUT_DIR}/job_list.txt
 export APP_JOB=${OUT_DIR}/app_job.sh
 export JOB_OUTPUT=${OUT_DIR}/job_output.OU
 export DATABASE=${OUT_DIR}/database.db
@@ -66,3 +57,4 @@ export DATABASE=${OUT_DIR}/database.db
 export OVERRIDEFILES=True
 export PLOT=False
 export DREQ_YEARS=False
+

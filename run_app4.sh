@@ -8,7 +8,7 @@
 #CM2
 #export EXP_TO_PROCESS=bi889           #CM2-piControl
 #export EXP_TO_PROCESS=bj400         #CM2-amip    bj400,bj402,bj567,bj229
-#export EXP_TO_PROCESS=bj594          #CM2-historical   bj594,bl655,bm652
+export EXP_TO_PROCESS=bj594          #CM2-historical   bj594,bl655,bm652
 #export EXP_TO_PROCESS=bn570        #CM2-abrupt-4xCO2   (+bj595)
 #export EXP_TO_PROCESS=bk243        #CM2-1pctCO2
 #export EXP_TO_PROCESS=bs267        #CM2-ssp126     bl686,br563,bs267
@@ -39,7 +39,7 @@
 #export EXP_TO_PROCESS=PI-slice-HIE03  #ESM-esm-piControl-30yrslice
 #export EXP_TO_PROCESS=PI-1pct-01       #ESM-1pctCO2
 #export EXP_TO_PROCESS=PI-4xco2-02       #ESM-abrupt-4xCO2  PI-4xco2-01,02
-export EXP_TO_PROCESS=AM-04        #ESM-amip    AM-01,02,03
+#export EXP_TO_PROCESS=AM-04        #ESM-amip    AM-01,02,03
 #export EXP_TO_PROCESS=HI-25        #ESM-historical   HI-05..34
 #export EXP_TO_PROCESS=HI-EDC-03      #ESM-esmhist     HI-EDC-03,04,06..13
 #export EXP_TO_PROCESS=SSP-126-06      #ESM-ssp126     SSP-126-05..14
@@ -85,19 +85,13 @@ export EXP_TO_PROCESS=AM-04        #ESM-amip    AM-01,02,03
 export TABLE_TO_PROCESS=all
 export VARIABLE_TO_PROCESS=all
 #
-# Table selection options
-export SUBDAILY=true
-export DAYMON=true
-export YEARLY=true
-export CO2AMON=true
+# subdaily selection options
+export SUBDAILY=true   #[true,false,only]
 #
 # Variable input options
 export RESTRICT_TO_INCOMPLETE=false
 export PRIORITY_ONLY=false
 export FORCE_DREQ=false
-#
-# Select environment
-export CMIP6_ENV=publication # publication or claire
 #
 # If inline argument is passed
 if [ ! -z $1 ]; then
@@ -109,22 +103,23 @@ fi
 ################################################################
 
 # Set up environment
-source ./subroutines/setup_env_cmip6.sh ${CMIP6_ENV}
+export DEFAULT_MODE=false
+source ./subroutines/setup_env_cmip6.sh
 
 # Cleanup output_files
 ./subroutines/cleanup.sh $OUT_DIR
 
 # Update 'version' in experiment json file to today or chosen date
-export version=$(date '+%Y%m%d')
-#export version=20201207
-./input_files/json/update_versions.sh
+export datevers=$(date '+%Y%m%d')
+#export datevers=20201207
+./input_files/json/update_json.sh
 
 # Create variable maps
 python ./subroutines/dreq_mapping.py --multi
 
 # Create database
 python ./subroutines/database_manager.py
-
+exit
 # FOR TESTING
 #python ./subroutines/app_wrapper.py
 #exit
@@ -136,34 +131,35 @@ python ./subroutines/database_manager.py
 echo -e '\ncreating job...'
 
 NUM_ROWS=$( cat $OUT_DIR/database_count.txt )
-if (($NUM_ROWS <= 28)); then
+if (($NUM_ROWS <= 48)); then
   NUM_CPUS=$NUM_ROWS
 else
-  NUM_CPUS=28
+  NUM_CPUS=48
 fi
-NUM_MEM=$(echo "${NUM_CPUS} * 64" | bc)
-if ((${NUM_MEM} >= 192)); then
-  NUM_MEM=1020
+NUM_MEM=$(echo "${NUM_CPUS} * 24" | bc)
+if ((${NUM_MEM} >= 1470)); then
+  NUM_MEM=1470
 fi
 #
-NUM_CPUS=28
-NUM_MEM=1020
+#NUM_CPUS=48
+#NUM_MEM=1470
 echo number of cpus to to be used: ${NUM_CPUS}
 echo total amount of memory to be used: ${NUM_MEM}Gb
 
 cat << EOF > $APP_JOB
 #!/bin/bash
 #PBS -P p66
-#PBS -q hugemembw
+#PBS -q hugemem
 #PBS -l storage=scratch/p66+gdata/p66+gdata/hh5+gdata/access
 #PBS -l ncpus=${NUM_CPUS},walltime=12:00:00,mem=${NUM_MEM}Gb,wd
 #PBS -j oe
 #PBS -o ${JOB_OUTPUT}
 #PBS -e ${JOB_OUTPUT}
 #PBS -N app_${EXP_TO_PROCESS}
-export EXP_TO_PROCESS=${EXP_TO_PROCESS}
 module purge
 # pre
+export EXP_TO_PROCESS=${EXP_TO_PROCESS}
+export DEFAULT_MODE=false
 source ./subroutines/setup_env_cmip6.sh ${CMIP6_ENV}
 # main
 python ./subroutines/app_wrapper.py
@@ -177,7 +173,6 @@ sort ${SUCCESS_LISTS}/${EXP_TO_PROCESS}_failed.csv \
     > ${SUCCESS_LISTS}/${EXP_TO_PROCESS}_failed_sorted.csv 2>/dev/null
 mv ${SUCCESS_LISTS}/${EXP_TO_PROCESS}_failed_sorted.csv \
     ${SUCCESS_LISTS}/${EXP_TO_PROCESS}_failed.csv
-chmod -R 644 ${OUT_DIR}
 echo "APP completed for exp ${EXP_TO_PROCESS}."
 EOF
 

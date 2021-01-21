@@ -21,6 +21,8 @@ import time
 import json
 exptoprocess=os.environ.get('EXP_TO_PROCESS')
 out_dir=os.environ.get('OUT_DIR')
+if os.environ.get('DEFAULT_MODE').lower() == 'true': def_mode=True
+else: def_mode=False
 
 def master_setup(conn):
     cursor=conn.cursor()
@@ -105,11 +107,24 @@ def experiments_setup(conn,exps_file):
                 access_version text,
                 cmip_exp_id text,
                 primary key (local_exp_id,json_file_path,start_year)) ''')
-        f=csv.reader(open(exps_file,'r'))
-        for line in f:
-            if len(line) != 0:
-                if line[0][0] != '#':
-                    cursor.execute('insert or replace into experiments values (?,?,?,?,?,?,?,?,?)', line)
+        if def_mode:
+            def_hist_data=os.environ.get('HISTORY_DATA')
+            def_version=os.environ.get('VERSION')
+            if def_version == 'CM2': def_json='input_files/json/default_cm2.json'
+            elif def_version == 'ESM': def_json='input_files/json/default_esm.json'
+            else: sys.exit('default jsons only exist for CM2 and ESM thus far')
+            def_start=os.environ.get('START_YEAR')
+            def_end=os.environ.get('END_YEAR')
+            def_dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
+            def_line=[exptoprocess,def_hist_data,def_json,def_dreq,def_start,def_start,def_end,def_version,'default']
+            cursor.execute('insert into experiments values (?,?,?,?,?,?,?,?,?)', def_line)
+        else:
+            f=csv.reader(open(exps_file,'r'))
+            for line in f:
+                if len(line) != 0:
+                    if line[0][0] != '#':
+                        print(line)
+                        cursor.execute('insert or replace into experiments values (?,?,?,?,?,?,?,?,?)', line)
     except Exception,e:
         print e, '\n unable to setup experiments table'
     conn.commit()
@@ -289,9 +304,12 @@ def tableToFreq(table):
     dictionary={'3hr':'3hr'\
     ,'6hrLev':'6hr'\
     ,'6hrPlevPt':'6hr'\
+    ,'6hrPlev':'6hr'\
     ,'AERday':'day'\
     ,'AERmon':'mon'\
+    ,'AERmonZ':'mon'\
     ,'Amon':'mon'\
+    ,'CFday':'day'\
     ,'CF3hr':'3hr'\
     ,'CFmon':'mon'\
     ,'E3hr':'3hr'\
@@ -302,6 +320,8 @@ def tableToFreq(table):
     ,'Emon':'mon'\
     ,'EmonZ':'mon'\
     ,'Eyr':'yr'\
+    ,'ImonGre':'mon'\
+    ,'ImonAnt':'mon'\
     ,'LImon':'mon'\
     ,'Lmon':'mon'\
     ,'Oclim':'monClim'\

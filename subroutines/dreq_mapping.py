@@ -30,14 +30,8 @@ MOM_tables=['Oclim','Omon','Oday','Oyr','Ofx','Emon','Eyr','3hr']
 CICE_tables=['SImon','SIday']
 CMIP_tables=UM_tables+MOM_tables+CICE_tables
 
-#multilist=os.environ.get('MULTI_LIST')
-priorityonly=os.environ.get('PRIORITY_ONLY')
+# non-boolean vars
 prioritylist=os.environ.get('PRIORITY_LIST')
-restricttoincomplete=os.environ.get('RESTRICT_TO_INCOMPLETE')
-subdaily=os.environ.get('SUBDAILY')
-yearly=os.environ.get('YEARLY')
-daymon=os.environ.get('DAYMON')
-co2amon=os.environ.get('CO2AMON')
 completedlist=os.environ.get('COMPLETED_LIST')
 experimentstable=os.environ.get('EXPERIMENTS_TABLE')
 exptoprocess=os.environ.get('EXP_TO_PROCESS')
@@ -45,29 +39,64 @@ tabletoprocess=os.environ.get('TABLE_TO_PROCESS')
 variabletoprocess=os.environ.get('VARIABLE_TO_PROCESS')
 master_map=os.environ.get('MASTER_MAP')
 outpath=os.environ.get('VARIABLE_MAPS')
-forcedreq=os.environ.get('FORCE_DREQ')
 try:    tabletoprocess
 except:    tabletoprocess='all'
 try:    variabletoprocess
 except:    variabletoprocess='all'
 
+# boolean vars
+if os.environ.get('SUBDAILY').lower() == 'true': 
+    subdaily=True
+    daymonyr=True
+elif os.environ.get('SUBDAILY').lower() == 'only':
+    subdaily=True
+    daymonyr=False
+else:
+    subdaily=False
+    daymonyr=True
+if os.environ.get('RESTRICT_TO_INCOMPLETE').lower() == 'true': restricttoincomplete=True
+else: restricttoincomplete=False
+if os.environ.get('PRIORITY_ONLY').lower() == 'true': priorityonly=True
+else: priorityonly=False
+if os.environ.get('FORCE_DREQ').lower() == 'true': forcedreq=True
+else: forcedreq=False
+if os.environ.get('DREQ_YEARS').lower() == 'true': dreq_years=True
+else: dreq_years=False
+
+# Default mode vars
+if os.environ.get('DEFAULT_MODE').lower() == 'true': def_mode=True
+else: def_mode=False
+if def_mode:
+    def_hist_data=os.environ.get('HISTORY_DATA')
+    def_version=os.environ.get('VERSION')
+    def_start=int(os.environ.get('START_YEAR'))
+    def_end=int(os.environ.get('END_YEAR'))
+
 try:
-    with open(experimentstable,'r') as f:
-        reader=csv.reader(f, delimiter=',')
-        for row in reader:
-            try: row[0]
-            except: row='#'
-            if row[0].startswith('#'): pass
-            elif row[0] == exptoprocess:
-                access_version=row[7]
-                if forcedreq.lower() in ['yes','true','1']: 
-                    dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
-                else: dreq=row[3]
-                reference_date=row[4]
-                start_year=row[5]
-                end_year=row[6]
-                local_exp_dir=row[1]
-    f.close()
+    if def_mode:
+        access_version=def_version
+        dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
+        reference_date=def_start
+        start_year=def_start
+        end_year=def_end
+        local_exp_dir=def_hist_data
+    else:
+        with open(experimentstable,'r') as f:
+            reader=csv.reader(f, delimiter=',')
+            for row in reader:
+                try: row[0]
+                except: row='#'
+                if row[0].startswith('#'): pass
+                elif row[0] == exptoprocess:
+                    access_version=row[7]
+                    if forcedreq: 
+                        dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
+                    else: dreq=row[3]
+                    reference_date=row[4]
+                    start_year=row[5]
+                    end_year=row[6]
+                    local_exp_dir=row[1]
+        f.close()
     if access_version.find('OM2') != -1:
         print('ACCESS-OM2, using master_map_om2.csv')
         master_map=master_map.replace('.csv','_om2.csv')
@@ -93,7 +122,7 @@ try:
                 priority_vars.append([row[0],row[1]])
     p.close()
 except:
-    if priorityonly.lower() in ['yes','true','1']:
+    if priorityonly:
         print 'no priority list for local experiment \'{}\', processing all variables'.format(exptoprocess)
 
 completed_vars=[]
@@ -108,7 +137,7 @@ try:
                 completed_vars.append([row[0],row[1],row[2],row[3]])
     c.close()
 except:
-    if restricttoincomplete.lower() in ['yes','true','1']:
+    if restricttoincomplete:
         print 'no completed list for local experiment \'{}\', processing all variables'.format(exptoprocess)
 
 def check_table():
@@ -151,11 +180,9 @@ def find_cmip_tables(dreq):
             if not row[0] in tables:
                 if (row[0] != 'Notes') and (row[0] != 'MIP table') and (row[0] != '0'):
                     if (row[0].find('hr') != -1):
-                        if (subdaily.lower() in ['yes','true','1']): tables.append(row[0])
-                    elif (row[0].find('yr') != -1):
-                        if (yearly.lower() in ['yes','true','1']): tables.append(row[0])
-                    else: 
-                        if (daymon.lower() in ['yes','true','1']): tables.append(row[0])
+                        if subdaily: tables.append(row[0])
+                    else:
+                        if daymonyr: tables.append(row[0])
     f.close()
     return tables
 
@@ -276,10 +303,6 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
         else:
             calculation='zonal_mean({})'.format(calculation)
             axes_modifier='{} dropX'.format(axes_modifier)
-    #co2,Amon:
-    if cmipvar == 'co2' and table == 'Amon':
-        if not (co2amon.lower() in ['yes','true','1']): 
-            skip='skip'
     return freq,axes_modifier,calculation,realm,realm2,timeshot,access_vars,skip
 
 def determine_dimension(freq,dimensions,timeshot,realm,table,skip):
@@ -359,6 +382,7 @@ def read_dreq_vars(dreq,table):
                                 years='"{}"'.format(years)
                             except: years='all'
                     except: years='all'
+                    if def_mode or not dreq_years: years='all'
                     if variabletoprocess.lower() == 'all':
                         dreq_variables.append([cmorname,realm,freq,cfname,years,dimensions])
                     else:
@@ -370,7 +394,7 @@ def read_dreq_vars(dreq,table):
 
 def priority_check(cmipvar,table):
     priority_ret=0
-    if priorityonly.lower() in ['yes','true','1']:
+    if priorityonly:
         for item in priority_vars:
             if (cmipvar == item[0]) and (table == item[1]):
                 priority_ret=1
@@ -382,7 +406,7 @@ def priority_check(cmipvar,table):
 
 def completed_check(cmipvar,table):
     completed_ret=1
-    if restricttoincomplete.lower() in ['yes','true','1']:
+    if restricttoincomplete:
         for item in completed_vars:
             if (cmipvar == item[1]) and (table == item[0]):
                 completed_ret=0
@@ -564,8 +588,7 @@ def main():
     check_path(outpath)
     check_file(dreq)
     check_file(master_map)
-    if priorityonly.lower() in ['yes','true','1']:
-        check_file(prioritylist)
+    if priorityonly: check_file(prioritylist)
     check_output_directory(outpath)
     print 'beginning creation of variable maps in directory \'{}\''.format(outpath)
     tables=find_cmip_tables(dreq)

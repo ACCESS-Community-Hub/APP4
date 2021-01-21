@@ -36,9 +36,9 @@ database_updater='{}/database_updater.py'.format(out_dir)
 #
 if os.environ.get('OVERRIDEFILES').lower() in ['true','yes']: overRideFiles=True
 else: overRideFiles=False
-if os.environ.get('PLOT').lower() in ['true','yes']: plot=True
+if os.environ.get('PLOT').lower() == 'true': plot=True
 else: plot=False
-if os.environ.get('DREQ_YEARS').lower() in ['true','yes']: dreq_years=True
+if os.environ.get('DREQ_YEARS').lower() == 'true': dreq_years=True
 else: dreq_years=False
 print 'dreq years = ',dreq_years
 
