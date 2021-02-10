@@ -81,6 +81,7 @@ try:
         end_year=def_end
         local_exp_dir=def_hist_data
     else:
+        print(exptoprocess)
         with open(experimentstable,'r') as f:
             reader=csv.reader(f, delimiter=',')
             for row in reader:

@@ -1,6 +1,7 @@
 #!/bin/bash
 echo "updating version date...${datevers}"
 scriptpath="$( cd "$(dirname "$0")" ; pwd -P )"
+echo $scriptpath
 cd $scriptpath
 
 if $DEFAULT_MODE; then

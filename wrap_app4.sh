@@ -1,17 +1,10 @@
 #!/bin/bash
 
-echo "WARNING: This script will delete the \${MAIN_DIR}/APP_job_files directories for all experiments listed in input_files/multi_exp_list.csv!"
-echo "Press ENTER to continue..."
-read cont
+loc_exp=(
+SSP-126-ext-07
+SSP-126-ext-09
+)
 
-while IFS= read -r expt
-do
-  echo ""
-  echo "-=-=-=-=--- $expt:"
-  if [[ $expt == "#"* ]]; then
-    echo "  skipping"
-  else
-    ./run_app4.sh $expt
-  fi
-  #break
-done < input_files/multi_exp_list.csv
+for exp in ${loc_exp[@]}; do
+  ./run_app4.sh $exp
+done

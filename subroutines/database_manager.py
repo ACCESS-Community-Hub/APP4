@@ -123,7 +123,7 @@ def experiments_setup(conn,exps_file):
             for line in f:
                 if len(line) != 0:
                     if line[0][0] != '#':
-                        print(line)
+                        #print(line)
                         cursor.execute('insert or replace into experiments values (?,?,?,?,?,?,?,?,?)', line)
     except Exception,e:
         print e, '\n unable to setup experiments table'
