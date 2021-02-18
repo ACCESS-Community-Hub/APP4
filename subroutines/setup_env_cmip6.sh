@@ -33,8 +33,7 @@ export CMIP6_TABLES=${APP_DIR}/input_files/cmip6-cmor-tables/Tables
 # Input files
 export EXPERIMENTS_TABLE=${APP_DIR}/input_files/experiments.csv
 export MASTER_MAP=${APP_DIR}/input_files/master_map.csv
-export PRIORITY_LIST=${APP_DIR}/input_files/priority_lists/priority_vars_esm_covid_pseudo-fix.csv
-export COMPLETED_LIST=${APP_DIR}/input_files/completed_lists/completed_${EXP_TO_PROCESS}.csv
+export PRIORITY_LIST=${APP_DIR}/input_files/priority_lists/priority_vars_msft-my-rho.csv
 
 # Outputs:
 export MAIN_DIR=/g/data/p66/CMIP6

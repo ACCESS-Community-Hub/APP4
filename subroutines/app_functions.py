@@ -179,6 +179,8 @@ def calcOverturning(transList,typ):
     #The result for each variable in transList are added together
     typ=typ.split('_')
     n=len(transList)
+    print('type = ',typ)
+    print('n = ',n)
     if len(typ)==1:
         #normal case for cmip5, need to convert units
         # gm and submeso quantities are output in Sv so need to be multiplied by 10**9
@@ -186,14 +188,14 @@ def calcOverturning(transList,typ):
         if n==1:
             if typ=='bolus':
                 #should be bolus transport for rho levels 
-                return transList[0].sum(3)*10**9
+                return transList[0].sum(3) #*10**9
         elif n==2:
             if typ=='bolus':
                 #bolus advection is sum of gm and submeso
-                return ( transList[0].sum(3)+transList[1].sum(3) ) *10**9
+                return ( transList[0].sum(3)+transList[1].sum(3) ) #*10**9
             elif typ=='full':
                 #full y overturning on rho levels, where trans and trans_gm are present (no submeso)
-                tmp= transList[0].sum(3).cumsum(1)+transList[1].sum(3) *10**9
+                tmp= transList[0].sum(3).cumsum(1)+transList[1].sum(3) #*10**9
                 s=transList[0].sum(3).sum(1)
                 for i in range(tmp.shape[1]):
                     tmp[:,i,:]=tmp[:,i,:]-s
@@ -202,7 +204,6 @@ def calcOverturning(transList,typ):
             #assume full y overturning:
             #trans + trans_gm +trans_submeso
             if typ=='full':
-                #tmp=transList[0].sum(3).cumsum(1)+transList[1].sum(3)*10**9+transList[2].sum(3)*10**9
                 tmp=transList[0].sum(3).cumsum(1)+transList[1].sum(3)+transList[2].sum(3)
                 s=transList[0].sum(3).sum(1)
                 for i in range(tmp.shape[1]):

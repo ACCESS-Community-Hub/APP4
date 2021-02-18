@@ -10,7 +10,7 @@ if [ -z $OUT_DIR ]; then
   rm -f sys
 else
   echo -e 'preparing job_files directory...'
-  if [ -d $OUT_DIR ] && [[ $MULTI_EXP != 1 ]]; then
+  if [ -d $OUT_DIR ]; then
     echo "output directory '${OUT_DIR}' exists. press enter to delete and continue. exit manually otherwise."
     read cont
   fi

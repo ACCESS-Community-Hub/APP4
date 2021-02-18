@@ -483,6 +483,8 @@ def count_rows(conn):
     cursor.execute('select * from file_master where status==\'unprocessed\' and local_exp_id==?',[exptoprocess])
     rows=cursor.fetchall()
     print 'number of rows: ',len(rows)
+    #for row in rows:
+    #    print(row)
     database_count='{}/database_count.txt'.format(out_dir)
     with open(database_count,'w') as dbc:
         dbc.write(str(len(rows)))

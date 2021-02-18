@@ -5,19 +5,18 @@
 ################################################################
 #
 # Local experiment to process
-export EXP_TO_PROCESS=bz683
+export EXP_TO_PROCESS=PI-01
 #
 # CMIP6 table/variable to process. Default is 'all'.
-export TABLE_TO_PROCESS=SImon
-export VARIABLE_TO_PROCESS=sithick
+export TABLE_TO_PROCESS=Omon
+export VARIABLE_TO_PROCESS=all
 #
 # subdaily selection options
-export SUBDAILY=false   #[true,false,only]
+export SUBDAILY=false    #[true,false,only]
 #
 # Variable input options
-export RESTRICT_TO_INCOMPLETE=false
-export PRIORITY_ONLY=false
-export FORCE_DREQ=false
+export FORCE_DREQ=false    #use piControl dreq
+export PRIORITY_ONLY=true
 #
 # If inline argument is passed
 if [ ! -z $1 ]; then
@@ -48,10 +47,9 @@ python ./subroutines/dreq_mapping.py --multi
 # Create database
 python ./subroutines/database_manager.py
 
-#exit
 # FOR TESTING
-python ./subroutines/app_wrapper.py
-exit
+#python ./subroutines/app_wrapper.py
+#exit
 #
 
 ################################################################
@@ -72,8 +70,9 @@ fi
 #
 #NUM_CPUS=48
 #NUM_MEM=1470
-echo number of cpus to to be used: ${NUM_CPUS}
-echo total amount of memory to be used: ${NUM_MEM}Gb
+echo "number of files to create: ${NUM_ROWS}"
+echo "number of cpus to to be used: ${NUM_CPUS}"
+echo "total amount of memory to be used: ${NUM_MEM}Gb"
 
 cat << EOF > $APP_JOB
 #!/bin/bash

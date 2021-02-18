@@ -32,7 +32,6 @@ CMIP_tables=UM_tables+MOM_tables+CICE_tables
 
 # non-boolean vars
 prioritylist=os.environ.get('PRIORITY_LIST')
-completedlist=os.environ.get('COMPLETED_LIST')
 experimentstable=os.environ.get('EXPERIMENTS_TABLE')
 exptoprocess=os.environ.get('EXP_TO_PROCESS')
 tabletoprocess=os.environ.get('TABLE_TO_PROCESS')
@@ -54,8 +53,6 @@ elif os.environ.get('SUBDAILY').lower() == 'only':
 else:
     subdaily=False
     daymonyr=True
-if os.environ.get('RESTRICT_TO_INCOMPLETE').lower() == 'true': restricttoincomplete=True
-else: restricttoincomplete=False
 if os.environ.get('PRIORITY_ONLY').lower() == 'true': priorityonly=True
 else: priorityonly=False
 if os.environ.get('FORCE_DREQ').lower() == 'true': forcedreq=True
@@ -125,21 +122,6 @@ try:
 except:
     if priorityonly:
         print 'no priority list for local experiment \'{}\', processing all variables'.format(exptoprocess)
-
-completed_vars=[]
-try:
-    with open(completedlist,'r') as c:
-        reader=csv.reader(c, delimiter=',')
-        for row in reader:
-            try: row[0]
-            except: row='#'
-            if row[0].startswith('#'): pass
-            else:
-                completed_vars.append([row[0],row[1],row[2],row[3]])
-    c.close()
-except:
-    if restricttoincomplete:
-        print 'no completed list for local experiment \'{}\', processing all variables'.format(exptoprocess)
 
 def check_table():
     if tabletoprocess in CMIP_tables:
@@ -405,18 +387,6 @@ def priority_check(cmipvar,table):
         priority_ret=1
     return priority_ret
 
-def completed_check(cmipvar,table):
-    completed_ret=1
-    if restricttoincomplete:
-        for item in completed_vars:
-            if (cmipvar == item[1]) and (table == item[0]):
-                completed_ret=0
-            else:
-                pass
-    else:
-        pass
-    return completed_ret
-
 def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,matches,nomatches):
     matchlist=[]
     skiplist=[]
@@ -454,8 +424,7 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                 try: dimension=determine_dimension(freq,dimensions,timeshot,realm,table,skip)
                 except: raise Exception('E: realm not identified')
                 priority_ret=priority_check(cmipvar,table)
-                completed_ret=completed_check(cmipvar,table)
-                if priority_ret == 0 or completed_ret == 0:
+                if priority_ret == 0:
                     skip='skip'
                 if skip == 'skip':
                     file_structure=None

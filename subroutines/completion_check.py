@@ -23,17 +23,17 @@ args = parser.parse_args()
 
 successlists=os.environ.get('SUCCESS_LISTS')
 multilist=os.environ.get('MULTI_LIST')
-completedlist=os.environ.get('COMPLETED_LIST')
 variablemapsdir=os.environ.get('VARIABLE_MAPS')
 exptoprocess=os.environ.get('EXP_TO_PROCESS')
 joboutputfile=os.environ.get('JOB_OUTPUT')
-jobscriptsdir=os.environ.get('JOB_SCRIPTS')
 app_dir=os.environ.get('APP_DIR')
 qc_dir=os.environ.get('QC_DIR')
 out_dir=os.environ.get('OUT_DIR')
 pub_dir=os.environ.get('PUB_DIR')
 cmip6tables=os.environ.get('CMIP6_TABLES')
 experimentstable=os.environ.get('EXPERIMENTS_TABLE')
+
+print(successlists)
 
 # Read in success and fail lists
 try:

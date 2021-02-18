@@ -30,7 +30,7 @@ export VARIABLE_TO_PROCESS=all
 export SUBDAILY=true            # select one of: [true, false, only]
 #
 # Variable input options
-export PRIORITY_ONLY=false      #priority list is set in ./subroutines/setup_env_cmip6.sh
+export PRIORITY_ONLY=false
 #
 ################################################################
 # SETTING UP ENVIROMENT, VARIABLE MAPS, AND DATABASE
@@ -38,7 +38,6 @@ export PRIORITY_ONLY=false      #priority list is set in ./subroutines/setup_env
 
 # Set up environment
 export DEFAULT_MODE=true
-export RESTRICT_TO_INCOMPLETE=false
 export FORCE_DREQ=true
 source ./subroutines/setup_env_cmip6.sh
 

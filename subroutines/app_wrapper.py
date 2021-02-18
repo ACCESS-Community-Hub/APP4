@@ -9,8 +9,6 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 from datetime import datetime
 import ast
-import random
-from contextlib import contextmanager
 import multiprocessing as mp
 
 exp=os.environ.get('EXP_TO_PROCESS')
@@ -291,8 +289,7 @@ def main():
     print 'app_wrapper finished!\n'
     #summarise what was processed:
     print "RESULTS:"
-    for r in results: 
-        print r
+    for r in results: print r
 
 if __name__ == "__main__":
     main()
