@@ -13,8 +13,8 @@ table='all' #'all' or CMIP6_table
 
 # Check for vars in 'xcheck1' that are not in 'xcheck2' (/xcheck3/xcheck4)
 
-xcheck1='esm/cmvme_c4.cd.cm.da.om.rf.sc_ssp585-bgc_2_2.csv'
-xcheck2='esm/cmvme_c4.cd.cm.rf.sc_hist-bgc_2_2.csv'
+xcheck1='LUMIP/cmvme_c4.cd.cm.da.lu.rf.sc_hist-noLu_3_2.csv'
+xcheck2='esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv'
 #xcheck3='RFMIP/cmvme_cm.fa.om.rf.sc.si_piClim-aer_1_2.csv'
 #xcheck4='cm2/cmvme_cm.fa.om.rf.sc.si_ssp245_1_2.csv'
 

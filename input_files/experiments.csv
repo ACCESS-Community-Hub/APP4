@@ -3,14 +3,14 @@
 ## CM2
 #
 # CMIP
-bi889,/g/data/p66/cm2704/archive/bi889/history,input_files/json/bi889.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv,950,1115,1449,CM2,piControl
+bi889,/g/data/p66/cm2704/archive/bi889/history,input_files/json/bi889.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv,950,950,1449,CM2,piControl
 bj400,/g/data/p66/cm2704/archive/bj400/history,input_files/json/bj400.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r1
 bj402,/g/data/p66/cm2704/archive/bj402/history,input_files/json/bj402.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r2
 bj567,/g/data/p66/cm2704/archive/bj567/history,input_files/json/bj567.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r3
 bj229,/g/data/p66/cm2704/archive/bj229/history,input_files/json/bj229.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r4
 bn570,/g/data/p66/cm2704/archive/bn570/history,input_files/json/bn570.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_abrupt-4xCO2_1_2.csv,950,950,1099,CM2,abrupt-4xCO2
 bk243,/g/data/p66/cm2704/archive/bk243/history,input_files/json/bk243.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_1pctCO2_1_2.csv,950,950,1099,CM2,1pctCO2
-bj594,/g/data/p66/cm2704/archive/bj594/history,input_files/json/bj594.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,2014,2014,CM2,historical-r1
+bj594,/g/data/p66/cm2704/archive/bj594/history,input_files/json/bj594.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r1
 bl655,/g/data/p66/cm2704/archive/bl655/history,input_files/json/bl655.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r2
 bm652,/g/data/p66/cm2704/archive/bm652/history,input_files/json/bm652.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r3
 # ScenarioMIP
@@ -27,7 +27,7 @@ bs266,/g/data/p66/cm2704/archive/bs266/history,input_files/json/bs266.json,input
 bs215,/g/data/p66/cm2704/archive/bs215/history,input_files/json/bs215.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp370_1_2.csv,1850,2015,2100,CM2,ssp370-r3
 bs118,/g/data/p66/cm2704/archive/bs118/history,input_files/json/bs118.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp585_1_2.csv,1850,2015,2100,CM2,ssp585-r3
 # ScenarioMIP-exts
-bz683,/g/data/p66/cm2704/archive/bz683/history,input_files/json/bz683.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp126_1_2.csv,1850,2101,2101,CM2,ssp126-r1-ext
+bz683,/g/data/p66/cm2704/archive/bz683/history,input_files/json/bz683.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp126_1_2.csv,1850,2101,2300,CM2,ssp126-r1-ext
 bz734,/g/data/p66/cm2704/archive/bz734/history,input_files/json/bz734.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp585_1_2.csv,1850,2101,2300,CM2,ssp585-r1-ext
 # FAFMIP
 bo133,/g/data/p66/cm2704/archive/bo133/history,input_files/json/bo133.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_faf-passiveheat_2_2.csv,950,950,1019,CM2,faf-passiveheat
@@ -59,7 +59,7 @@ by563,/g/data/p66/cm2704/archive/by563/history,input_files/json/by563.json,input
 ## ESM1.5
 #
 # CMIP
-PI-01,/g/data/p66/cm2704/archive/PI-01/history,input_files/json/PI-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_piControl_1_2.csv,101,101,1000,ESM,piControl
+PI-01,/g/data/p66/cm2704/archive/PI-01/history,input_files/json/PI-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_piControl_1_2.csv,101,1001,1100,ESM,piControl
 PI-02,/g/data/p66/cm2704/archive/PI-02/history,input_files/json/PI-02.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_piControl_1_2.csv,1101,101,1100,ESM,piControl-ext
 PI-slice-HI-05,/g/data/p66/cm2704/archive/PI-slice-HI-05/history,input_files/json/PI-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_piControl_1_2.csv,101,296,325,ESM,piControl-30yrslice-296-325
 PI-EDC-01,/g/data/p66/cm2704/archive/PI-EDC-01/history,input_files/json/PI-EDC-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-piControl_1_2.csv,271,271,770,ESM,esm-piControl
@@ -77,7 +77,7 @@ AM-07,/g/data/p66/cm2704/archive/AM-07/history,input_files/json/AM-07.json,input
 AM-08,/g/data/p66/cm2704/archive/AM-08/history,input_files/json/AM-08.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,2014,ESM,amip-r8
 AM-09,/g/data/p66/cm2704/archive/AM-09/history,input_files/json/AM-09.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,2014,ESM,amip-r9
 AM-10,/g/data/p66/cm2704/archive/AM-10/history,input_files/json/AM-10.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_amip_1_2.csv,1979,1979,2014,ESM,amip-r10
-HI-05,/g/data/p66/cm2704/archive/HI-05/history,input_files/json/HI-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,1860,ESM,historical-r1
+HI-05,/g/data/p66/cm2704/archive/HI-05/history,input_files/json/HI-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,historical-r1
 HI-06,/g/data/p66/cm2704/archive/HI-06/history,input_files/json/HI-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,historical-r2
 HI-07,/g/data/p66/cm2704/archive/HI-07/history,input_files/json/HI-07.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,historical-r3
 HI-08,/g/data/p66/cm2704/archive/HI-08/history,input_files/json/HI-08.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,historical-r4
@@ -118,6 +118,16 @@ HI-EDC-11,/g/data/p66/cm2704/archive/HI-EDC-11/history,input_files/json/HI-EDC-1
 HI-EDC-12,/g/data/p66/cm2704/archive/HI-EDC-12/history,input_files/json/HI-EDC-12.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-hist_1_2.csv,1850,1850,2014,ESM,esm-hist-r9
 HI-EDC-13,/g/data/p66/cm2704/archive/HI-EDC-13/history,input_files/json/HI-EDC-13.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-hist_1_2.csv,1850,1850,2014,ESM,esm-hist-r10
 # ScenarioMIP
+SSP-126-05,/g/data/p66/cm2704/archive/SSP-126-05/history,input_files/json/SSP-126-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2015,2100,ESM,ssp126-r1
+SSP-126-06,/g/data/p66/cm2704/archive/SSP-126-06/history,input_files/json/SSP-126-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2015,2100,ESM,ssp126-r2
+SSP-126-07,/g/data/p66/cm2704/archive/SSP-126-07/history,input_files/json/SSP-126-07.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2015,2100,ESM,ssp126-r3
+SSP-126-08,/g/data/p66/cm2704/archive/SSP-126-08/history,input_files/json/SSP-126-08.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2015,2100,ESM,ssp126-r4
+SSP-126-09,/g/data/p66/cm2704/archive/SSP-126-09/history,input_files/json/SSP-126-09.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2015,2100,ESM,ssp126-r5
+SSP-126-10,/g/data/p66/cm2704/archive/SSP-126-10/history,input_files/json/SSP-126-10.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2015,2100,ESM,ssp126-r6
+SSP-126-11,/g/data/p66/cm2704/archive/SSP-126-11/history,input_files/json/SSP-126-11.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2015,2100,ESM,ssp126-r7
+SSP-126-12,/g/data/p66/cm2704/archive/SSP-126-12/history,input_files/json/SSP-126-12.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2015,2100,ESM,ssp126-r8
+SSP-126-13,/g/data/p66/cm2704/archive/SSP-126-13/history,input_files/json/SSP-126-13.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2015,2100,ESM,ssp126-r9
+SSP-126-14,/g/data/p66/cm2704/archive/SSP-126-14/history,input_files/json/SSP-126-14.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2015,2100,ESM,ssp126-r10
 SSP-245-05,/g/data/p66/cm2704/archive/SSP-245-05/history,input_files/json/SSP-245-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp245_1_2.csv,1850,2015,2100,ESM,ssp245-r1
 SSP-245-06,/g/data/p66/cm2704/archive/SSP-245-06/history,input_files/json/SSP-245-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp245_1_2.csv,1850,2015,2100,ESM,ssp245-r2
 SSP-245-07,/g/data/p66/cm2704/archive/SSP-245-07/history,input_files/json/SSP-245-07.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp245_1_2.csv,1850,2015,2100,ESM,ssp245-r3
@@ -179,6 +189,16 @@ SSP-126-ext-11,/g/data/p66/cm2704/archive/SSP-126-ext-11/history,input_files/jso
 SSP-126-ext-12,/g/data/p66/cm2704/archive/SSP-126-ext-12/history,input_files/json/SSP-126-ext-12.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2101,2300,ESM,ssp126-r8-ext
 SSP-126-ext-13,/g/data/p66/cm2704/archive/SSP-126-ext-13/history,input_files/json/SSP-126-ext-13.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2101,2300,ESM,ssp126-r9-ext
 SSP-126-ext-14,/g/data/p66/cm2704/archive/SSP-126-ext-14/history,input_files/json/SSP-126-ext-14.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2101,2300,ESM,ssp126-r10-ext
+SSP-585-ext-05,/g/data/p66/cm2704/archive/SSP-585-ext-05/history,input_files/json/SSP-585-ext-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2101,2300,ESM,ssp585-r1-ext
+SSP-585-ext-06,/g/data/p66/cm2704/archive/SSP-585-ext-06/history,input_files/json/SSP-585-ext-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2101,2300,ESM,ssp585-r2-ext
+SSP-585-ext-07,/g/data/p66/cm2704/archive/SSP-585-ext-07/history,input_files/json/SSP-585-ext-07.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2101,2300,ESM,ssp585-r3-ext
+SSP-585-ext-08,/g/data/p66/cm2704/archive/SSP-585-ext-08/history,input_files/json/SSP-585-ext-08.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2101,2300,ESM,ssp585-r4-ext
+SSP-585-ext-09,/g/data/p66/cm2704/archive/SSP-585-ext-09/history,input_files/json/SSP-585-ext-09.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2101,2300,ESM,ssp585-r5-ext
+SSP-585-ext-10,/g/data/p66/cm2704/archive/SSP-585-ext-10/history,input_files/json/SSP-585-ext-10.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2101,2300,ESM,ssp585-r6-ext
+SSP-585-ext-11,/g/data/p66/cm2704/archive/SSP-585-ext-11/history,input_files/json/SSP-585-ext-11.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2101,2300,ESM,ssp585-r7-ext
+SSP-585-ext-12,/g/data/p66/cm2704/archive/SSP-585-ext-12/history,input_files/json/SSP-585-ext-12.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2101,2300,ESM,ssp585-r8-ext
+SSP-585-ext-13,/g/data/p66/cm2704/archive/SSP-585-ext-13/history,input_files/json/SSP-585-ext-13.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2101,2300,ESM,ssp585-r9-ext
+SSP-585-ext-14,/g/data/p66/cm2704/archive/SSP-585-ext-14/history,input_files/json/SSP-585-ext-14.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2101,2300,ESM,ssp585-r10-ext
 # C4MIP
 PI-1pct-bgc-01,/g/data/p66/cm2704/archive/PI-1pct-bgc-01/history,input_files/json/PI-1pct-bgc-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-bgc_1_2.csv,101,101,250,ESM,1pctCO2-bgc
 PI-1pct-rad-01,/g/data/p66/cm2704/archive/PI-1pct-rad-01/history,input_files/json/PI-1pct-rad-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-rad_2_2.csv,101,101,250,ESM,1pctCO2-rad
@@ -187,6 +207,13 @@ SSP-585-bgc-02,/g/data/p66/cm2704/archive/SSP-585-bgc-02/history,input_files/jso
 SSP-EDC-585-03,/g/data/p66/cm2704/archive/SSP-EDC-585-03/history,input_files/json/SSP-EDC-585-03.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r1
 SSP-EDC-585-04,/g/data/p66/cm2704/archive/SSP-EDC-585-04/history,input_files/json/SSP-EDC-585-04.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r2
 SSP-EDC-585-06,/g/data/p66/cm2704/archive/SSP-EDC-585-06/history,input_files/json/SSP-EDC-585-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r3
+SSP-EDC-585-07,/g/data/p66/cm2704/archive/SSP-EDC-585-07/history,input_files/json/SSP-EDC-585-07.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r4
+SSP-EDC-585-08,/g/data/p66/cm2704/archive/SSP-EDC-585-08/history,input_files/json/SSP-EDC-585-08.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r5
+SSP-EDC-585-09,/g/data/p66/cm2704/archive/SSP-EDC-585-09/history,input_files/json/SSP-EDC-585-09.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r6
+SSP-EDC-585-10,/g/data/p66/cm2704/archive/SSP-EDC-585-10/history,input_files/json/SSP-EDC-585-10.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r7
+SSP-EDC-585-11,/g/data/p66/cm2704/archive/SSP-EDC-585-11/history,input_files/json/SSP-EDC-585-11.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r8
+SSP-EDC-585-12,/g/data/p66/cm2704/archive/SSP-EDC-585-12/history,input_files/json/SSP-EDC-585-12.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r9
+SSP-EDC-585-13,/g/data/p66/cm2704/archive/SSP-EDC-585-13/history,input_files/json/SSP-EDC-585-13.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r10
 # CDRMIP
 PI-1pct-rev-01,/g/data/p66/cm2704/archive/PI-1pct-rev-01/history,input_files/json/PI-1pct-rev-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-cdr_1_2.csv,241,241,380,ESM,1pctCO2-cdr
 PI-rev-01,/g/data/p66/cm2704/archive/PI-rev-01/history,input_files/json/PI-rev-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-cdr_1_2.csv,241,241,1000,ESM,1pctCO2-cdr
@@ -215,6 +242,27 @@ HI-ghg-03,/g/data/p66/cm2704/archive/HI-ghg-03/history,input_files/json/HI-ghg-0
 HI-nat-01,/g/data/p66/cm2704/archive/HI-nat-01/history,input_files/json/HI-nat-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.da.rf.sc_hist-nat_1_2.csv,1850,1850,2020,ESM,hist-nat-r1
 HI-nat-02,/g/data/p66/cm2704/archive/HI-nat-02/history,input_files/json/HI-nat-02.json,input_files/dreq/esm/cmvme_c4.cd.cm.da.rf.sc_hist-nat_1_2.csv,1850,1850,2020,ESM,hist-nat-r2
 HI-nat-03,/g/data/p66/cm2704/archive/HI-nat-03/history,input_files/json/HI-nat-03.json,input_files/dreq/esm/cmvme_c4.cd.cm.da.rf.sc_hist-nat_1_2.csv,1850,1850,2020,ESM,hist-nat-r3
+# LUMIP
+SSP-585-126-03,/g/data/p66/cm2704/archive/SSP-585-126-03/history,input_files/json/SSP-585-126-03.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-ssp126Lu-r1
+SSP-585-126-04,/g/data/p66/cm2704/archive/SSP-585-126-04/history,input_files/json/SSP-585-126-04.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-ssp126Lu-r2
+SSP-585-126-06,/g/data/p66/cm2704/archive/SSP-585-126-06/history,input_files/json/SSP-585-126-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-ssp126Lu-r3
+SSP-585-126-07,/g/data/p66/cm2704/archive/SSP-585-126-07/history,input_files/json/SSP-585-126-07.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-ssp126Lu-r4
+SSP-585-126-08,/g/data/p66/cm2704/archive/SSP-585-126-08/history,input_files/json/SSP-585-126-08.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-ssp126Lu-r5
+SSP-585-126-09,/g/data/p66/cm2704/archive/SSP-585-126-09/history,input_files/json/SSP-585-126-09.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-ssp126Lu-r6
+SSP-585-126-10,/g/data/p66/cm2704/archive/SSP-585-126-10/history,input_files/json/SSP-585-126-10.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-ssp126Lu-r7
+SSP-585-126-11,/g/data/p66/cm2704/archive/SSP-585-126-11/history,input_files/json/SSP-585-126-11.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-ssp126Lu-r8
+SSP-585-126-12,/g/data/p66/cm2704/archive/SSP-585-126-12/history,input_files/json/SSP-585-126-12.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-ssp126Lu-r9
+SSP-585-126-13,/g/data/p66/cm2704/archive/SSP-585-126-13/history,input_files/json/SSP-585-126-13.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-ssp126Lu-r10
+HI-noluc-05,/g/data/p66/cm2704/archive/HI-noluc-05/history,input_files/json/HI-noluc-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,hist-noLu-r1
+HI-noluc-06,/g/data/p66/cm2704/archive/HI-noluc-06/history,input_files/json/HI-noluc-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,hist-noLu-r2
+HI-noluc-07,/g/data/p66/cm2704/archive/HI-noluc-07/history,input_files/json/HI-noluc-07.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,hist-noLu-r3
+HI-noluc-08,/g/data/p66/cm2704/archive/HI-noluc-08/history,input_files/json/HI-noluc-08.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,hist-noLu-r4
+HI-noluc-09,/g/data/p66/cm2704/archive/HI-noluc-09/history,input_files/json/HI-noluc-09.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,hist-noLu-r5
+HI-noluc-10,/g/data/p66/cm2704/archive/HI-noluc-10/history,input_files/json/HI-noluc-10.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,hist-noLu-r6
+HI-noluc-11,/g/data/p66/cm2704/archive/HI-noluc-11/history,input_files/json/HI-noluc-11.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,hist-noLu-r7
+HI-noluc-12,/g/data/p66/cm2704/archive/HI-noluc-12/history,input_files/json/HI-noluc-12.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,hist-noLu-r8
+HI-noluc-13,/g/data/p66/cm2704/archive/HI-noluc-13/history,input_files/json/HI-noluc-13.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,hist-noLu-r9
+HI-noluc-14,/g/data/p66/cm2704/archive/HI-noluc-14/history,input_files/json/HI-noluc-14.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv,1850,1850,2014,ESM,hist-noLu-r10
 # CovidMIP
 SSP-245-tyb-01,/g/data/p66/cm2704/archive/SSP-245-tyb-01/history,input_files/json/SSP-245-tyb-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp245_1_2.csv,1850,2020,2050,ESM,ssp245-covid-r1
 SSP-245-tyb-02,/g/data/p66/cm2704/archive/SSP-245-tyb-02/history,input_files/json/SSP-245-tyb-02.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp245_1_2.csv,1850,2020,2050,ESM,ssp245-covid-r2

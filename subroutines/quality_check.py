@@ -376,7 +376,7 @@ def check_compliance_results(results_comp):
     for comp in compliant:
         print os.path.basename(comp)
         shutil.copy2(comp,comp.replace(outpath_root,pub_dir))
-        #os.remove(comp)
+        os.remove(comp)
     print '\nNon-compliant files:'
     for noncomp in noncompliant:
         print os.path.basename(noncomp[0]),noncomp[1]

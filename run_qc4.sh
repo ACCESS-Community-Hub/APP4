@@ -4,7 +4,7 @@
 # CHOOSE OPTIONS
 ################################################################
 
-export EXP_TO_PROCESS=AM-04
+export EXP_TO_PROCESS=PI-01
 
 export PRINTERRORS=False
 export PUBLISH=True
@@ -30,10 +30,10 @@ echo "publishing = $PUBLISH"
 echo -e '\ncreating job...'
 
 NUM_ROWS=$( cat ${SUCCESS_LISTS}/${EXP_TO_PROCESS}_success.csv | wc -l )
-if (($NUM_ROWS <= 12)); then
+if (($NUM_ROWS <= 48)); then
   NUM_CPUS=$NUM_ROWS
 else
-  NUM_CPUS=12
+  NUM_CPUS=48
 fi
 NUM_MEM=$(echo "${NUM_CPUS} * 32" | bc)
 if ((${NUM_MEM} >= 1470)); then

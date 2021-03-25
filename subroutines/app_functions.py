@@ -959,7 +959,8 @@ def calc_mrfso(var,model):
 def calc_global_ave_ocean(var,rho_dzt,area_t):
     mass=rho_dzt*area_t
     print np.shape(var)
-    vnew=np.average(var,axis=(1,2,3),weights=mass)
+    try: vnew=np.average(var,axis=(1,2,3),weights=mass)
+    except: vnew=np.average(var,axis=(1,2),weights=mass[:,0,:,:])
     return vnew
 
 def calc_global_ave_ocean_025(var,rho_dzt):

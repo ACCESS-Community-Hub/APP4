@@ -7,21 +7,21 @@
 # Local experiment to process
 export EXP_TO_PROCESS=PI-01
 #
-# CMIP6 table/variable to process. Default is 'all'.
-export TABLE_TO_PROCESS=Omon
-export VARIABLE_TO_PROCESS=all
-#
-# subdaily selection options
-export SUBDAILY=false    #[true,false,only]
-#
-# Variable input options
-export FORCE_DREQ=false    #use piControl dreq
-export PRIORITY_ONLY=true
-#
 # If inline argument is passed
 if [ ! -z $1 ]; then
   export EXP_TO_PROCESS=$1
 fi
+#
+# CMIP6 table/variable to process. Default is 'all'.
+export TABLE_TO_PROCESS=3hr
+export VARIABLE_TO_PROCESS=all
+#
+# subdaily selection options
+export SUBDAILY=true    #[true,false,only]
+#
+# Variable input options
+export FORCE_DREQ=false    #use piControl dreq
+export PRIORITY_ONLY=false
 #
 # for Default mode (i.e. non-CMIP6)
 export DEFAULT_MODE=false
@@ -58,17 +58,17 @@ python ./subroutines/database_manager.py
 echo -e '\ncreating job...'
 
 NUM_ROWS=$( cat $OUT_DIR/database_count.txt )
-if (($NUM_ROWS <= 48)); then
+if (($NUM_ROWS <= 24)); then
   NUM_CPUS=$NUM_ROWS
 else
-  NUM_CPUS=48
+  NUM_CPUS=24
 fi
-NUM_MEM=$(echo "${NUM_CPUS} * 32" | bc)
+NUM_MEM=$(echo "${NUM_CPUS} * 64" | bc)
 if ((${NUM_MEM} >= 1470)); then
   NUM_MEM=1470
 fi
 #
-#NUM_CPUS=48
+#NUM_CPUS=18
 #NUM_MEM=1470
 echo "number of files to create: ${NUM_ROWS}"
 echo "number of cpus to to be used: ${NUM_CPUS}"
@@ -79,7 +79,7 @@ cat << EOF > $APP_JOB
 #PBS -P p66
 #PBS -q hugemem
 #PBS -l storage=scratch/p66+gdata/p66+gdata/hh5+gdata/access
-#PBS -l ncpus=${NUM_CPUS},walltime=12:00:00,mem=${NUM_MEM}Gb,wd
+#PBS -l ncpus=${NUM_CPUS},walltime=48:00:00,mem=${NUM_MEM}Gb,wd
 #PBS -j oe
 #PBS -o ${JOB_OUTPUT}
 #PBS -e ${JOB_OUTPUT}

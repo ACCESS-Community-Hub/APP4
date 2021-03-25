@@ -141,7 +141,8 @@
                     "OMIP",
                     "RFMIP",
                     "SIMIP",
-                    "ScenarioMIP"
+                    "ScenarioMIP",
+                    "DAMIP"
                 ],
                 "cohort":[
                     "Registered"
@@ -160,7 +161,9 @@
                     "OMIP",
                     "PMIP",
                     "RFMIP",
-                    "ScenarioMIP"
+                    "ScenarioMIP",
+                    "DAMIP",
+                    "LUMIP"
                 ],
                 "cohort":[
                     "Registered"
