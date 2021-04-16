@@ -36,10 +36,15 @@ export MASTER_MAP=${APP_DIR}/input_files/master_map.csv
 export PRIORITY_LIST=${APP_DIR}/input_files/priority_lists/priority_vars_cm2_3hr-tas-tos.csv
 
 # Outputs:
+# output logs and job scripts/files go to MAIN_DIR
 export MAIN_DIR=/g/data/p66/CMIP6
+# write cmorised data to DATA_DIR
+#export DATA_DIR=${MAIN_DIR}
+export DATA_DIR=/scratch/p66/CMIP6
 # Default mode
 if $DEFAULT_MODE; then
   export MAIN_DIR=$OUTPUT_LOC
+  export DATA_DIR=$OUTPUT_LOC
 fi
 export OUT_DIR=${MAIN_DIR}/APP_job_files/${EXP_TO_PROCESS}
 # Output subdirectories

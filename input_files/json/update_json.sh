@@ -17,7 +17,7 @@ else
 fi
 echo $json
 dateline="    \"version\":                      \"v${datevers}\","
-maindirline="    \"outpath\":                      \"${MAIN_DIR}/APP_output/CMIP6\","
+maindirline="    \"outpath\":                      \"${DATA_DIR}/APP_output/CMIP6\","
 
 vline=$(grep '\"version\":' $json)
 outpathline=$(grep '\"outpath\":' $json)

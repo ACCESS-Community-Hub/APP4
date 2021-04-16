@@ -13,11 +13,11 @@ if [ ! -z $1 ]; then
 fi
 #
 # CMIP6 table/variable to process. Default is 'all'.
-export TABLE_TO_PROCESS=3hr
+export TABLE_TO_PROCESS=all
 export VARIABLE_TO_PROCESS=all
 #
 # subdaily selection options
-export SUBDAILY=true    #[true,false,only]
+export SUBDAILY=false    #[true,false,only]
 #
 # Variable input options
 export FORCE_DREQ=false    #use piControl dreq
