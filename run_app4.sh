@@ -17,7 +17,7 @@ export TABLE_TO_PROCESS=all
 export VARIABLE_TO_PROCESS=all
 #
 # subdaily selection options
-export SUBDAILY=false    #[true,false,only]
+export SUBDAILY=true    #[true,false,only]
 #
 # Variable input options
 export FORCE_DREQ=false    #use piControl dreq

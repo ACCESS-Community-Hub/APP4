@@ -8,6 +8,9 @@ bj400,/g/data/p66/cm2704/archive/bj400/history,input_files/json/bj400.json,input
 bj402,/g/data/p66/cm2704/archive/bj402/history,input_files/json/bj402.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r2
 bj567,/g/data/p66/cm2704/archive/bj567/history,input_files/json/bj567.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r3
 bj229,/g/data/p66/cm2704/archive/bj229/history,input_files/json/bj229.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r4
+ca199,/g/data/p66/cm2704/archive/ca199/history,input_files/json/ca199.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r1-f2(SST-corrected)
+cd152,/g/data/p66/cm2704/archive/cd152/history,input_files/json/cd152.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r2-f2(SST-corrected)
+cd153,/g/data/p66/cm2704/archive/cd153/history,input_files/json/cd153.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r3-f2(SST-corrected)
 bn570,/g/data/p66/cm2704/archive/bn570/history,input_files/json/bn570.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_abrupt-4xCO2_1_2.csv,950,950,1099,CM2,abrupt-4xCO2
 bk243,/g/data/p66/cm2704/archive/bk243/history,input_files/json/bk243.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_1pctCO2_1_2.csv,950,950,1099,CM2,1pctCO2
 bj594,/g/data/p66/cm2704/archive/bj594/history,input_files/json/bj594.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r1
