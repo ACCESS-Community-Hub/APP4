@@ -572,7 +572,7 @@ def msftbarot(psiu,tx_trans):
     drake_trans=transAcrossLine(tx_trans,212,212,32,49)
     #loop over times
     for i,trans in enumerate(drake_trans):
-#offset psiu by the drake passage transport at that time
+        #offset psiu by the drake passage transport at that time
         psiu[i,:]=psiu[i,:]+trans
     return psiu
 
@@ -963,8 +963,11 @@ def calc_global_ave_ocean(var,rho_dzt,area_t):
     except: vnew=np.average(var,axis=(1,2),weights=mass[:,0,:,:])
     return vnew
 
-def calc_global_ave_ocean_025(var,rho_dzt):
-    fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
+def calc_global_ave_ocean_om2(var,rho_dzt,deg):
+    if deg == 1:
+        fname=ancillary_path+'om2_grid.nc' #file with grids specifications
+    elif deg == 025:
+        fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
     f=cdms2.open(fname,'r')
     area_t=np.float32(f.variables['area_t'][:])
     mass=rho_dzt*area_t
@@ -1175,7 +1178,7 @@ def tos_degC(var):
         print 'temp in K, converting to degC'
         var=var[:]-273.15
     return var
-
+    
 def tos_3hr(var):
     var=tos_degC(var)
     t,y,x=np.shape(var)
@@ -1187,6 +1190,13 @@ def tos_3hr(var):
     for i in range(t):
          vout[i,:,:]=np.ma.masked_where(landfrac == 1,var[i,:,:])
     return vout
+    
+def tossq_degC(var):
+    var=np.ma.asarray(var[:])
+    if var[0].mean() >= 10000:
+        print 'temp in K^2, converting to degC^2'
+        var=((var[:]**0.5)-273.15)**2
+    return var
 
 def ocean_surface(var):
     return var[:,0,:,:]
@@ -1359,8 +1369,34 @@ def calc_areacello(area,mask_v):
     area.mask=mask_v.mask
     return area.filled(0)
 
-def calc_volcello(area,dht):
+def calc_areacello_om2(deg):
+    if deg == 1:
+        fname=ancillary_path+'om2_grid.nc' #file with grids specifications
+    elif deg == 025:
+        fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
+    f=cdms2.open(fname,'r')
+    area=np.float32(f.variables['area_t'][:])
+    mask_v=np.float32(f.variables['ht'][:])
+    area.mask=mask_v.mask
     return area.filled(0)
+
+def calc_volcello_om2(dht,deg):
+    if deg == 1:
+        fname=ancillary_path+'om2_grid.nc' #file with grids specifications
+    elif deg == 025:
+        fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
+    f=cdms2.open(fname,'r')
+    area=np.float32(f.variables['area_t'][:])
+    return area*dht
+    
+def getdeptho(deg):
+    if deg == 1:
+        fname=ancillary_path+'om2_grid.nc' #file with grids specifications
+    elif deg == 025:
+        fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
+    f=cdms2.open(fname,'r')
+    deptho=np.float32(f.variables['ht'][:])
+    return deptho
     
 def plevinterp(var,pmod,heavy,lat,lat_v):
     plev,bounds=plev19()
@@ -1430,25 +1466,29 @@ def calc_zostoga(var,depth,lat):
         areacello.mask=T[0,0,:].mask
         zostoga[t]=(tmp*areacello).sum(0).sum(0)/areacello.sum()
     return zostoga
-    
+
 #calculates zostga from T and pressure
-def calc_zostoga2(var,depth,lat):
+def calc_zostoga_om2(var,depth,lat,deg):
     #extract variables
-    [T,dz,areacello]=var
+    [T,dz]=var
+    if deg == 1:
+        fname=ancillary_path+'om2_grid.nc' #file with grids specifications
+    elif deg == 025:
+        fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
+    f=cdms2.open(fname,'r')
+    areacello=np.float32(f.variables['area_t'][:])
+    lat=f.variables['area_t'].getLatitude()
+    print 'lat: ',lat
     [nt,nz,ny,nx]=T.shape #dimension lengths
     zostoga=np.zeros([nt],dtype=np.float32)
     #calculate pressure field
     press=np.ma.array(sw_press(depth,lat))
     press.mask=T[0,:].mask
-    #initialize volcello
-    volcello=dz[0,:]
     #do calculation for each time step
     for t in range(nt):
-        #set volcello
-        for z in range(nz):        
-            volcello[z]=dz[t,z,:]*areacello[:]
-        tmp=((1. - rho_from_theta(T[t,:],35.00,press)/rho_from_theta(4.00,35.00,press))*volcello).sum()
-        zostoga[t]=tmp/volcello.sum()
+        tmp=((1. - rho_from_theta(T[t,:],35.00,press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(0)
+        areacello.mask=T[0,0,:].mask
+        zostoga[t]=(tmp*areacello).sum(0).sum(0)/areacello.sum()
     return zostoga
     
 #calculates zossga from T,S and pressure
@@ -1534,7 +1574,7 @@ def sw_press(dpth,lat):
     c1=np.expand_dims(c1,0)
     c1=np.tile(c1,(nd,1,1))
     return ((1-c1)-np.sqrt(((1-c1)**2)-(8.84e-6*dpth)))/4.42e-6
-    
+
 def fix_packing_division(num,den):
     vout=num/den
     vout[vout == 0.0] = 0.5*np.min(vout[vout > 0.0])

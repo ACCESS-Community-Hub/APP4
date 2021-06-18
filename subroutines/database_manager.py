@@ -70,7 +70,7 @@ def master_setup(conn):
         raise e
     conn.commit()
 
-def grids_setup(conn):
+def grids_setup(conn,grid_file):
     cursor=conn.cursor()
     #The grids table describes the number of gridpoints for different classes of variables
     #Delete the grids table then make it again (only necessary if changes are made to its structure) 
@@ -84,7 +84,8 @@ def grids_setup(conn):
             max_file_size_per_year integer,
             max_file_years integer,
             primary key (dimensions,frequency)) ''')
-        f=csv.reader(open(sys.path[0]+'/../input_files/grids.csv','r'))
+        f=csv.reader(open(grid_file,'r'))
+        print 'using grid file: {}'.format(grid_file)
         for line in f:
             if len(line) != 0:
                 if line[0][0] != '#':
@@ -121,10 +122,9 @@ def experiments_setup(conn,exps_file):
         else:
             f=csv.reader(open(exps_file,'r'))
             for line in f:
-                if len(line) != 0:
-                    if line[0][0] != '#':
-                        #print(line)
-                        cursor.execute('insert or replace into experiments values (?,?,?,?,?,?,?,?,?)', line)
+                if (len(line) != 0) and (line[0][0] != '#'):
+                    #print(line)
+                    cursor.execute('insert or replace into experiments values (?,?,?,?,?,?,?,?,?)', line)
     except Exception,e:
         print e, '\n unable to setup experiments table'
     conn.commit()
@@ -415,6 +415,21 @@ def populate_unlimited(cursor,opts):
     cursor.execute('''select * from champions where definable==\'yes\'''')
     populateRows(cursor.fetchall(),opts,cursor)
 
+#choose grid file to determine chunking, based on access_version
+def grid_file_choose(conn):
+    cursor=conn.cursor()
+    cursor.execute('select * from experiments where local_exp_id==?',[exptoprocess])
+    for exp in cursor.fetchall():
+        access_version=exp[7]
+    if access_version.find('OM2') != -1:
+        if access_version.find('025') != -1:
+            grid_file=sys.path[0]+'/../input_files/grids_om2-025.csv'
+        else: 
+            grid_file=sys.path[0]+'/../input_files/grids_om2.csv'
+    else:
+        grid_file=sys.path[0]+'/../input_files/grids.csv'
+    return grid_file
+
 #
 #
 #main script to populate the file_master table
@@ -514,7 +529,8 @@ def main():
     #setup database tables
     master_setup(conn)
     experiments_setup(conn,exp_table)
-    grids_setup(conn)
+    grid_file=grid_file_choose(conn)
+    grids_setup(conn,grid_file)
     champions_setup(champions_dir,conn)
     populate(conn)
     create_database_updater()

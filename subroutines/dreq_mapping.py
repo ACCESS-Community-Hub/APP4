@@ -230,12 +230,21 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
                 skip=''
     #[O,E]yr cases:
     if table.find('yr') != -1:
-        if access_vars.find('_raw') != -1 or access_version == 'OM2-025':
-            pass
-        elif timeshot == 'inst':
-            axes_modifier='{} yrpoint'.format(axes_modifier)
+        if access_version.find('OM2') != -1:
+            if realm == 'ocnBgchem':
+                if access_vars.find('_raw') != -1:
+                    axes_modifier='{} mon2yr'.format(axes_modifier)
+                else: pass
+            if realm == 'ocean':
+                if access_vars.find('dht') != -1 :
+                    axes_modifier='{} mon2yr'.format(axes_modifier)
         else:
-            axes_modifier='{} mon2yr'.format(axes_modifier)
+            if access_vars.find('_raw') != -1:
+                pass
+            elif timeshot == 'inst':
+                axes_modifier='{} yrpoint'.format(axes_modifier)
+            else:
+                axes_modifier='{} mon2yr'.format(axes_modifier)
     #sfdsi:
     if cmipvar == 'sfdsi':
         if realm == 'ocean':
@@ -286,6 +295,9 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
         else:
             calculation='zonal_mean({})'.format(calculation)
             axes_modifier='{} dropX'.format(axes_modifier)
+    #ACCESS-OM2/OM2-025
+    if (access_version.find('OM2') != -1):# and (realm == 'ocean' or realm == 'ocnBgchem' ):
+        axes_modifier='{} tMonOverride'.format(axes_modifier)          
     return freq,axes_modifier,calculation,realm,realm2,timeshot,access_vars,skip
 
 def determine_dimension(freq,dimensions,timeshot,realm,table,skip):
@@ -420,7 +432,8 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                 #elif realm != realm2: realm = realm2
                 var_notes=row[9]
                 #check for special cases
-                freq,axes_modifier,calculation,realm,realm2,timeshot,access_vars,skip=special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,realm2,table,timeshot,access_vars,skip,access_version)
+                freq,axes_modifier,calculation,realm,realm2,timeshot,access_vars,skip=\
+                    special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,realm2,table,timeshot,access_vars,skip,access_version)
                 try: dimension=determine_dimension(freq,dimensions,timeshot,realm,table,skip)
                 except: raise Exception('E: realm not identified')
                 priority_ret=priority_check(cmipvar,table)
@@ -435,7 +448,6 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                         file_structure=atm_file_struc+'*_mon.nc'
                     elif freq == 'day':
                         if table.find('EdayZ') != -1:
-                            #file_structure='/atm/netCDF/plev19_daily/link/*_dai.nc'
                             file_structure=atm_file_struc+'*_dai.nc_zonal'
                         else:
                             file_structure=atm_file_struc+'*_dai.nc'
@@ -452,22 +464,42 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                     elif freq == 'mon':
                         file_structure='/ocn/ocean_month.nc-*'
                     elif freq == 'yr':
-                        if access_version == 'OM2-025':
-                            file_structure='/ocn/ocean_budget.nc-*'
+                        if access_version.find('OM2') != -1:
+                            if axes_modifier.find('mon2yr') != -1:
+                                file_structure='/ocn/ocean_month.nc-*'
+                            else:
+                                file_structure='/ocn/ocean_budget.nc-*'
+                                if exptoprocess == '025deg_jra55_iaf_omip2_cycle6':
+                                    axes_modifier='{} mon2yr'.format(axes_modifier)
                         else:
                             file_structure='/ocn/ocean_month.nc-*'
                     elif freq == 'fx':
-                        if access_version == 'OM2-025':
-                            file_structure='/ocn/ocean_grid.nc-*'
-                        else:
-                            file_structure='/ocn/ocean_month.nc-*'
+                        #if access_version.find('OM2') != -1:
+                        #    file_structure='/ocn/ocean_grid.nc-*'
+                        #else:
+                        file_structure='/ocn/ocean_month.nc-*'
                     elif freq == 'day':
                         file_structure='/ocn/ocean_daily.nc-*'
                     else:
                         #Unknown ocean frequency
                         file_structure=None
                 elif realm == 'ocnBgchem':
-                    if access_vars.find('_raw') != -1:
+                    if access_version == 'OM2':
+                        if freq in ['mon']:
+                            file_structure='/ocn/ocean_bgc_mth.nc-*'
+                        elif freq in ['yr']:
+                            if axes_modifier.find('mon2yr') != -1:
+                                file_structure='/ocn/ocean_bgc_mth.nc-*'
+                            else:
+                                file_structure='/ocn/ocean_bgc_ann.nc-*'
+                        elif freq in ['day']:
+                            file_structure='/ocn/ocean_bgc_daily.nc-*'
+                        else:
+                            #Unknown ocnBgchem frequency
+                            file_structure=None
+                    elif access_version in ['CM2','OM2-025']:
+                        file_structure=None
+                    elif (access_vars.find('_raw') != -1):
                         if freq in ['mon']:
                             file_structure='/ocn/ocean_bgc_mth.nc-*'
                         elif freq in ['yr']:
@@ -485,11 +517,17 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                             file_structure='/ice/iceh_m.????-??.nc'
                         elif access_version == 'ESM':
                             file_structure='/ice/iceh.????-??.nc'
+                        elif access_version.find('OM2') != -1:
+                            file_structure='/ice/iceh.????-??.nc'
+                        else: file_structure=None
                     elif freq == 'day':
                         if access_version == 'CM2':
                             file_structure='/ice/iceh_d.????-??.nc'
                         elif access_version == 'ESM':
                             file_structure='/ice/iceh_day.????-??.nc'
+                        elif access_version.find('OM2') != -1:
+                            file_structure='/ice/iceh.????-??-daily.nc'
+                        else: file_structure=None
                     else:
                         #Unknown sea ice frequency
                         file_structure=None
@@ -535,10 +573,8 @@ def create_variable_map(dreq,master_map,outpath,table):
     for cmorname,realm,freq,cfname,years,dimensions in dreq_variables:
         matches,nomatches=find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,matches,nomatches)
     if matches == []:
-        print '\n{}:'.format(table)
         print'  no ACCESS variables found'.format(table)
     else: 
-        print '\n{}:'.format(table)
         write_variable_map(outpath,table,matches)
     if nomatches != []:
         print '    variables in table \'{}\' that were not identified in the master variable map:'.format(table)
@@ -564,6 +600,7 @@ def main():
     tables=find_cmip_tables(dreq)
     if tabletoprocess.lower() == 'all':
         for table in tables:
+            print '\n{}:'.format(table)
             create_variable_map(dreq,master_map,outpath,table)
     else:
         table=tabletoprocess

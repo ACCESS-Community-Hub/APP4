@@ -127,7 +127,7 @@ def app(option_dictionary):
     i=0
     while True:
         try:
-                        temp_file=netCDF4.Dataset(all_access_files[i],'r')
+            temp_file=netCDF4.Dataset(all_access_files[i],'r')
         except IndexError: 
             #gone through all files and haven't found variable
             raise Exception('Error! Variable missing from files: {}'.format(opts['vin'][0]))
@@ -161,12 +161,14 @@ def app(option_dictionary):
     if opts['axes_modifier'].find('tMonOverride') != -1:
         #if we want to override dodgey units in the input files
         print 'overriding time axis...'
-        refString="days since {r}-01-01".format(r=opts['reference_date'])
-        time_dimension=None    
+        refString="days since {r:04d}-01-01".format(r=opts['reference_date'])
+        #time_dimension=None    
         inrange_access_files=all_access_files
+        startyear=opts['tstart']
+        endyear=opts['tend']
     elif opts['cmip_table'].find('fx') != -1:
         print 'fx variable, no time axis'
-        refString="days since {r}-01-01".format(r=opts['reference_date'])
+        refString="days since {r:04d}-01-01".format(r=opts['reference_date'])
         time_dimension=None    
         inrange_access_files=all_access_files
     else:
@@ -206,7 +208,7 @@ def app(option_dictionary):
     print 'time dimension: {}'.format(time_dimension)
     sys.stdout.flush()
     exit=False
-    if time_dimension != None:
+    if (time_dimension != None) and (opts['axes_modifier'].find('tMonOverride') == -1):
         for i, input_file in enumerate(all_access_files):
             try:
                 access_file=netCDF4.Dataset(input_file,'r')
@@ -214,6 +216,8 @@ def app(option_dictionary):
                 #Read the time information.
                 #
                 tvals=access_file.variables[time_dimension]
+                #print opts['tend']
+                #print float(tvals[0])
                 #test each file to see if it contains time values within the time range from tstart to tend
                 #if (opts['tend'] == None or float(tvals[0]) < float(opts['tend'])) and (opts['tstart'] == None or float(tvals[-1]) > float(opts['tstart'])):
                 if (opts['tend'] == None or float(tvals[0]) <= float(opts['tend'])) and (opts['tstart'] == None or float(tvals[-1]) >= float(opts['tstart'])):
@@ -224,6 +228,10 @@ def app(option_dictionary):
                         inrange_access_times.append(tvals[0])
                         exit=True
                     else:
+                        irefString=access_file.variables[time_dimension].units
+                        if irefString != refString: 
+                            #print 'WRONG refString ', irefString, refString
+                            tvals=np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
                         inrange_access_times.extend(tvals[:])
                 #
                 #Close the file.
@@ -234,11 +242,26 @@ def app(option_dictionary):
             if exit:
                 break
     else:
-        #print all_access_files[0]
         #if we are using a time invariant parameter, just use a file with vin
-        #inrange_access_files.append(all_access_files[i])
-        inrange_access_files = [all_access_files[0]]
-        #print inrange_access_files
+        if opts['cmip_table'].find('fx') != -1:
+            inrange_access_files = [all_access_files[0]]
+        else:
+            for i, input_file in enumerate(all_access_files):
+                try:
+                    access_file=netCDF4.Dataset(input_file,'r')
+                    tvals=access_file.variables[time_dimension]
+                    #print opts['tend']
+                    #print float(tvals[0])
+                    irefString=access_file.variables[time_dimension].units
+                    if irefString != refString: 
+                        #print 'WRONG refString ', irefString, refString
+                        tvals=np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
+                    inrange_access_times.extend(tvals[:])
+                    access_file.close()
+                except Exception, e:
+                    print 'Cannot open file: {}'.format(e)
+                if exit:
+                    break
     print 'number of files in time range: {}'.format(len(inrange_access_files))
     #check if the requested range is covered
     if inrange_access_files == []:
@@ -335,6 +358,7 @@ def app(option_dictionary):
         z_len=0
         print 'list of dimensions: {}'.format(dim_list)
         for dim in dim_list:
+            print(axis_ids)
             try:
                 dim_vals=access_file.variables[dim]
                 dim_values=dim_vals[:]
@@ -363,7 +387,7 @@ def app(option_dictionary):
                         axis_name='X'
                     elif dim == 'nj':
                         axis_name='Y'
-                    elif dim == time_dimension:
+                    elif (dim == time_dimension) or (dim.find('time') != -1):
                         axis_name='T'
                     else:
                         axis_name='unknown'
@@ -423,16 +447,38 @@ def app(option_dictionary):
                     max_tvals=[]
                     if opts['axes_modifier'].find('tMonOverride') == -1:
                         #convert times to days since reference_date
-                        tvals=np.array(inrange_access_times) + cdtime.reltime(0,refString).torel('days since {r}-01-01'.format(r=opts['reference_date']),cdtime.DefaultCalendar).value
-                        print 'time values converted to days since 01,01,{r}: {a}...{b}'.format(r=opts['reference_date'],a=tvals[0:5],b=tvals[-5:-1])
+                        tvals=np.array(inrange_access_times) + cdtime.reltime(0,refString).torel('days since {r:04d}-01-01'.format(r=opts['reference_date']),cdtime.DefaultCalendar).value
+                        print 'time values converted to days since 01,01,{r:04d}: {a}...{b}'.format(r=opts['reference_date'],a=tvals[0:5],b=tvals[-5:-1])
                     else:
-                        #manually create time axis
+                        print 'manually create time axis'
                         tvals=[]
-                        for year in range(opts['tstart'],opts['tend']+1):
-                            for mon in range(1,13):
-                                tvals.append(cdtime.comptime(year,mon,15).torel(refString,cdtime.DefaultCalendar).value)
+                        if opts['frequency'] == 'yr':
+                            print 'yearly'
+                            for year in range(opts['tstart'],opts['tend']+1):
+                                tvals.append(cdtime.comptime(year,07,02,12).torel(refString,cdtime.DefaultCalendar).value)
+                        elif opts['frequency'] == 'mon':
+                            print 'monthly'
+                            for year in range(opts['tstart'],opts['tend']+1):
+                                for mon in range(1,13):
+                                    tvals.append(cdtime.comptime(year,mon,15).torel(refString,cdtime.DefaultCalendar).value)
+                        elif opts['frequency'] == 'day':
+                            print 'daily'
+                            newstarttime=cdtime.comptime(opts['tstart'],1,1,12).torel(refString,cdtime.DefaultCalendar).value
+                            difftime=inrange_access_times[0] - newstarttime
+                            newendtimeyear=cdtime.comptime(opts['tend'],12,31,12).torel(refString,cdtime.DefaultCalendar).value
+                            numdays_cal=int(newendtimeyear - newstarttime + 1)
+                            numdays_tvals=len(inrange_access_times)
+                            #diff_days=numdays_cal - numdays_tvals
+                            if numdays_cal == 366 and numdays_tvals == 365: 
+                                print 'adjusting for single leap year offset'
+                                difftime=inrange_access_times[0] - newstarttime - 1
+                            else: difftime=inrange_access_times[0] - newstarttime
+                            tvals=np.array(inrange_access_times) - difftime
+                        else: 
+                            print 'cannot manually create axis for this frequency, {}'.format(opts['frequency'])
+                    #print tvals                    
                     #set refString to new value
-                    refString='days since {r}-01-01'.format(r=opts['reference_date'])
+                    refString='days since {r:04d}-01-01'.format(r=opts['reference_date'])
                     #
                     #Handle different types of time axis
                     #(mean, snapshot, climatology)
@@ -451,7 +497,16 @@ def app(option_dictionary):
                         elif opts['axes_modifier'].find('mon2yr') != -1:
                             print 'converting timevals from monthly to annual'
                             tvals,min_tvals,max_tvals=mon2yr(tvals,refString)
-                        elif (len(tvals) <= 1) or (((tvals[1]-tvals[0]) >= 28) and ((tvals[1]-tvals[0]) <= 31)):
+                        elif len(tvals) == 1:
+                            print 'one year of data'
+                            try:
+                                tvals=np.asarray(tvals)
+                                min_tvals=[0.0]
+                                max_tvals=[2*tvals[0]]
+                            except Exception, e:
+                                print 'E: ', e
+                                raise Exception('unable to compute time bounds')
+                        elif (((tvals[1]-tvals[0]) >= 28) and ((tvals[1]-tvals[0]) <= 31)): # and (len(tvals) != 1):
                             print 'monthly time bounds'
                             for i,ordinaldate in enumerate(tvals):
                                 if (os.path.basename(all_access_files[0]).startswith('ice')) or (dim.find('time1') != -1 or dim.find('time_0') != -1):
@@ -474,6 +529,7 @@ def app(option_dictionary):
                             if os.path.basename(all_access_files[0]).startswith('ice'):
                                 tvals=tvals-0.5
                             try:
+                                tvals=np.asarray(tvals)
                                 min_tvals=np.append(1.5*tvals[0] - 0.5*tvals[1],(tvals[0:-1] + tvals[1:])/2)
                                 max_tvals=np.append((tvals[0:-1] + tvals[1:])/2,(1.5*tvals[-1] - 0.5*tvals[-2]))
                             except:
@@ -618,7 +674,7 @@ def app(option_dictionary):
                         #ocean depth
                         else:
                             lev_name='depth_coord'
-                        if opts['access_version'] == 'OM2-025' and dim == 'sw_ocean':
+                        if opts['access_version'].find('OM2')!=-1 and dim == 'sw_ocean':
                             dim_val_bounds=dim_val_bounds[:]
                             dim_val_bounds[-1]=dim_values[-1]
                     elif dim == 'potrho':
@@ -1011,24 +1067,34 @@ def app(option_dictionary):
             count=0
             vsum=np.ma.zeros(vshape[1:],dtype=np.float32)
             for input_file in inrange_access_files:
-                #if os.path.basename(input_file).startswith('ocean'):
-                #    yearstamp=int(os.path.basename(input_file).split('.')[1][3:7])
-                #else:
-                #    if opts['access_version'].find('CM2') != -1:
-                #        yearstamp=int(os.path.basename(input_file).split('.')[1][2:6])
-                #    elif opts['access_version'].find('ESM') != -1:
-                #        yearstamp=int(os.path.basename(input_file).split('.')[1][3:7])
-                #if not yearstamp == year: continue
-                access_file=cdms2.open(input_file,'r')
-                t=access_file.variables[opts['vin'][0]].getTime()
-                datelist=t.asComponentTime()
-                yearinside=False
-                for date in datelist:
-                    if date.year == year: yearinside=True
+                if opts['axes_modifier'].find('tMonOverride') != -1:
+                    print('reading date info from file name')
+                    if os.path.basename(input_file).startswith('ocean'):
+                        yearstamp=int(os.path.basename(input_file).split('.')[1][3:7])
+                    else:
+                        if opts['access_version'].find('CM2') != -1:
+                            yearstamp=int(os.path.basename(input_file).split('.')[1][2:6])
+                        elif opts['access_version'].find('ESM') != -1:
+                            yearstamp=int(os.path.basename(input_file).split('.')[1][3:7])
+                    access_file=cdms2.open(input_file,'r')
+                    t=access_file.variables[opts['vin'][0]].getTime()
+                    datelist=t.asComponentTime()
+                    if yearstamp == year: yearinside=True
+                    else: yearinside=False
+                else:
+                    print('reading date info from time dimension')
+                    access_file=cdms2.open(input_file,'r')
+                    t=access_file.variables[opts['vin'][0]].getTime()
+                    datelist=t.asComponentTime()
+                    yearinside=False
+                    for date in datelist:
+                        if date.year == year: yearinside=True
+                try: print year, yearstamp, yearinside, input_file
+                except: print year, yearinside, input_file
                 if yearinside:
                     print 'found data in file {}'.format(input_file)
                     for index, d in enumerate(datelist[:]):
-                        if d.year == year:
+                        if (d.year == year) or (opts['axes_modifier'].find('tMonOverride') != -1):
                             if opts['calculation'] == '':
                                 data_vals=access_file.variables[opts['vin'][0]][:]
                             else:
@@ -1061,8 +1127,12 @@ def app(option_dictionary):
                     yearstamp=int(os.path.basename(input_file).split('.')[1][2:6])
                     monstamp=int(os.path.basename(input_file).split('.')[1][6:8])
                 elif opts['access_version'].find('ESM') != -1:
-                    yearstamp=int(os.path.basename(input_file).split('.')[1][3:7])
-                    monstamp=int(os.path.basename(input_file).split('.')[1][8:10])
+                    try:
+                        yearstamp=int(os.path.basename(input_file).split('.')[1][3:7])
+                        monstamp=int(os.path.basename(input_file).split('.')[1][8:10])
+                    except:
+                        yearstamp=int(os.path.basename(input_file).split('.')[1][3:7])
+                        monstamp=int(os.path.basename(input_file).split('.')[1][7:9])
                 if not monstamp == 12 or not yearstamp == year: continue
                 access_file=cdms2.open(input_file,'r')
                 t=access_file.variables[opts['vin'][0]].getTime()
@@ -1105,6 +1175,7 @@ def app(option_dictionary):
                         return -1
                     else: 
                         data_vals=access_file.variables[opts['vin'][0]][:]
+                        #print data_vals
                         access_file.close()
                 else:
                     print 'calculating...'

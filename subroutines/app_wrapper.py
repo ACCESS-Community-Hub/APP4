@@ -151,9 +151,9 @@ def process_row(row):
         #Do the processing:
         #
         expected_file=file_name
-        if not os.path.exists(outpath):
-            print 'creating outpath directory: {}'.format(outpath)
-            os.makedirs(outpath)
+        #if not os.path.exists(outpath):
+        #    print 'creating outpath directory: {}'.format(outpath)
+        #    os.makedirs(outpath)
         if overRideFiles or not os.path.exists(expected_file):
             #if file doesn't already exist (and we're not overriding), run the app
             #
