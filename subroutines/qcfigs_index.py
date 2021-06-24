@@ -11,7 +11,6 @@ import sys
 
 try: corepath=os.environ.get('ONLINE_PLOT_DIR')
 except: sys.exit('no corepath defined')
-#exp='HI-EDC-06'
 exp=os.environ.get('EXP_TO_PROCESS')
 
 path=corepath+'/'+exp

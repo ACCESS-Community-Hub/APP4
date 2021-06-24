@@ -35,14 +35,13 @@ if (($NUM_ROWS <= 48)); then
 else
   NUM_CPUS=48
 fi
-NUM_MEM=$(echo "${NUM_CPUS} * 32" | bc)
+#NUM_MEM=$(echo "${NUM_CPUS} * 32" | bc)
+NUM_MEM=$(echo "${NUM_CPUS} * 2" | bc)
 if ((${NUM_MEM} >= 1470)); then
   NUM_MEM=1470
 fi
 #
-#NUM_CPUS=1
-#NUM_MEM=4
-QUEUE=hugemem
+QUEUE=normal
 echo "number of files to check: ${NUM_ROWS}"
 echo "number of cpus to to be used: ${NUM_CPUS}"
 echo "total amount of memory to be used: ${NUM_MEM}Gb"
@@ -71,7 +70,7 @@ source ./subroutines/setup_env_cmip6.sh publication
 echo "completion checking exp ${EXP_TO_PROCESS}..."
 python ./subroutines/completion_check.py --multi
 echo "quality checking exp ${EXP_TO_PROCESS}..."
-python ./subroutines/quality_check.py --compliance --timeseries
+python ./subroutines/quality_check.py --compliance #--timeseries
 exit
 echo "setting up accessdev-web QC plots"
 python ./subroutines/qcfigs_index.py
