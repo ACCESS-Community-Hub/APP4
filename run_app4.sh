@@ -5,7 +5,7 @@
 ################################################################
 #
 # Local experiment to process
-export EXP_TO_PROCESS=PI-01
+export EXP_TO_PROCESS=lig127k
 #
 # If inline argument is passed
 if [ ! -z $1 ]; then
@@ -48,8 +48,7 @@ python ./subroutines/dreq_mapping.py --multi
 python ./subroutines/database_manager.py
 
 # FOR TESTING
-#python ./subroutines/app_wrapper.py
-#exit
+#python ./subroutines/app_wrapper.py; exit
 #
 
 ################################################################

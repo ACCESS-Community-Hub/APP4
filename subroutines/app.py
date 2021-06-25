@@ -1089,8 +1089,8 @@ def app(option_dictionary):
                     yearinside=False
                     for date in datelist:
                         if date.year == year: yearinside=True
-                try: print year, yearstamp, yearinside, input_file
-                except: print year, yearinside, input_file
+                #try: print year, yearstamp, yearinside, input_file
+                #except: print year, yearinside, input_file
                 if yearinside:
                     print 'found data in file {}'.format(input_file)
                     for index, d in enumerate(datelist[:]):

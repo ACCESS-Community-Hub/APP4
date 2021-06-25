@@ -4,7 +4,7 @@
 # CHOOSE OPTIONS
 ################################################################
 
-export EXP_TO_PROCESS=PI-01
+export EXP_TO_PROCESS=lig127k
 # If inline argument is passed
 if [ ! -z $1 ]; then
   export EXP_TO_PROCESS=$1

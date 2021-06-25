@@ -1,24 +1,16 @@
 #!/bin/bash
 
 loc_exp=(
-025deg_jra55_iaf_omip2_cycle1
-025deg_jra55_iaf_omip2_cycle2
-025deg_jra55_iaf_omip2_cycle3
-025deg_jra55_iaf_omip2_cycle4
-025deg_jra55_iaf_omip2_cycle5
-025deg_jra55_iaf_omip2_cycle6
-1deg_jra55_iaf_omip2_cycle1
-1deg_jra55_iaf_omip2_cycle2
-1deg_jra55_iaf_omip2_cycle3
-1deg_jra55_iaf_omip2_cycle4
-1deg_jra55_iaf_omip2_cycle5
-1deg_jra55_iaf_omip2_cycle6
-1deg_jra55_iaf_omip2spunup_cycle34
-1deg_jra55_iaf_omip2spunup_cycle35
-1deg_jra55_iaf_omip2spunup_cycle36
-1deg_jra55_iaf_omip2spunup_cycle37
-1deg_jra55_iaf_omip2spunup_cycle38
-1deg_jra55_iaf_omip2spunup_cycle39
+SSP-370-35
+SSP-370-36
+SSP-370-37
+SSP-370-38
+SSP-370-39
+SSP-370-40
+SSP-370-41
+SSP-370-42
+SSP-370-43
+SSP-370-44
 )
 
 for exp in ${loc_exp[@]}; do
