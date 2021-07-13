@@ -17,7 +17,7 @@ export TABLE_TO_PROCESS=all
 export VARIABLE_TO_PROCESS=all
 #
 # subdaily selection options
-export SUBDAILY=true    #[true,false,only]
+export SUBDAILY=false    #[true,false,only]
 #
 # Variable input options
 export FORCE_DREQ=false    #use piControl dreq
@@ -62,7 +62,7 @@ if (($NUM_ROWS <= 24)); then
 else
   NUM_CPUS=24
 fi
-NUM_MEM=$(echo "${NUM_CPUS} * 64" | bc)
+NUM_MEM=$(echo "${NUM_CPUS} * 32" | bc)
 if ((${NUM_MEM} >= 1470)); then
   NUM_MEM=1470
 fi
