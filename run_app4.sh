@@ -62,7 +62,7 @@ if (($NUM_ROWS <= 24)); then
 else
   NUM_CPUS=24
 fi
-NUM_MEM=$(echo "${NUM_CPUS} * 32" | bc)
+NUM_MEM=$(echo "${NUM_CPUS} * 48" | bc)
 if ((${NUM_MEM} >= 1470)); then
   NUM_MEM=1470
 fi
