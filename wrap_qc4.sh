@@ -1,16 +1,10 @@
 #!/bin/bash
 
 loc_exp=(
-SSP-585-15
-SSP-585-16
-SSP-585-17
-SSP-585-18
-SSP-585-19
-SSP-585-20
-SSP-585-21
-SSP-585-22
-SSP-585-23
-SSP-585-24
+cg320
+cg321
+cg322
+cg323
 )
 
 for exp in ${loc_exp[@]}; do

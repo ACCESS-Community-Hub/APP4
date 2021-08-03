@@ -1,7 +1,7 @@
 #!/bin/bash
 # Set up  environment for running scripts
 
-echo -e "setting up environment..."
+echo -e "\nsetting up environment..."
 
 module purge
 module use /g/data/hh5/public/modules

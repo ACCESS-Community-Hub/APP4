@@ -68,6 +68,7 @@ def app(option_dictionary):
     except:
         print 'E: Unable to add a global attribute called notes'
         raise Exception('E: Unable to add a global attribute called notes')
+    cmor.set_cur_dataset_attribute('contact','access_csiro@csiro.au')
     #
     #Load the CMIP tables into memory.
     #

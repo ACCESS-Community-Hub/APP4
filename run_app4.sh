@@ -17,11 +17,14 @@ export TABLE_TO_PROCESS=all
 export VARIABLE_TO_PROCESS=all
 #
 # subdaily selection options
-export SUBDAILY=false    #[true,false,only]
+export SUBDAILY=true    #[true,false,only]
 #
 # Variable input options
 export FORCE_DREQ=false    #use piControl dreq
 export PRIORITY_ONLY=false
+#
+# NCI project to charge compute and use in storage flags
+export PROJ=p66
 #
 # for Default mode (i.e. non-CMIP6)
 export DEFAULT_MODE=false
@@ -77,7 +80,7 @@ cat << EOF > $APP_JOB
 #!/bin/bash
 #PBS -P p66
 #PBS -q hugemem
-#PBS -l storage=scratch/p66+gdata/p66+gdata/hh5+gdata/access
+#PBS -l storage=scratch/${PROJ}+gdata/${PROJ}+gdata/hh5+gdata/access
 #PBS -l ncpus=${NUM_CPUS},walltime=48:00:00,mem=${NUM_MEM}Gb,wd
 #PBS -j oe
 #PBS -o ${JOB_OUTPUT}

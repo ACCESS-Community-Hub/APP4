@@ -64,6 +64,7 @@ export QC_DIR=${QC_DIR}
 export ONLINE_PLOT_DIR=${ONLINE_PLOT_DIR}
 export USER=$USER
 export DEFAULT_MODE=$DEFAULT_MODE
+export NCPUS=$NUM_CPUS
 # Set up environment
 source ./subroutines/setup_env_cmip6.sh publication
 # Run checks
