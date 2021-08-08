@@ -62,14 +62,10 @@ rlutcs,yes,fld_s02i206,,W m-2,,,both,atmos,
 rsds,yes,fld_s01i235,,W m-2,,,both,atmos,
 rsdscs,yes,fld_s01i210,,W m-2,,,both,atmos,
 rsdsdiff,yes,fld_s01i216,,W m-2,,down,both,atmos,
-#
 rsdt,yes,fld_s01i207,,W m-2,,,both,atmos,
-#
 rsus,yes,fld_s01i235 fld_s01i201,var[0]-var[1],W m-2,,up,both,atmos,
 rsuscs,yes,fld_s01i211,,W m-2,,,both,atmos,
-#
 rsut,yes,fld_s01i208,,W m-2,,,both,atmos,
-#
 rsutcs,yes,fld_s01i209,,W m-2,,,both,atmos,
 rtmt,yes,fld_s01i207 fld_s01i208 fld_s03i332,var[0]-var[1]-var[2],W m-2,,,both,atmos,
 rv850,yes,fld_s30i455,,s-1,,,CM2,atmos,

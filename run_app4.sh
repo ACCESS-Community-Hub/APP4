@@ -40,8 +40,8 @@ source ./subroutines/setup_env_cmip6.sh
 ./subroutines/cleanup.sh $OUT_DIR
 
 # Update 'version' in experiment json file to today or chosen date
-export datevers=$(date '+%Y%m%d')
-#export datevers=20201207
+#export datevers=$(date '+%Y%m%d')
+export datevers=20210802
 ./input_files/json/update_json.sh
 
 # Create variable maps

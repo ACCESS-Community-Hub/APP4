@@ -1,10 +1,8 @@
 #!/bin/bash
 
 loc_exp=(
-cg320
-cg321
-cg322
-cg323
+cd659
+cd884
 )
 
 for exp in ${loc_exp[@]}; do

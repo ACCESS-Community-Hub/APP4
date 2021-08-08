@@ -33,7 +33,7 @@ export CMIP6_TABLES=${APP_DIR}/input_files/cmip6-cmor-tables/Tables
 # Input files
 export EXPERIMENTS_TABLE=${APP_DIR}/input_files/experiments.csv
 export MASTER_MAP=${APP_DIR}/input_files/master_map.csv
-export PRIORITY_LIST=${APP_DIR}/input_files/priority_lists/priority_vars_lig127k_ocnbgc.csv
+export PRIORITY_LIST=${APP_DIR}/input_files/priority_lists/priority_vars_cm2_abs550aer_evspbl.csv
 
 # Outputs:
 # output logs and job scripts/files go to MAIN_DIR

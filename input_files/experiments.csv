@@ -1,4 +1,4 @@
-#local_exp_id,local_exp_dir,json_file_path,data_request,reference_date,start_year,end_year,ACCESS_version,cmip_exp_id
+find#local_exp_id,local_exp_dir,json_file_path,data_request,reference_date,start_year,end_year,ACCESS_version,cmip_exp_id
 #
 ## CM2
 #
@@ -367,7 +367,7 @@ PI-EDC-ZEC-02,/g/data/p66/cm2704/archive/PI-EDC-ZEC-02/history,input_files/json/
 PI-EDC-ZEC-03,/g/data/p66/cm2704/archive/PI-EDC-ZEC-03/history,input_files/json/PI-EDC-ZEC-03.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-1pct-brch-2000PgC_3_2.csv,101,216,316,ESM,esm-1pct-brch-2000PgC
 # PMIP
 lig127k,/g/data/p66/cm2704/archive/lig127k/history,input_files/json/lig127k.json,input_files/PMIP/cmvme_c4.cd.cm.pm.rf.sc_lig127k_1_2.csv,901,901,1100,ESM,lig127k
-esm-mh,/scratch/p66/cm2704/archive/esm-mh/history,input_files/json/esm-mh.json,input_files/dreq/PMIP/cmvme_c4.cd.cm.pm.rf.sc_lig127k_1_2.csv,501,501,800,ESM,midHolocene
+esm-mh,/g/data/p66/cm2704/archive/esm-mh/history,input_files/json/esm-mh.json,input_files/dreq/PMIP/cmvme_c4.cd.cm.pm.rf.sc_lig127k_1_2.csv,501,501,800,ESM,midHolocene
 # RFMIP
 AM-rf-01,/g/data/p66/cm2704/archive/AM-rf-01/history,input_files/json/AM-rf-01.json,input_files/dreq/RFMIP/cmvme_cm.fa.om.rf.sc.si_piClim-control_1_2.csv,101,121,150,ESM,piClim-control
 AM-rf-aer-01,/g/data/p66/cm2704/archive/AM-rf-aer-01/history,input_files/json/AM-rf-aer-01.json,input_files/dreq/RFMIP/cmvme_cm.fa.om.rf.sc.si_piClim-aer_1_2.csv,101,121,150,ESM,piClim-aer
