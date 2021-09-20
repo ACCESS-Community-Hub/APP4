@@ -37,7 +37,7 @@ export PRIORITY_ONLY=false
 ################################################################
 
 # Set up environment
-export DEFAULT_MODE=true
+export MODE=default
 export FORCE_DREQ=true
 source ./subroutines/setup_env_cmip6.sh
 
@@ -51,6 +51,7 @@ export datevers=$(date '+%Y%m%d')
 
 # Create variable maps
 python ./subroutines/dreq_mapping.py --multi
+exit
 
 # Create database
 python ./subroutines/database_manager.py

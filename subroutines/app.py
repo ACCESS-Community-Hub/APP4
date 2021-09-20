@@ -23,6 +23,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 import time as timetime
 import psutil
+import calendar
 
 cmorlogs=os.environ.get('CMOR_LOGS')
 
@@ -43,10 +44,11 @@ def app(option_dictionary):
     #
     cdtime.DefaultCalendar=cdtime.GregorianCalendar
     #
-    cmor.setup(inpath=opts['cmip6_table_path'],
+    cmor.setup(inpath=opts['cmip_table_path'],
         netcdf_file_action=cmor.CMOR_REPLACE_4,
         set_verbosity=cmor.CMOR_NORMAL,
         exit_control=cmor.CMOR_NORMAL,
+        #exit_control=cmor.CMOR_EXIT_ON_MAJOR,
         logfile='{}/log'.format(cmorlogs),create_subdirectories=1)
     #
     #Define the dataset.
@@ -73,8 +75,13 @@ def app(option_dictionary):
     #Load the CMIP tables into memory.
     #
     tables=[]
-    tables.append(cmor.load_table('{}/CMIP6_grids.json'.format(opts['cmip6_table_path'])))
-    tables.append(cmor.load_table('{}/{}.json'.format(opts['cmip6_table_path'],opts['cmip_table'])))
+    #if opts['mode'] == 'ccmi':
+    #    print('{}/{}.json'.format(opts['cmip_table_path'],opts['cmip_table']))
+    #    tables.append(cmor.load_table('{}/CCMI2022_grids.json'.format(opts['cmip_table_path'])))
+    #    tables.append(cmor.load_table('{}/{}.json'.format(opts['cmip_table_path'],opts['cmip_table'])))
+    #else:
+    tables.append(cmor.load_table('{}/CMIP6_grids.json'.format(opts['cmip_table_path'])))
+    tables.append(cmor.load_table('{}/{}.json'.format(opts['cmip_table_path'],opts['cmip_table'])))
     #
     #Find all the ACCESS file names which match the "glob" pattern.
     #Sort the filenames, assuming that the sorted filenames will
@@ -568,6 +575,9 @@ def app(option_dictionary):
                                         tvals[i]=min_tvals[i]+mid
                             else:    
                                 tvals=tvals-0.5
+                        elif opts['mode'] == 'ccmi' and tvals[0].is_integer():
+                            tvals = tvals - 0.5
+                            print('inst time shifted back half a day for CMOR')
                         elif opts['axes_modifier'].find('yrpoint') != -1:
                             print 'converting timevals from monthly to end of year'
                             tvals,min_tvals,max_tvals=yrpoint(tvals,refString) 
@@ -755,6 +765,8 @@ def app(option_dictionary):
                             lev_name='plev3'
                         elif z_len == 19:
                             lev_name='plev19'
+                        elif z_len == 39:
+                            lev_name='plev39'
                         else: raise Exception('Z levels do not match known levels {}'.format(dim))
                     elif dim.find('pressure') != -1:
                         print opts['cmip_table']
@@ -766,6 +778,8 @@ def app(option_dictionary):
                             lev_name='plev3'
                         elif z_len == 19:
                             lev_name='plev19'
+                        elif z_len == 39:
+                            lev_name='plev39'
                         else: raise Exception('Z levels do not match known levels {}'.format(dim))
                     elif (dim.find('soil') != -1) or (dim == 'depth'):
                         units='m'
@@ -916,8 +930,8 @@ def app(option_dictionary):
     elif lev_name == 'hybrid_height_half':
         orog_vals=getOrog()
         zfactor_b_id=cmor.zfactor(zaxis_id=z_axis_id,zfactor_name='b_half',
-            axis_ids=z_axis_id,units='1',type='d',zfactor_values=b_vals,
-            zfactor_bounds=b_bounds)
+                axis_ids=z_axis_id,units='1',type='d',zfactor_values=b_vals,
+                zfactor_bounds=b_bounds)
         zfactor_orog_id=cmor.zfactor(zaxis_id=z_axis_id,zfactor_name='orog',
             axis_ids=z_ids,units='m',type='f',zfactor_values=orog_vals)
     #
@@ -1159,6 +1173,51 @@ def app(option_dictionary):
             print np.shape(data_vals)
             cmor.write(variable_id,data_vals[0,:,:,:],ntimes_passed=1)
     #
+    #Convert monthly integral to rate (e.g. K to K s-1, as in tntrl)
+    #
+    elif opts['axes_modifier'].find('monsecs') != -1:
+        for i, input_file in enumerate(inrange_access_files):
+            print 'processing file: {}'.format(input_file)
+            access_file=cdms2.open(input_file,'r')
+            t=access_file.variables[opts['vin'][0]].getTime()
+            datelist=t.asdatetime()
+            #print(calendar.monthrange(datelist[0].year,datelist[0].month)[1])
+            monsecs=calendar.monthrange(datelist[0].year,datelist[0].month)[1]*86400
+            try:
+                if opts['calculation'] == '':
+                    if len(opts['vin'])>1:
+                        print 'error: multiple input variables are given without a description of the calculation'
+                        return -1
+                    else: 
+                        data_vals=access_file.variables[opts['vin'][0]][:]
+                        data_vals=data_vals/monsecs
+                        #print data_vals
+                        access_file.close()
+                else:
+                    print 'calculating...'
+                    data_vals=calculateVals((access_file,),opts['vin'],opts['calculation'])
+                    data_vals=data_vals/monsecs
+                    #convert mask to missing values
+                    try: data_vals=data_vals.filled(in_missing)
+                    except:
+                        #if values aren't in a masked array
+                        pass 
+                    access_file.close()
+            except Exception, e:
+                print 'E: Unable to process data from {} {}'.format(input_file,e)
+                raise
+            print 'writing with cmor...'
+            try:
+                if time_dimension != None:
+                    #assuming time is the first dimension
+                    print np.shape(data_vals)
+                    cmor.write(variable_id,data_vals,ntimes_passed=np.shape(data_vals)[0])
+                else:
+                    cmor.write(variable_id,data_vals,ntimes_passed=0)
+            except Exception, e:
+                print 'E: Unable to write the CMOR variable to file {}'.format(e)
+                raise
+    #
     #normal case
     #
     else:
@@ -1232,8 +1291,8 @@ parser.add_option('--vin', action="append",dest='vin', default=[],
     help='Name of the input variable to process [default: %default]')
 parser.add_option('--vcmip', dest='vcmip', default='tos',
     help='Name of the CMIP-5 variable [default: %default]')
-parser.add_option('--cmip6_table_path', dest='cmip6_table_path', default='./cmip6-cmor-tables/Tables',
-    help='Path to the directory where the CMIP5 tables are stored [default: %default]')
+parser.add_option('--cmip_table_path', dest='cmip_table_path', default='./cmip-cmor-tables/Tables',
+    help='Path to the directory where the CMIP tables are stored [default: %default]')
 parser.add_option('--frequency', dest='frequency', default='mon',
     help='requested frequency of variable')
 parser.add_option('--cmip_table', dest='cmip_table', default='CMIP6_Amon',
@@ -1263,6 +1322,8 @@ parser.add_option('--access_version',dest='access_version',default='CM2',
     help='CM2 or ESM')
 parser.add_option('--reference_date',dest='reference_date',default='0001',
     help='The internally-consistent date that the experiment began')
+parser.add_option('--mode',dest='mode',default='cmip6',
+    help='CMIP6, CCMI2022, or default mode')
 (options, args)=parser.parse_args()
 opts=dict()
 #produce a dictionary out of the options object
@@ -1274,7 +1335,7 @@ opts['infile']=options.infile
 opts['in_units']=options.in_units
 opts['vin']=options.vin
 opts['vcmip']=options.vcmip
-opts['cmip6_table_path']=options.cmip6_table_path
+opts['cmip_table_path']=options.cmip_table_path
 opts['calculation']=options.calculation
 opts['axes_modifier']=options.axes_modifier
 opts['positive']=options.positive
@@ -1284,6 +1345,7 @@ opts['timeshot']=options.timeshot
 opts['access_version']=options.access_version
 opts['reference_date']=options.reference_date
 opts['frequency']=options.frequency
+opts['mode']=options.mode
 
 if __name__ == "__main__":
     app(opts)

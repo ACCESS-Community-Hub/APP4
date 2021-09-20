@@ -16,7 +16,9 @@ export PUBLISH=True
 export PUB_DIR=/scratch/p66/CMIP6/APP_publishable/CMIP6
 export QC_DIR=/g/data/p66/CMIP6/APP_QC/CMIP6
 export ONLINE_PLOT_DIR=/g/data/p66/accessdev-web/$USER/CMIP6_QC
-export DEFAULT_MODE=false
+export MODE=cmip6
+export PROJ=p66
+export ADDPROJS=( p73 )
 
 ################################################################
 
@@ -29,6 +31,9 @@ echo "publishing = $PUBLISH"
 ################################################################
 echo -e '\ncreating job...'
 
+for addproj in ${ADDPROJS[@]}; do
+  addstore="${addstore}+scratch/${addproj}+gdata/${addproj}"
+done
 NUM_ROWS=$( cat ${SUCCESS_LISTS}/${EXP_TO_PROCESS}_success.csv | wc -l )
 if (($NUM_ROWS <= 48)); then
   NUM_CPUS=$NUM_ROWS
@@ -49,13 +54,12 @@ echo "NCI queue to use: $QUEUE"
 
 cat << EOF > ${OUT_DIR}/qc_job.sh
 #!/bin/bash
-#PBS -P p66
+#PBS -P ${PROJ}
 #PBS -l walltime=12:00:00,ncpus=${NUM_CPUS},mem=${NUM_MEM}Gb,wd
 #PBS -q ${QUEUE}
-#PBS -l storage=scratch/p66+gdata/p66+gdata/hh5+gdata/access
+#PBS -l storage=scratch/${PROJ}+gdata/${PROJ}+gdata/hh5+gdata/access${addstore}
 #PBS -j oe
 #PBS -o ${OUT_DIR}/qc_results.ou
-#PBS -e ${OUT_DIR}/qc_results_${EXP_TO_PROCESS}.ou
 #PBS -N qc_${EXP_TO_PROCESS}
 export EXP_TO_PROCESS=${EXP_TO_PROCESS}
 export PUBLISH=${PUBLISH}

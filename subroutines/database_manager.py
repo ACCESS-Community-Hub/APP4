@@ -21,8 +21,9 @@ import time
 import json
 exptoprocess=os.environ.get('EXP_TO_PROCESS')
 out_dir=os.environ.get('OUT_DIR')
-if os.environ.get('DEFAULT_MODE').lower() == 'true': def_mode=True
-else: def_mode=False
+if os.environ.get('MODE').lower() == 'default': mode='default'
+elif os.environ.get('MODE').lower() == 'ccmi': mode='ccmi'
+else: mode='cmip6'
 
 def master_setup(conn):
     cursor=conn.cursor()
@@ -108,7 +109,7 @@ def experiments_setup(conn,exps_file):
                 access_version text,
                 cmip_exp_id text,
                 primary key (local_exp_id,json_file_path,start_year)) ''')
-        if def_mode:
+        if mode == 'default':
             def_hist_data=os.environ.get('HISTORY_DATA')
             def_version=os.environ.get('VERSION')
             if def_version == 'CM2': def_json='input_files/json/default_cm2.json'
@@ -309,6 +310,7 @@ def tableToFreq(table):
     ,'AERmon':'mon'\
     ,'AERmonZ':'mon'\
     ,'Amon':'mon'\
+    ,'AmonZ':'mon'\
     ,'CFday':'day'\
     ,'CF3hr':'3hr'\
     ,'CFmon':'mon'\
@@ -316,6 +318,8 @@ def tableToFreq(table):
     ,'E3hrPt':'3hr'\
     ,'Eday':'day'\
     ,'EdayZ':'day'\
+    ,'Aday':'day'\
+    ,'AdayZ':'day'\
     ,'Efx':'fx'\
     ,'Emon':'mon'\
     ,'EmonZ':'mon'\

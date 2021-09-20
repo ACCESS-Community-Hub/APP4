@@ -5,7 +5,7 @@
 ################################################################
 #
 # Local experiment to process
-export EXP_TO_PROCESS=lig127k
+export EXP_TO_PROCESS=cd659
 #
 # If inline argument is passed
 if [ ! -z $1 ]; then
@@ -13,11 +13,11 @@ if [ ! -z $1 ]; then
 fi
 #
 # CMIP6 table/variable to process. Default is 'all'.
-export TABLE_TO_PROCESS=all
-export VARIABLE_TO_PROCESS=all
+export TABLE_TO_PROCESS=Amon
+export VARIABLE_TO_PROCESS=cl
 #
-# subdaily selection options
-export SUBDAILY=true    #[true,false,only]
+# subdaily selection options [true,false,only]
+export SUBDAILY=false
 #
 # Variable input options
 export FORCE_DREQ=false    #use piControl dreq
@@ -25,9 +25,11 @@ export PRIORITY_ONLY=false
 #
 # NCI project to charge compute and use in storage flags
 export PROJ=p66
+# Additional NCI projects to be included in the storage flags
+export ADDPROJS=( p73 )
 #
-# for Default mode (i.e. non-CMIP6)
-export DEFAULT_MODE=false
+# [cmip6, ccmi, default]
+export MODE=cmip6
 #
 ################################################################
 # SETTING UP ENVIROMENT, VARIABLE MAPS, AND DATABASE
@@ -40,18 +42,19 @@ source ./subroutines/setup_env_cmip6.sh
 ./subroutines/cleanup.sh $OUT_DIR
 
 # Update 'version' in experiment json file to today or chosen date
-#export datevers=$(date '+%Y%m%d')
-export datevers=20210802
+export datevers=$(date '+%Y%m%d')
+#export datevers=20210802
 ./input_files/json/update_json.sh
 
 # Create variable maps
 python ./subroutines/dreq_mapping.py --multi
+#exit 
 
 # Create database
 python ./subroutines/database_manager.py
 
 # FOR TESTING
-#python ./subroutines/app_wrapper.py; exit
+python ./subroutines/app_wrapper.py; exit
 #
 
 ################################################################
@@ -59,6 +62,10 @@ python ./subroutines/database_manager.py
 ################################################################
 echo -e '\ncreating job...'
 
+for addproj in ${ADDPROJS[@]}; do
+  addstore="${addstore}+scratch/${addproj}+gdata/${addproj}"
+done
+#
 NUM_ROWS=$( cat $OUT_DIR/database_count.txt )
 if (($NUM_ROWS <= 24)); then
   NUM_CPUS=$NUM_ROWS
@@ -78,9 +85,9 @@ echo "total amount of memory to be used: ${NUM_MEM}Gb"
 
 cat << EOF > $APP_JOB
 #!/bin/bash
-#PBS -P p66
+#PBS -P ${PROJ}
 #PBS -q hugemem
-#PBS -l storage=scratch/${PROJ}+gdata/${PROJ}+gdata/hh5+gdata/access
+#PBS -l storage=scratch/${PROJ}+gdata/${PROJ}+gdata/hh5+gdata/access${addstore}
 #PBS -l ncpus=${NUM_CPUS},walltime=48:00:00,mem=${NUM_MEM}Gb,wd
 #PBS -j oe
 #PBS -o ${JOB_OUTPUT}
@@ -89,7 +96,7 @@ cat << EOF > $APP_JOB
 module purge
 # pre
 export EXP_TO_PROCESS=${EXP_TO_PROCESS}
-export DEFAULT_MODE=${DEFAULT_MODE}
+export MODE=${MODE}
 source ./subroutines/setup_env_cmip6.sh ${CMIP6_ENV}
 # main
 python ./subroutines/app_wrapper.py

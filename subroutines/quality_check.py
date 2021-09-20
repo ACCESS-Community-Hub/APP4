@@ -40,7 +40,7 @@ app_dir=os.environ.get('APP_DIR')
 qc_dir=os.environ.get('QC_DIR')
 out_dir=os.environ.get('OUT_DIR')
 pub_dir=os.environ.get('PUB_DIR')
-cmip6tables=os.environ.get('CMIP6_TABLES')
+cmiptables=os.environ.get('CMIP_TABLES')
 experimentstable=os.environ.get('EXPERIMENTS_TABLE')
 
 online_plot_dir=os.environ.get('ONLINE_PLOT_DIR')
@@ -99,7 +99,7 @@ def compliance_check(success):
         cmorfilebase=os.path.basename(cmorfile)
         cmorfiledir=os.path.dirname(cmorfile)
         cmorerr=0
-        try: outputp=sp.check_output(['PrePARE','--table-path',cmip6tables,cmorfile],stderr=sp.STDOUT)
+        try: outputp=sp.check_output(['PrePARE','--table-path',cmiptables,cmorfile],stderr=sp.STDOUT)
         except Exception, e: outputp=e.output
         if table == 'Oclim': pass #Oclim files all fail PrePARE
         elif outputp.find('Number of file with error(s): 0') == -1:

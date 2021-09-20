@@ -29,7 +29,11 @@ export APP_DIR=$(pwd)
 #export APP_DIR=/g/data/p66/$USER/post_processing/APP4-0
 # Input subdirectories
 export ANCILLARY_FILES=/g/data/p66/CMIP6/APP_ancils
-export CMIP6_TABLES=${APP_DIR}/input_files/cmip6-cmor-tables/Tables
+if [[ $MODE == ccmi ]]; then
+  export CMIP_TABLES=${APP_DIR}/input_files/ccmi-2022/Tables
+else
+  export CMIP_TABLES=${APP_DIR}/input_files/cmip6-cmor-tables/Tables
+fi
 # Input files
 export EXPERIMENTS_TABLE=${APP_DIR}/input_files/experiments.csv
 export MASTER_MAP=${APP_DIR}/input_files/master_map.csv
@@ -40,9 +44,9 @@ export PRIORITY_LIST=${APP_DIR}/input_files/priority_lists/priority_vars_cm2_abs
 export MAIN_DIR=/g/data/p66/CMIP6
 # write cmorised data to DATA_DIR
 #export DATA_DIR=${MAIN_DIR}
-export DATA_DIR=/scratch/p66/CMIP6
+export DATA_DIR=/scratch/p73/CMIP6
 # Default mode
-if $DEFAULT_MODE; then
+if [[ $MODE == default ]]; then
   export MAIN_DIR=$OUTPUT_LOC
   export DATA_DIR=$OUTPUT_LOC
 fi

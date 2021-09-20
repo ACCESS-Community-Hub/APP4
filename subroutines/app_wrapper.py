@@ -29,6 +29,9 @@ conn=sqlite3.connect(database,timeout=200.0)
 conn.text_factory=str
 cursor=conn.cursor()
 database_updater='{}/database_updater.py'.format(out_dir)
+if os.environ.get('MODE').lower() == 'default': mode='default'
+elif os.environ.get('MODE').lower() == 'ccmi': mode='ccmi'
+else: mode='cmip6'
 
 #options
 #
@@ -49,7 +52,7 @@ def process_row(row):
     #set version number
     #date=datetime.today().strftime('%Y%m%d')
     #set location of cmor tables
-    cmip6_table_path=os.environ.get('CMIP6_TABLES')
+    cmip_table_path=os.environ.get('CMIP_TABLES')
     #
     #First map entries from database row to variables
     #
@@ -64,6 +67,9 @@ def process_row(row):
     vin=row[8].split()
     vcmip=row[9]
     table=row[10]
+    #if mode == 'ccmi':
+    #    cmip_table='CCMI2022_{}'.format(row[10])
+    #else:
     cmip_table='CMIP6_{}'.format(row[10])
     frequency=row[11]
     tstart=row[12]
@@ -159,9 +165,10 @@ def process_row(row):
             #
             #version_number='v{date}'.format(date=version)
             dictionary={'vcmip':vcmip,'vin':vin,'cmip_table':cmip_table,'infile':infile,'tstart':tstart,'tend':tend,\
-            'notes':notes,'cmip6_table_path':cmip6_table_path,'frequency':frequency,\
+            'notes':notes,'cmip_table_path':cmip_table_path,'frequency':frequency,\
             'calculation':calculation,'axes_modifier':axes_modifier,'in_units':in_units,'positive':positive,\
-            'json_file_path':json_file_path,'timeshot':timeshot,'access_version':access_version,'reference_date':reference_date}
+            'json_file_path':json_file_path,'timeshot':timeshot,'access_version':access_version,\
+            'reference_date':reference_date,'mode':mode}
             #process the file,
             ret=app(dictionary)
             try: os.chmod(ret,0644)

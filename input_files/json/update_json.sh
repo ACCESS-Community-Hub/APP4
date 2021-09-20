@@ -4,10 +4,10 @@ scriptpath="$( cd "$(dirname "$0")" ; pwd -P )"
 echo $scriptpath
 cd $scriptpath
 
-if $DEFAULT_MODE; then
+if [ $MODE == default ]; then
   if [ $VERSION == CM2 ]; then
     json=default_cm2.json
-  elif [ $VERSION == ESM]; then
+  elif [ $VERSION == ESM ]; then
     json=default_esm.json
   else
     echo "default jsons only exist for CM2 and ESM thus far"
@@ -17,7 +17,11 @@ else
 fi
 echo $json
 dateline="    \"version\":                      \"v${datevers}\","
-maindirline="    \"outpath\":                      \"${DATA_DIR}/APP_output/CMIP6\","
+if [ $MODE == ccmi ]; then 
+  maindirline="    \"outpath\":                      \"${DATA_DIR}/APP_output/CCMI2022\","
+else
+  maindirline="    \"outpath\":                      \"${DATA_DIR}/APP_output/CMIP6\","
+fi
 
 vline=$(grep '\"version\":' $json)
 outpathline=$(grep '\"outpath\":' $json)

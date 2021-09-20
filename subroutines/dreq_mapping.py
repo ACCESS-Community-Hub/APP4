@@ -25,7 +25,7 @@ CICE_realms=['seaIce']
 UM_tables=['3hr','AERmon','AERday','CFmon',\
     'Eday','Eyr','fx','6hrLev','Amon','E3hr','Efx',\
     'LImon','day','6hrPlev','6hrPlevPt','CF3hr','E3hrPt','Emon',\
-    'Lmon','EdayZ','EmonZ']
+    'Lmon','EdayZ','EmonZ','AmonZ','Aday','AdayZ']
 MOM_tables=['Oclim','Omon','Oday','Oyr','Ofx','Emon','Eyr','3hr']   
 CICE_tables=['SImon','SIday']
 CMIP_tables=UM_tables+MOM_tables+CICE_tables
@@ -61,16 +61,17 @@ if os.environ.get('DREQ_YEARS').lower() == 'true': dreq_years=True
 else: dreq_years=False
 
 # Default mode vars
-if os.environ.get('DEFAULT_MODE').lower() == 'true': def_mode=True
-else: def_mode=False
-if def_mode:
+if os.environ.get('MODE').lower() == 'default': mode='default'
+elif os.environ.get('MODE').lower() == 'ccmi': mode='ccmi'
+else: mode='cmip6'
+if mode == 'default':
     def_hist_data=os.environ.get('HISTORY_DATA')
     def_version=os.environ.get('VERSION')
     def_start=int(os.environ.get('START_YEAR'))
     def_end=int(os.environ.get('END_YEAR'))
 
 try:
-    if def_mode:
+    if mode == 'default':
         access_version=def_version
         dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
         reference_date=def_start
@@ -98,6 +99,9 @@ try:
     if access_version.find('OM2') != -1:
         print('ACCESS-OM2, using master_map_om2.csv')
         master_map=master_map.replace('.csv','_om2.csv')
+    elif mode == 'ccmi':
+        print('CCMI2022, using master_map_ccmi2022.csv')
+        master_map=master_map.replace('.csv','_ccmi2022.csv')
     dreq
 except:
     if os.path.exists(experimentstable):
@@ -169,7 +173,8 @@ def find_cmip_tables(dreq):
     f.close()
     return tables
 
-def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,realm2,table,timeshot,access_vars,skip,access_version):
+def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,realm2,\
+    table,timeshot,access_vars,skip,access_version,varnotes):
     #tasmin/tasmax:
     if cmipvar in ['tasmin','tasmax']:
         if freq == 'mon':
@@ -182,15 +187,15 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
         if realm2 == 'ocean':
             if table == 'Omon':
                 realm='ocean'
-                skip=''
+                skip=False
             elif table != 'Omon':
-                skip='skip'
+                skip=True
         elif realm2 == 'atmos':
             if table == 'Omon':
-                skip='skip'
+                skip=True
             elif table != 'Omon':
                 realm='atmos'
-                skip=''
+                skip=False
     #sea_ice vars in UM output:
     if realm in CICE_realms:
         if access_vars.find('fld_') != -1:
@@ -199,35 +204,35 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
     if cmipvar in ['ta','ua','va','hus']:
         if table.find('6hrLev') != -1:
             if axes_modifier.find('6hrLev') != -1:
-                skip=''
+                skip=False
             else:
-                skip='skip'
+                skip=True
         elif table.find('3hr') != -1:
             if axes_modifier.find('3hr') != -1:
-                skip=''
+                skip=False
             else:
-                skip='skip'
+                skip=True
         else:
             if axes_modifier.find('6hrLev') != -1 or axes_modifier.find('3hr') != -1:
-                skip='skip'
+                skip=True
             else:
-                skip=''
+                skip=False
     #3hr cases:
     if cmipvar in ['ts']:
-        if table.find('3hr') != -1: skip='skip'
+        if table.find('3hr') != -1: skip=True
         else: pass        
     if cmipvar in ['tos']:
         if table.find('3hr') != -1:
             if axes_modifier.find('3hr') != -1:
-                skip=''
+                skip=False
                 realm='atmos'
             else:
-                skip='skip'
+                skip=True
         else:
             if axes_modifier.find('3hr') != -1:
-                skip='skip'
+                skip=True
             else:
-                skip=''
+                skip=False
     #[O,E]yr cases:
     if table.find('yr') != -1:
         if access_version.find('OM2') != -1:
@@ -249,17 +254,17 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
     if cmipvar == 'sfdsi':
         if realm == 'ocean':
             if realm2 == 'ocean':
-                skip=''
+                skip=False
             else:
-                skip='skip'
+                skip=True
         elif realm == 'seaIce':
             if realm2 == 'seaIce':
-                skip=''
+                skip=False
             else:
-                skip='skip'
+                skip=True
     #ocnbgchem in CM2:
     if realm == 'ocnBgchem' and access_version == 'CM2':
-        skip='skip'
+        skip=True
     #prra:
     if cmipvar == 'prra':
         realm='ocean'
@@ -267,14 +272,14 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
     if cmipvar == 'sbl':
         if table.find('LImon') != -1: 
             if axes_modifier.find('LImon') != -1:
-                skip=''
+                skip=False
             else:
-                skip='skip'
+                skip=True
         else: 
             if axes_modifier.find('LImon') != -1:
-                skip='skip'
+                skip=True
             else:
-                skip=''
+                skip=False
     #nbp:
     if cmipvar == 'nbp':
         if exptoprocess.find('-EDC-') != -1:
@@ -286,9 +291,9 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
         else: pass
     #SIday in ESM:
     if table.find('SIday') != -1 and access_version.find('ESM') != -1:
-        skip='skip'
+        skip=True
     #E[day,mon]z:
-    if (table.find('EdayZ') != -1) or (table.find('EmonZ') != -1):
+    if (table.find('Z') != -1):
         if calculation == '':
             calculation='zonal_mean(var[0])'
             axes_modifier='{} dropX'.format(axes_modifier)
@@ -297,11 +302,20 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
             axes_modifier='{} dropX'.format(axes_modifier)
     #ACCESS-OM2/OM2-025
     if (access_version.find('OM2') != -1):# and (realm == 'ocean' or realm == 'ocnBgchem' ):
-        axes_modifier='{} tMonOverride'.format(axes_modifier)          
+        axes_modifier='{} tMonOverride'.format(axes_modifier)
+    #CCMI2022 zonal vars:
+    if (mode == 'ccmi'):
+        if table.find('Z') != -1:
+            if varnotes != 'zonal': skip=True
+        else:
+            if varnotes == 'zonal': skip=True
+        if (cmipvar == 'clt'):
+            if table.find('day') != -1 and varnotes != 'daily': skip=True
+            elif table.find('mon') != -1 and varnotes == 'daily': skip=True
     return freq,axes_modifier,calculation,realm,realm2,timeshot,access_vars,skip
 
 def determine_dimension(freq,dimensions,timeshot,realm,table,skip):
-    if skip == 'skip':
+    if skip:
         dimension=''
     elif (freq == 'fx') or (dimensions.find('time') == -1):
         dimension='fx'
@@ -377,7 +391,7 @@ def read_dreq_vars(dreq,table):
                                 years='"{}"'.format(years)
                             except: years='all'
                     except: years='all'
-                    if def_mode or not dreq_years: years='all'
+                    if (mode == 'default') or not dreq_years: years='all'
                     if variabletoprocess.lower() == 'all':
                         dreq_variables.append([cmorname,realm,freq,cfname,years,dimensions])
                     else:
@@ -413,11 +427,12 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
     with open(master_map,'r') as g:
         champ_reader=csv.reader(g, delimiter=',')
         for row in champ_reader:
-            skip=''
+            skip=False
             try: row[0]
             except: row='#'
             if row[0].startswith('#'): pass
             elif (row[0] == cmorname) and ((row[7] == access_version) or (row[7] == 'both')):
+                ## catch zonal vars here
                 cmipvar=row[0]
                 definable=row[1]
                 access_vars=row[2]
@@ -428,18 +443,20 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                 axes_modifier=row[5]
                 positive=row[6]
                 realm2=row[8].split()[0]
+                varnotes=row[9]
                 if realm == 'uncertain': realm = realm2
                 #elif realm != realm2: realm = realm2
                 var_notes=row[9]
                 #check for special cases
                 freq,axes_modifier,calculation,realm,realm2,timeshot,access_vars,skip=\
-                    special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,realm2,table,timeshot,access_vars,skip,access_version)
+                    special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,realm2,\
+                    table,timeshot,access_vars,skip,access_version,varnotes)
                 try: dimension=determine_dimension(freq,dimensions,timeshot,realm,table,skip)
                 except: raise Exception('E: realm not identified')
                 priority_ret=priority_check(cmipvar,table)
                 if priority_ret == 0:
-                    skip='skip'
-                if skip == 'skip':
+                    skip=True
+                if skip:
                     file_structure=None
                     if not cmorname in skiplist:
                         skiplist.append(cmipvar)
@@ -447,7 +464,7 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                     if freq in ['yr','mon','fx']:
                         file_structure=atm_file_struc+'*_mon.nc'
                     elif freq == 'day':
-                        if table.find('EdayZ') != -1:
+                        if table.find('dayZ') != -1:
                             file_structure=atm_file_struc+'*_dai.nc_zonal'
                         else:
                             file_structure=atm_file_struc+'*_dai.nc'
@@ -538,7 +555,7 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                     matches.append('{},{},{},{},{},{},{},{},{},{},{},{},{}'.format(cmipvar,definable,access_vars,file_structure,calculation,units,axes_modifier,positive,timeshot,years,var_notes,cfname,dimension))
                     if not cmorname in matchlist:
                         matchlist.append(cmipvar)
-                elif (file_structure == None) and (skip != 'skip'):
+                elif (file_structure == None) and (not skip):
                     if not cmorname in nomatches:
                         nomatches.append(cmorname)
     if not cmorname in matchlist:
