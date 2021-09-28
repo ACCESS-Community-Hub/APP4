@@ -14,14 +14,14 @@ fi
 #
 # CMIP6 table/variable to process. Default is 'all'.
 export TABLE_TO_PROCESS=Amon
-export VARIABLE_TO_PROCESS=cl
+export VARIABLE_TO_PROCESS=rsdt
 #
 # subdaily selection options [true,false,only]
 export SUBDAILY=false
 #
 # Variable input options
-export FORCE_DREQ=false    #use piControl dreq
-export PRIORITY_ONLY=false
+export FORCE_DREQ=true     #use piControl dreq
+export PRIORITY_ONLY=false  #defined in subroutines/setup_env_cmip6.sh
 #
 # NCI project to charge compute and use in storage flags
 export PROJ=p66
@@ -54,7 +54,7 @@ python ./subroutines/dreq_mapping.py --multi
 python ./subroutines/database_manager.py
 
 # FOR TESTING
-python ./subroutines/app_wrapper.py; exit
+#python ./subroutines/app_wrapper.py; exit
 #
 
 ################################################################
@@ -77,8 +77,8 @@ if ((${NUM_MEM} >= 1470)); then
   NUM_MEM=1470
 fi
 #
-#NUM_CPUS=18
-#NUM_MEM=1470
+#NUM_CPUS=4
+#NUM_MEM=192
 echo "number of files to create: ${NUM_ROWS}"
 echo "number of cpus to to be used: ${NUM_CPUS}"
 echo "total amount of memory to be used: ${NUM_MEM}Gb"

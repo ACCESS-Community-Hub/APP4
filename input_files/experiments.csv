@@ -16,7 +16,7 @@ bk243,/g/data/p73/archive/CMIP6/ACCESS-CM2/bk243/history,input_files/json/bk243.
 bj594,/g/data/p73/archive/CMIP6/ACCESS-CM2/bj594/history,input_files/json/bj594.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r1
 bl655,/g/data/p73/archive/CMIP6/ACCESS-CM2/bl655/history,input_files/json/bl655.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r2
 bm652,/g/data/p73/archive/CMIP6/ACCESS-CM2/bm652/history,input_files/json/bm652.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r3
-cd659,/g/data/p73/archive/CMIP6/ACCESS-CM2/cd659/history,input_files/json/cd659.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,2014,2014,CM2,historical-r4
+cd659,/g/data/p73/archive/CMIP6/ACCESS-CM2/cd659/history,input_files/json/cd659.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r4
 cd884,/g/data/p73/archive/CMIP6/ACCESS-CM2/cd884/history,input_files/json/cd884.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r5
 # ScenarioMIP
 bl686,/g/data/p73/archive/CMIP6/ACCESS-CM2/bl686/history,input_files/json/bl686.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp126_1_2.csv,1850,2015,2100,CM2,ssp126-r1
@@ -361,7 +361,7 @@ SSP-EDC-585-12,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-EDC-585-12/history,in
 SSP-EDC-585-13,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-EDC-585-13/history,input_files/json/SSP-EDC-585-13.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-ssp585_1_2.csv,1850,2015,2100,ESM,esm-ssp585-r10
 # CDRMIP
 PI-1pct-rev-01,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/PI-1pct-rev-01/history,input_files/json/PI-1pct-rev-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-cdr_1_2.csv,241,241,380,ESM,1pctCO2-cdr
-PI-rev-01,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/PI-rev-01/history,input_files/json/PI-rev-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-cdr_1_2.csv,241,241,1000,ESM,1pctCO2-cdr
+PI-rev-01,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/PI-rev-01/history,input_files/json/PI-rev-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-cdr_1_2.csv,241,381,1000,ESM,1pctCO2-cdr
 PI-EDC-pulse-01,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/PI-EDC-pulse-01/history,input_files/json/PI-EDC-pulse-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-pi-cdr-pulse_1_2.csv,271,271,370,ESM,esm-pi-cdr-pulse
 PI-EDC-pulse-02,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/PI-EDC-pulse-02/history,input_files/json/PI-EDC-pulse-02.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_esm-pi-CO2pulse_1_2.csv,271,271,370,ESM,esm-pi-CO2pulse
 # ZECMIP
