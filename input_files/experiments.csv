@@ -39,6 +39,7 @@ cg320,/g/data/p73/archive/CMIP6/ACCESS-CM2/cg320/history,input_files/json/cg320.
 cg321,/g/data/p73/archive/CMIP6/ACCESS-CM2/cg321/history,input_files/json/cg321.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp245_1_2.csv,1850,2015,2100,CM2,ssp245-r5
 cg322,/g/data/p73/archive/CMIP6/ACCESS-CM2/cg322/history,input_files/json/cg322.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp370_1_2.csv,1850,2015,2100,CM2,ssp370-r5
 cg323,/g/data/p73/archive/CMIP6/ACCESS-CM2/cg323/history,input_files/json/cg323.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp585_1_2.csv,1850,2015,2100,CM2,ssp585-r5
+ce576,/g/data/p73/archive/CMIP6/ACCESS-CM2/ce576/history,input_files/json/ce576.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp585_1_2.csv,1850,2041,2100,CM2,ssp534-over-r1
 # ScenarioMIP-exts
 bz683,/g/data/p73/archive/CMIP6/ACCESS-CM2/bz683/history,input_files/json/bz683.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp126_1_2.csv,1850,2101,2300,CM2,ssp126-r1-ext
 bz734,/g/data/p73/archive/CMIP6/ACCESS-CM2/bz734/history,input_files/json/bz734.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_ssp585_1_2.csv,1850,2101,2300,CM2,ssp585-r1-ext
@@ -323,6 +324,7 @@ SSP-585-41,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-585-41/history,input_file
 SSP-585-42,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-585-42/history,input_files/json/SSP-585-42.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2015,2100,ESM,ssp585-r38
 SSP-585-43,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-585-43/history,input_files/json/SSP-585-43.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2015,2100,ESM,ssp585-r39
 SSP-585-44,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-585-44/history,input_files/json/SSP-585-44.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2015,2100,ESM,ssp585-r40
+SSP-534-05,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-05/history,input_files/json/SSP-534-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r1
 # ScenarioMIP-exts
 SSP-126-ext-05,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-126-ext-05/history,input_files/json/SSP-126-ext-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2101,2300,ESM,ssp126-r1-ext
 SSP-126-ext-06,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-126-ext-06/history,input_files/json/SSP-126-ext-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2101,2300,ESM,ssp126-r2-ext

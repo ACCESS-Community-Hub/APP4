@@ -1,8 +1,7 @@
 #!/bin/bash
 
 loc_exp=(
-PI-1pct-rev-01
-PI-rev-01
+SSP-534-05
 )
 
 for exp in ${loc_exp[@]}; do

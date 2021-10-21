@@ -13,14 +13,14 @@ if [ ! -z $1 ]; then
 fi
 #
 # CMIP6 table/variable to process. Default is 'all'.
-export TABLE_TO_PROCESS=Amon
-export VARIABLE_TO_PROCESS=rsdt
+export TABLE_TO_PROCESS=all
+export VARIABLE_TO_PROCESS=all
 #
 # subdaily selection options [true,false,only]
 export SUBDAILY=false
 #
 # Variable input options
-export FORCE_DREQ=true     #use piControl dreq
+export FORCE_DREQ=false     #use piControl dreq
 export PRIORITY_ONLY=false  #defined in subroutines/setup_env_cmip6.sh
 #
 # NCI project to charge compute and use in storage flags
@@ -34,6 +34,7 @@ export MODE=cmip6
 ################################################################
 # SETTING UP ENVIROMENT, VARIABLE MAPS, AND DATABASE
 ################################################################
+export CONTACT=access_csiro@csiro.au
 
 # Set up environment
 source ./subroutines/setup_env_cmip6.sh
@@ -52,6 +53,7 @@ python ./subroutines/dreq_mapping.py --multi
 
 # Create database
 python ./subroutines/database_manager.py
+#exit
 
 # FOR TESTING
 #python ./subroutines/app_wrapper.py; exit

@@ -31,6 +31,8 @@ export APP_DIR=$(pwd)
 export ANCILLARY_FILES=/g/data/p66/CMIP6/APP_ancils
 if [[ $MODE == ccmi ]]; then
   export CMIP_TABLES=${APP_DIR}/input_files/ccmi-2022/Tables
+elif [[ $MODE == default ]]; then
+  export CMIP_TABLES=${APP_DIR}/input_files/default_mode_cmor-tables/Tables
 else
   export CMIP_TABLES=${APP_DIR}/input_files/cmip6-cmor-tables/Tables
 fi

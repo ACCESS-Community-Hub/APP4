@@ -24,7 +24,7 @@ database=os.environ.get('DATABASE')
 print database
 if not database:
     #default database
-    database='{}/app.db'.format(out_dir)
+    database='{}/database.db'.format(out_dir)
 conn=sqlite3.connect(database,timeout=200.0)
 conn.text_factory=str
 cursor=conn.cursor()

@@ -112,9 +112,8 @@ def experiments_setup(conn,exps_file):
         if mode == 'default':
             def_hist_data=os.environ.get('HISTORY_DATA')
             def_version=os.environ.get('VERSION')
-            if def_version == 'CM2': def_json='input_files/json/default_cm2.json'
-            elif def_version == 'ESM': def_json='input_files/json/default_esm.json'
-            else: sys.exit('default jsons only exist for CM2 and ESM thus far')
+            def_json='{}/{}.json'.format(out_dir,exptoprocess)
+            print(def_json) 
             def_start=os.environ.get('START_YEAR')
             def_end=os.environ.get('END_YEAR')
             def_dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
@@ -476,7 +475,7 @@ def populate(conn):
 #read the cmip json file (containing experiment information) into a python dictionary
 def read_json_file(path):
     with open(path,'r') as f:
-           json_dict=json.load(f)
+        json_dict=json.load(f)
     f.close()
     return json_dict
 
@@ -486,6 +485,7 @@ def create_database_updater():
         dbu.write('import os\n'\
             'import sqlite3\n'\
             'database=os.environ.get("DATABASE")\n'\
+            'print(database)\n'\
             'out_dir=os.environ.get("OUT_DIR")\n'\
             'conn=sqlite3.connect(database)\n'\
             'conn.text_factory=str\n'\

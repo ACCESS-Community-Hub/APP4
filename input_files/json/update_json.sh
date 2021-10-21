@@ -19,6 +19,8 @@ echo $json
 dateline="    \"version\":                      \"v${datevers}\","
 if [ $MODE == ccmi ]; then 
   maindirline="    \"outpath\":                      \"${DATA_DIR}/APP_output/CCMI2022\","
+elif [ $MODE == default ]; then
+  maindirline="    \"outpath\":                      \"${DATA_DIR}/CMORised_output\","
 else
   maindirline="    \"outpath\":                      \"${DATA_DIR}/APP_output/CMIP6\","
 fi
