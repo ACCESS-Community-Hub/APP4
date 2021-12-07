@@ -44,14 +44,14 @@ export parent_variant_label=r1i1p1f1                # e.g. r1i1p1f1
 # Variables to CMORise:
 # CMIP6 table/variable to process. Default is 'all'.
 export TABLE_TO_PROCESS=Amon            # CMIP6 table to process. Default is 'all'
-export VARIABLE_TO_PROCESS=tas          # CMIP6 variable to process. Default is 'all'
+export VARIABLE_TO_PROCESS=all          # CMIP6 variable to process. Default is 'all'
 export SUBDAILY=true                    # subdaily selection options - select one of: [true, false, only]
 export PRIORITY_ONLY=false              # sub-set list of variables to process, as defined in setup_env_cmip6.sh
 
 # Additional NCI information:
 # OUTPUT_LOC defines directory for all generated data (CMORISED files & logs)
 #
-export OUTPUT_LOC=/scratch/$PROJECT/$USER/APP4_output  
+export OUTPUT_LOC=/scratch/$PROJECT/$USER/APP4_output 
 export PROJECT=p66                      # NCI project to charge compute
 export ADDPROJS=( p73 )                 # additional NCI projects to be included in the storage flags
 export QUEUE=hugemem                    # NCI queue to use
@@ -88,7 +88,7 @@ python ./subroutines/database_manager.py
 #exit
 
 # FOR TESTING
-python ./subroutines/app_wrapper.py; exit
+#python ./subroutines/app_wrapper.py; exit
 #
 
 ################################################################
