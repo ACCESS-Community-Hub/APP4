@@ -3,38 +3,40 @@
 ################################################################
 # CHOOSE OPTIONS
 ################################################################
-#
+
 # Local experiment to process
-export EXP_TO_PROCESS=cd659
+export EXP_TO_PROCESS=ca587
 #
 # If inline argument is passed
 if [ ! -z $1 ]; then
   export EXP_TO_PROCESS=$1
 fi
+
+# Variables input options
 #
-# CMIP6 table/variable to process. Default is 'all'.
-export TABLE_TO_PROCESS=all
-export VARIABLE_TO_PROCESS=all
+export TABLE_TO_PROCESS=Amon            # CMIP6 table to process. Default is 'all'
+export VARIABLE_TO_PROCESS=all          # CMIP6 variable to process. Default is 'all'
+export SUBDAILY=true                    # subdaily selection options - select one of: [true, false, only]
+export PRIORITY_ONLY=false              # sub-set list of variables to process, as defined in setup_env_cmip6.sh
+export FORCE_DREQ=false                 # use input_files/default_mode_cmor-tables/Tables/CMIP6_CV.json
+
+# Additional NCI information:
 #
-# subdaily selection options [true,false,only]
-export SUBDAILY=false
+export PROJ=p66                         # NCI project to charge compute and use in storage flags
+export ADDPROJS=( p73 )                 # additional NCI projects to be included in the storage flags
+export QUEUE=hugemem                    # NCI queue to use
+export MEM_PER_CPU=24                   # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
+
+# Select mode [cmip6, ccmi]
 #
-# Variable input options
-export FORCE_DREQ=false     #use piControl dreq
-export PRIORITY_ONLY=false  #defined in subroutines/setup_env_cmip6.sh
-#
-# NCI project to charge compute and use in storage flags
-export PROJ=p66
-# Additional NCI projects to be included in the storage flags
-export ADDPROJS=( p73 )
-#
-# [cmip6, ccmi, default]
 export MODE=cmip6
+
 #
+#
+
 ################################################################
 # SETTING UP ENVIROMENT, VARIABLE MAPS, AND DATABASE
 ################################################################
-export CONTACT=access_csiro@csiro.au
 
 # Set up environment
 source ./subroutines/setup_env_cmip6.sh
@@ -68,13 +70,15 @@ for addproj in ${ADDPROJS[@]}; do
   addstore="${addstore}+scratch/${addproj}+gdata/${addproj}"
 done
 #
+QUEUE=hugemem
+#
 NUM_ROWS=$( cat $OUT_DIR/database_count.txt )
 if (($NUM_ROWS <= 24)); then
   NUM_CPUS=$NUM_ROWS
 else
   NUM_CPUS=24
 fi
-NUM_MEM=$(echo "${NUM_CPUS} * 48" | bc)
+NUM_MEM=$(echo "${NUM_CPUS} * ${MEM_PER_CPU}" | bc)
 if ((${NUM_MEM} >= 1470)); then
   NUM_MEM=1470
 fi
@@ -88,7 +92,7 @@ echo "total amount of memory to be used: ${NUM_MEM}Gb"
 cat << EOF > $APP_JOB
 #!/bin/bash
 #PBS -P ${PROJ}
-#PBS -q hugemem
+#PBS -q ${QUEUE}
 #PBS -l storage=scratch/${PROJ}+gdata/${PROJ}+gdata/hh5+gdata/access${addstore}
 #PBS -l ncpus=${NUM_CPUS},walltime=48:00:00,mem=${NUM_MEM}Gb,wd
 #PBS -j oe

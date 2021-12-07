@@ -14,7 +14,7 @@ zfull,yes,fld_s15i101,,m,,,CM2-Chem,atmos,
 ps,yes,fld_s00i409,,Pa,,,CM2-Chem,atmos,
 ts,yes,fld_s00i024,,K,,,CM2-Chem,atmos,
 clt,yes,fld_s02i261,column_max(var[0]),1,dropZ,,CM2-Chem,atmos,
-cltc,yes,fld_s00i013,,1,,,CM2-Chem,atmos,
+#cltc,yes,fld_s00i013,,1,,,CM2-Chem,atmos,
 cod,yes,fld_s02i457 fld_s02i451,var[0]/var[1],1,,,CM2-Chem,atmos,
 ptp,yes,fld_s30i451,,Pa,,,CM2-Chem,atmos,
 tatp,yes,fld_s30i452,,K,,,CM2-Chem,atmos,
@@ -38,7 +38,7 @@ tntrs,yes,fld_s01i181,,K s-1,monsecs,,CM2-Chem,atmos,
 o3,yes,fld_s34i001,var[0]*0.604,mol mol-1,,,CM2-Chem,atmos,
 h2o,yes,fld_s00i010,,mol mol-1,,,CM2-Chem,atmos,
 meanage,yes,fld_s34i150,,s,,,CM2-Chem,atmos,
-ch4,yes,fld_s34i004,var[0]*1.811,mol mol-1,,,CM2-Chem,atmos,
+ch4,yes,fld_s34i009,var[0]*1.811,mol mol-1,,,CM2-Chem,atmos,
 n2o,yes,fld_s34i049,var[0]*0.658,mol mol-1,,,CM2-Chem,atmos,
 hcl,yes,fld_s34i992,var[0]*0.793,mol mol-1,,,CM2-Chem,atmos,
 co,yes,fld_s34i010,var[0]*1.035,mol mol-1,,,CM2-Chem,atmos,
@@ -48,7 +48,7 @@ oh,yes,fld_s34i081,var[0]*1.704,mol mol-1,,,CM2-Chem,atmos,
 c2h6,yes,fld_s34i014,var[0]*0.965,mol mol-1,,,CM2-Chem,atmos,
 #
 ##Aday
-clt,yes,fld_s02i217,column_max(var[0]),1,dropZ,,CM2-Chem,atmos,daily
+clt,yes,fld_s02i261,column_max(var[0]),1,dropZ,,CM2-Chem,atmos,daily
 ua10,yes,fld_s30i201,"extract_lvl(var[0],4)",m s-1,dropZ,,CM2-Chem,atmos,
 ua50,yes,fld_s30i201,"extract_lvl(var[0],3)",m s-1,dropZ,,CM2-Chem,atmos,
 ua100,yes,fld_s30i201,"extract_lvl(var[0],2)",m s-1,dropZ,,CM2-Chem,atmos,
@@ -73,7 +73,7 @@ vorpot840,yes,fld_s15i214,"extract_lvl(var[0],1)",K m2 kg-1 s-1,dropZ,,CM2-Chem,
 vorpot480,yes,fld_s15i214,"extract_lvl(var[0],0)",K m2 kg-1 s-1,dropZ,,CM2-Chem,atmos,
 rsds,yes,fld_s01i235,,W m-2,,,CM2-Chem,atmos,
 rsdscs,yes,fld_s01i210,,W m-2,,,CM2-Chem,atmos,
-snd,yes,fld_s00i376,,m,,,CM2-Chem,atmos,
+#snd,yes,fld_s00i376,,m,,,CM2-Chem,atmos,
 snw,yes,fld_s00i023,,kg m-2,,,CM2-Chem,atmos,
 tas,yes,fld_s03i236,,K,,,CM2-Chem,atmos,
 tasmin,yes,fld_s03i236_min,,K,,,CM2-Chem,atmos,
@@ -87,7 +87,7 @@ zg,yes,fld_s30i297,,m,,,CM2-Chem,atmos,zonal
 meanage,yes,fld_s51i150,,yr,,,CM2-Chem,atmos,zonal
 o3,yes,fld_s51i001,var[0]*0.604,mol mol-1,,,CM2-Chem,atmos,zonal
 n2o,yes,fld_s51i049,var[0]*0.658,mol mol-1,,,CM2-Chem,atmos,zonal
-ch4,yes,fld_s51i004,var[0]*1.811,mol mol-1,,,CM2-Chem,atmos,zonal
+ch4,yes,fld_s51i009,var[0]*1.811,mol mol-1,,,CM2-Chem,atmos,zonal
 ch3ooh,yes,fld_s51i012,var[0]*0.604,mol mol-1,,,CM2-Chem,atmos,zonal
 co,yes,fld_s51i010,var[0]*1.035,mol mol-1,,,CM2-Chem,atmos,zonal
 h2o,yes,fld_s30i205,,mol mol-1,,,CM2-Chem,atmos,zonal

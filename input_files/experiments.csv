@@ -567,7 +567,7 @@ PI-1prad-C-01,/scratch/p66/cm2704/archive/PI-1prad-C-01/history,input_files/json
 #
 ## ACCESS-CM2-Chem
 #
-# CCMI
-ca547,/scratch/p66/cm2704/archive/ca547/history,input_files/json/ca547.json,input_files/dreq/CCMI/ccmi_dreq.csv,1959,1959,2018,CM2-Chem,REF-D1-r1
-ca548,/scratch/p66/cm2704/archive/ca548/history,input_files/json/ca548.json,input_files/dreq/CCMI/ccmi_dreq.csv,1959,1959,2018,CM2-Chem,REF-D1-r2
-ca587,/scratch/p66/cm2704/archive/ca587/history,input_files/json/ca587.json,input_files/dreq/CCMI/ccmi_dreq.csv,1959,1959,2018,CM2-Chem,REF-D1-r3
+# CCMI2022
+ca547,/scratch/p66/cm2704/archive/ca547/history,input_files/json/ca547.json,input_files/dreq/CCMI/ccmi_dreq.csv,1960,1960,2018,CM2-Chem,REF-D1-r1
+ca548,/scratch/p66/cm2704/archive/ca548/history,input_files/json/ca548.json,input_files/dreq/CCMI/ccmi_dreq.csv,1960,1960,2018,CM2-Chem,REF-D1-r2
+ca587,/scratch/p66/cm2704/archive/ca587/history,input_files/json/ca587.json,input_files/dreq/CCMI/ccmi_dreq.csv,1960,1960,2018,CM2-Chem,REF-D1-r3

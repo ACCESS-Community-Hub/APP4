@@ -89,6 +89,7 @@ def app(option_dictionary):
     #and/or time information in the filename.
     #
     print 'input file structure: {}'.format(opts['infile'])
+    print(opts['cmip_table'])
     tmp=opts['infile'].split()
     #if there are two different files used make a list of extra access files
     if len(tmp)>1:
@@ -457,6 +458,15 @@ def app(option_dictionary):
                         #convert times to days since reference_date
                         tvals=np.array(inrange_access_times) + cdtime.reltime(0,refString).torel('days since {r:04d}-01-01'.format(r=opts['reference_date']),cdtime.DefaultCalendar).value
                         print 'time values converted to days since 01,01,{r:04d}: {a}...{b}'.format(r=opts['reference_date'],a=tvals[0:5],b=tvals[-5:-1])
+                        if opts['cmip_table'].find('A10day') != -1:
+                            print('Aday10: selecting 1st, 11th, 21st days')
+                            a10_tvals=[]
+                            for a10 in tvals:
+                                a10_comp=cdtime.reltime(a10,'days since {r:04d}-01-01'.format(r=opts['reference_date'])).tocomp(cdtime.DefaultCalendar)
+                                #print(a10, a10_comp, a10_comp.day)
+                                if a10_comp.day in [1,11,21]:
+                                    a10_tvals.append(a10)
+                            tvals=a10_tvals
                     else:
                         print 'manually create time axis'
                         tvals=[]
@@ -576,8 +586,9 @@ def app(option_dictionary):
                             else:    
                                 tvals=tvals-0.5
                         elif opts['mode'] == 'ccmi' and tvals[0].is_integer():
-                            tvals = tvals - 0.5
-                            print('inst time shifted back half a day for CMOR')
+                            if opts['cmip_table'].find('A10day') == -1:
+                                tvals=tvals-0.5
+                                print('inst time shifted back half a day for CMOR')
                         elif opts['axes_modifier'].find('yrpoint') != -1:
                             print 'converting timevals from monthly to end of year'
                             tvals,min_tvals,max_tvals=yrpoint(tvals,refString) 
@@ -1172,6 +1183,54 @@ def app(option_dictionary):
             print 'writing with cmor...'
             print np.shape(data_vals)
             cmor.write(variable_id,data_vals[0,:,:,:],ntimes_passed=1)
+    #
+    #Aday10Pt processing for CCMI2022
+    #
+    elif opts['cmip_table'].find('A10dayPt') != -1:
+        for i, input_file in enumerate(inrange_access_files):
+            print 'processing file: {}'.format(input_file)
+            access_file=cdms2.open(input_file,'r')
+            t=access_file.variables[opts['vin'][0]].getTime()
+            datelist=t.asdatetime()
+            print('ONLY 1st, 11th, 21st days to be used')
+            a10_idxlist=[]
+            for idx, date in enumerate(datelist):
+                if date.day in [1,11,21]: a10_idxlist.append(idx)
+            print(a10_idxlist)
+            a10_datavals=[]
+            try:
+                if opts['calculation'] == '':
+                    if len(opts['vin'])>1:
+                        print 'error: multiple input variables are given without a description of the calculation'
+                        return -1
+                    else: 
+                        for a10 in a10_idxlist:
+                            a10_datavals.append(access_file.variables[opts['vin'][0]][a10])
+                        access_file.close()
+                else: 
+                    print 'calculating...'
+                    data_vals=calculateVals((access_file,),opts['vin'],opts['calculation'])
+                    for a10 in a10_idxlist:
+                        a10_datavals.append(data_vals[a10])
+                    try: a10_datavals=a10_datavals.filled(in_missing)
+                    except:
+                        #if values aren't in a masked array
+                        pass 
+                    access_file.close()
+            except Exception, e:
+                print 'E: Unable to process data from {} {}'.format(input_file,e)
+                raise
+            print 'writing with cmor...'
+            try:
+                if time_dimension != None:
+                    #assuming time is the first dimension
+                    print np.shape(a10_datavals)
+                    cmor.write(variable_id,a10_datavals,ntimes_passed=np.shape(a10_datavals)[0])
+                else:
+                    cmor.write(variable_id,a10_datavals,ntimes_passed=0)
+            except Exception, e:
+                print 'E: Unable to write the CMOR variable to file {}'.format(e)
+                raise
     #
     #Convert monthly integral to rate (e.g. K to K s-1, as in tntrl)
     #

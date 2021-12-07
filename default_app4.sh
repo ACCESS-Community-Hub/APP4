@@ -2,65 +2,67 @@
 # 
 ################################################################
 # USE THIS FOR NON-CMIP6 EXPERIMENTS - "DEFAULT MODE"
-# THE APP4 WILL MAKE DEFAULT DECISIONS - NOT FOR CMIP6 PUBLICATION
-# 
+#
+# THE APP4 WILL INSERT THE DETAILS DEFINED BELOW INTO THE CV.JSON FILE
+#   TO ENABLE NON-CMIP6 EXPERIMENTS TO BE CMORISED
+#
+# see https://git.nci.org.au/cm2704/ACCESS-Archiver for related tools
 ################################################################
 
 # Details of local experiment to process:
-# HISTORY_DATA is the input directory containing model output: atm/,ocn/,ice/.
-# see https://git.nci.org.au/cm2704/ACCESS-Archiver for related tools
-export EXP_TO_PROCESS=bj594             # local name of experiment
-export VERSION=ESM                      # select one of: [CM2, ESM, OM2(TBC)]
-export START_YEAR=1850                  # internal year to begin CMORisation
-export END_YEAR=1851                    # internal year to end CMORisation (inclusive)
-export PROJECT=p66                      # NCI project to charge compute
-export CONTACT=access_csiro@csiro.au    # please insert your contact email
+# HISTORY_DATA must point to dir containing atm/ ocn/ ice/
+#
 export HISTORY_DATA=/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/HI-05/history
+export EXP_TO_PROCESS=HI-05                 # local name of experiment
+export VERSION=ESM                          # select one of: [CM2, ESM, OM2(TBC)]
+export START_YEAR=1850                      # internal year to begin CMORisation
+export END_YEAR=1851                        # internal year to end CMORisation (inclusive)
+export CONTACT=access_csiro@csiro.au        # please insert your contact email
+export DREQ=default                         # default=input_files/dreq/cmvme_all_piControl_3_3.csv
 
 # Standard experiment details:
-export experiment_id=piControl          # standard experiment name 
-export activity_id=CMIP                 # activity name
-export realization_index=1              # "r1"[i1p1f1]
-export initialization_index=1           # [r1]"i1"[p1f1]
-export physics_index=1                  # [r1i1]"p1"[f1]
-export forcing_index=1                  # [r1i1p1]"f1"
-export source_type=AOGCM                # see input_files/default_mode_cmor-tables/Tables/CMIP6_CV.json
-export branch_time_in_child=0D0         # specifies the difference between the time units base and the first internal year
+#
+export experiment_id=faf-antwater           # standard experiment name; e.g. piControl
+export activity_id=SOMIP                    # activity name; e.g. CMIP
+export realization_index=1                  # "r1"[i1p1f1]; e.g. 1
+export initialization_index=1               # [r1]"i1"[p1f1]; e.g. 1
+export physics_index=1                      # [r1i1]"p1"[f1]; e.g. 1
+export forcing_index=1                      # [r1i1p1]"f1"; e.g. 1
+export source_type=AOGCM                    # see input_files/default_mode_cmor-tables/Tables/CMIP6_CV.json
+export branch_time_in_child=0D0             # specifies the difference between the time units base and the first internal year; e.g. 365D0
 
 # Parent experiment details:
-# if parent=false, all variables are set to "no parent"
-export parent=true
-export parent_experiment_id=piControl-spinup
-export parent_activity_id=CMIP
-export parent_mip_era=CMIP6
-export parent_time_units="days since 0001-01-01"
-export branch_time_in_parent=0D0
-export parent_variant_label=r1i1p1f1
-
-# Additional NCI information:
-# output directory for all generated data (CMORISED files & logs)
-export OUTPUT_LOC=/scratch/$PROJECT/$USER/APP4_output
-# additional NCI projects to be included in the storage flags
-export ADDPROJS=( p73 )
+# if parent=false, all parent fields are automatically set to "no parent". If true, defined values are used.
+#
+export parent=false 
+export parent_experiment_id=piControl               # e.g. piControl-spinup
+export parent_activity_id=CMIP                      # e.g. CMIP
+export parent_time_units="days since 0001-01-01"    # e.g. "days since 0001-01-01"
+export branch_time_in_parent=0D0                    # e.g. 0D0
+export parent_variant_label=r1i1p1f1                # e.g. r1i1p1f1
 
 # Variables to CMORise:
 # CMIP6 table/variable to process. Default is 'all'.
-export TABLE_TO_PROCESS=Amon
-export VARIABLE_TO_PROCESS=tas
-# subdaily selection options
-export SUBDAILY=false            # select one of: [true, false, only]
-# Variable input options for specific list of required variables
-export PRIORITY_ONLY=false      # priority list of variables is defined in setup_env_cmip6.sh
+export TABLE_TO_PROCESS=Amon            # CMIP6 table to process. Default is 'all'
+export VARIABLE_TO_PROCESS=tas          # CMIP6 variable to process. Default is 'all'
+export SUBDAILY=true                    # subdaily selection options - select one of: [true, false, only]
+export PRIORITY_ONLY=false              # sub-set list of variables to process, as defined in setup_env_cmip6.sh
 
+# Additional NCI information:
+# OUTPUT_LOC defines directory for all generated data (CMORISED files & logs)
+#
+export OUTPUT_LOC=/scratch/$PROJECT/$USER/APP4_output  
+export PROJECT=p66                      # NCI project to charge compute
+export ADDPROJS=( p73 )                 # additional NCI projects to be included in the storage flags
+export QUEUE=hugemem                    # NCI queue to use
+export MEM_PER_CPU=24                   # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
 
-
 #
 #
 #
 #
 #
 #
-
 
 ################################################################
 # SETTING UP ENVIROMENT, VARIABLE MAPS, AND DATABASE
@@ -68,14 +70,14 @@ export PRIORITY_ONLY=false      # priority list of variables is defined in setup
 
 # Set up environment
 export MODE=default
-export FORCE_DREQ=true
 source ./subroutines/setup_env_cmip6.sh
 
 # Cleanup output_files
 ./subroutines/cleanup.sh $OUT_DIR
 
 # Create json file which contains metadata info
-./subroutines/create_json_default.sh
+python ./subroutines/default_json_editor.py
+#exit
 
 # Create variable maps
 python ./subroutines/dreq_mapping.py --multi
@@ -86,8 +88,7 @@ python ./subroutines/database_manager.py
 #exit
 
 # FOR TESTING
-#python ./subroutines/app_wrapper.py
-#exit
+python ./subroutines/app_wrapper.py; exit
 #
 
 ################################################################
@@ -98,27 +99,23 @@ echo -e '\ncreating job...'
 for addproj in ${ADDPROJS[@]}; do
   addstore="${addstore}+scratch/${addproj}+gdata/${addproj}"
 done
-QUEUE=normal #hugemem
 #
 NUM_ROWS=$( cat $OUT_DIR/database_count.txt )
-if (($NUM_ROWS <= 48)); then
+if (($NUM_ROWS <= 24)); then
   NUM_CPUS=$NUM_ROWS
 else
-  NUM_CPUS=48
+  NUM_CPUS=24
 fi
-if $SUBDAILY; then
-  NUM_MEM=$(echo "${NUM_CPUS} * 24" | bc)
-else
-  NUM_MEM=$(echo "${NUM_CPUS} * 8" | bc)
-fi
+NUM_MEM=$(echo "${NUM_CPUS} * ${MEM_PER_CPU}" | bc)
 if ((${NUM_MEM} >= 1470)); then
   NUM_MEM=1470
 fi
 #
 #NUM_CPUS=48
 #NUM_MEM=1470
-echo number of cpus to to be used: ${NUM_CPUS}
-echo total amount of memory to be used: ${NUM_MEM}Gb
+echo "number of files to create: ${NUM_ROWS}"
+echo "number of cpus to to be used: ${NUM_CPUS}"
+echo "total amount of memory to be used: ${NUM_MEM}Gb"
 
 cat << EOF > $APP_JOB
 #!/bin/bash

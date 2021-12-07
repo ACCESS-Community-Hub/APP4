@@ -25,7 +25,7 @@ CICE_realms=['seaIce']
 UM_tables=['3hr','AERmon','AERday','CFmon',\
     'Eday','Eyr','fx','6hrLev','Amon','E3hr','Efx',\
     'LImon','day','6hrPlev','6hrPlevPt','CF3hr','E3hrPt','Emon',\
-    'Lmon','EdayZ','EmonZ','AmonZ','Aday','AdayZ']
+    'Lmon','EdayZ','EmonZ','AmonZ','Aday','AdayZ','A10dayPt']
 MOM_tables=['Oclim','Omon','Oday','Oyr','Ofx','Emon','Eyr','3hr']   
 CICE_tables=['SImon','SIday']
 CMIP_tables=UM_tables+MOM_tables+CICE_tables
@@ -55,10 +55,13 @@ else:
     daymonyr=True
 if os.environ.get('PRIORITY_ONLY').lower() == 'true': priorityonly=True
 else: priorityonly=False
-if os.environ.get('FORCE_DREQ').lower() == 'true': forcedreq=True
-else: forcedreq=False
+try:
+    if os.environ.get('FORCE_DREQ').lower() == 'true': forcedreq=True
+    else: forcedreq=False
+except: forcedreq=False
 if os.environ.get('DREQ_YEARS').lower() == 'true': dreq_years=True
 else: dreq_years=False
+
 
 # Default mode vars
 if os.environ.get('MODE').lower() == 'default': mode='default'
@@ -73,7 +76,12 @@ if mode == 'default':
 try:
     if mode == 'default':
         access_version=def_version
-        dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
+        if os.environ.get('DREQ') == 'default': dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
+        elif not os.environ.get('DREQ').endswith('.csv'): 
+            print('E: dreq not a csv file')
+            raise 
+        else: dreq=os.environ.get('DREQ')
+        print('dreq file: {}'.format(dreq))
         reference_date=def_start
         start_year=def_start
         end_year=def_end
@@ -399,6 +407,7 @@ def read_dreq_vars(dreq,table):
                             dreq_variables.append([cmorname,realm,freq,cfname,years,dimensions])
             except: pass
     f.close()
+    #print(dreq_variables)
     return dreq_variables
 
 def priority_check(cmipvar,table):
@@ -472,6 +481,8 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                         file_structure=atm_file_struc+'*_3h.nc'
                     elif freq == '6hr':
                         file_structure=atm_file_struc+'*_6h.nc'
+                    elif freq == '10day':
+                        file_structure=atm_file_struc+'*_chem.nc'
                     else:
                         #Unknown atmospheric frequency
                         file_structure=None
@@ -550,7 +561,13 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                         file_structure=None
                 else:
                     file_structure=None
-                #print(cmipvar,realm,freq)
+                # special CCMI file_structure cases
+                if mode == 'ccmi':
+                    if realm in UM_realms and freq == '10day' and cmipvar == 'ps' and skip == False:
+                        file_structure=atm_file_struc+'*_dai.nc'
+                    if realm in UM_realms and freq == 'day' and cmipvar == 'clt' and skip == False:
+                        file_structure=atm_file_struc+'*_chem.nc'
+                #
                 if file_structure != None:
                     matches.append('{},{},{},{},{},{},{},{},{},{},{},{},{}'.format(cmipvar,definable,access_vars,file_structure,calculation,units,axes_modifier,positive,timeshot,years,var_notes,cfname,dimension))
                     if not cmorname in matchlist:

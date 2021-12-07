@@ -24,6 +24,12 @@ python -V
 
 # Environment variables
 
+if [[ $MODE == default ]]; then
+  export CONTACT=$CONTACT
+else
+  export CONTACT=access_csiro@csiro.au
+fi
+
 # Inputs:
 export APP_DIR=$(pwd)
 #export APP_DIR=/g/data/p66/$USER/post_processing/APP4-0

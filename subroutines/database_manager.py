@@ -222,6 +222,12 @@ def buildFileName(opts):
                 #add month to string
                 start='{}01'.format(start)
                 fin='{}12'.format(fin)
+            elif frequency == '10day':
+                start=str(st_date).zfill(4)
+                fin=str(fin_date).zfill(4)
+                #add day to string
+                start='{}0111'.format(start)
+                fin='{}0101'.format(int(fin)+1)
             elif frequency == 'day':
                 start=str(st_date).zfill(4)
                 fin=str(fin_date).zfill(4)
@@ -319,6 +325,7 @@ def tableToFreq(table):
     ,'EdayZ':'day'\
     ,'Aday':'day'\
     ,'AdayZ':'day'\
+    ,'A10dayPt':'10day'\
     ,'Efx':'fx'\
     ,'Emon':'mon'\
     ,'EmonZ':'mon'\
