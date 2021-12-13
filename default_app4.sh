@@ -12,18 +12,18 @@
 # Details of local experiment to process:
 # HISTORY_DATA must point to dir containing atm/ ocn/ ice/
 #
-export HISTORY_DATA=/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/HI-05/history
-export EXP_TO_PROCESS=HI-05                 # local name of experiment
+export HISTORY_DATA=/g/data/p73/archive/non-CMIP/ACCESS-ESM1-5/HI-noluc-C-05/history
+export EXP_TO_PROCESS=HI-noluc-C-05                 # local name of experiment
 export VERSION=ESM                          # select one of: [CM2, ESM, OM2(TBC)]
 export START_YEAR=1850                      # internal year to begin CMORisation
-export END_YEAR=1851                        # internal year to end CMORisation (inclusive)
+export END_YEAR=2014                        # internal year to end CMORisation (inclusive)
 export CONTACT=access_csiro@csiro.au        # please insert your contact email
-export DREQ=default                         # default=input_files/dreq/cmvme_all_piControl_3_3.csv
+export DREQ=input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv   # default=input_files/dreq/cmvme_all_piControl_3_3.csv
 
 # Standard experiment details:
 #
-export experiment_id=faf-antwater           # standard experiment name; e.g. piControl
-export activity_id=SOMIP                    # activity name; e.g. CMIP
+export experiment_id=hist-noluc-C                 # standard experiment name; e.g. piControl
+export activity_id=CNP-MIP                  # activity name; e.g. CMIP
 export realization_index=1                  # "r1"[i1p1f1]; e.g. 1
 export initialization_index=1               # [r1]"i1"[p1f1]; e.g. 1
 export physics_index=1                      # [r1i1]"p1"[f1]; e.g. 1
@@ -34,26 +34,26 @@ export branch_time_in_child=0D0             # specifies the difference between t
 # Parent experiment details:
 # if parent=false, all parent fields are automatically set to "no parent". If true, defined values are used.
 #
-export parent=false 
+export parent=true 
 export parent_experiment_id=piControl               # e.g. piControl-spinup
 export parent_activity_id=CMIP                      # e.g. CMIP
-export parent_time_units="days since 0001-01-01"    # e.g. "days since 0001-01-01"
-export branch_time_in_parent=0D0                    # e.g. 0D0
+export parent_time_units="days since 0101-01-01"    # e.g. "days since 0001-01-01"
+export branch_time_in_parent=21915D0                # e.g. 0D0
 export parent_variant_label=r1i1p1f1                # e.g. r1i1p1f1
 
 # Variables to CMORise:
 # CMIP6 table/variable to process. Default is 'all'.
-export TABLE_TO_PROCESS=Amon            # CMIP6 table to process. Default is 'all'
+export TABLE_TO_PROCESS=all             # CMIP6 table to process. Default is 'all'
 export VARIABLE_TO_PROCESS=all          # CMIP6 variable to process. Default is 'all'
-export SUBDAILY=true                    # subdaily selection options - select one of: [true, false, only]
+export SUBDAILY=false                    # subdaily selection options - select one of: [true, false, only]
 export PRIORITY_ONLY=false              # sub-set list of variables to process, as defined in setup_env_cmip6.sh
 
 # Additional NCI information:
 # OUTPUT_LOC defines directory for all generated data (CMORISED files & logs)
 #
 export OUTPUT_LOC=/scratch/$PROJECT/$USER/APP4_output 
-export PROJECT=p66                      # NCI project to charge compute
-export ADDPROJS=( p73 )                 # additional NCI projects to be included in the storage flags
+export PROJECT=$PROJECT                      # NCI project to charge compute
+export ADDPROJS=( p73 p66 )                 # additional NCI projects to be included in the storage flags
 export QUEUE=hugemem                    # NCI queue to use
 export MEM_PER_CPU=24                   # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
 
@@ -133,6 +133,7 @@ export EXP_TO_PROCESS=${EXP_TO_PROCESS}
 export OUTPUT_LOC=$OUTPUT_LOC
 export MODE=default
 export CONTACT=$CONTACT
+export CDAT_ANONYMOUS_LOG=no
 source ./subroutines/setup_env_cmip6.sh ${CMIP6_ENV}
 # main
 python ./subroutines/app_wrapper.py

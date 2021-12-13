@@ -67,7 +67,8 @@
             "ScenarioMIP": "Scenario Model Intercomparison Project",
             "VIACSAB": "Vulnerability, Impacts, Adaptation and Climate Services Advisory Board",
             "VolMIP": "Volcanic Forcings Model Intercomparison Project",
-            "SOMIP": "SOMIP"
+            "SOMIP": "SOMIP",
+            "CNP-MIP": "CNP-MIP"
         },
         "institution_id": {
             "AER": "Research and Climate Group, Atmospheric and Environmental Research, 131 Hartwell Avenue, Lexington, MA 02421, USA",
@@ -10513,6 +10514,102 @@
                 ],
                 "parent_activity_id": [
                     "no parent"
+                ],
+                "sub_experiment_id": [
+                    "none"
+                ]
+            },
+            "hist-C": {
+                "activity_id": [
+                    "CNP-MIP"
+                ],
+                "experiment": "hist-C",
+                "additional_allowed_model_components": [
+                    "AER",
+                    "CHEM",
+                    "BGC"
+                ],
+                "required_model_components": [
+                    "AOGCM"
+                ],
+                "experiment_id": "hist-C",
+                "parent_experiment_id": [
+                    "piControl"
+                ],
+                "parent_activity_id": [
+                    "CMIP"
+                ],
+                "sub_experiment_id": [
+                    "none"
+                ]
+            },
+            "hist-CN": {
+                "activity_id": [
+                    "CNP-MIP"
+                ],
+                "experiment": "hist-CN",
+                "additional_allowed_model_components": [
+                    "AER",
+                    "CHEM",
+                    "BGC"
+                ],
+                "required_model_components": [
+                    "AOGCM"
+                ],
+                "experiment_id": "hist-CN",
+                "parent_experiment_id": [
+                    "piControl"
+                ],
+                "parent_activity_id": [
+                    "CMIP"
+                ],
+                "sub_experiment_id": [
+                    "none"
+                ]
+            },
+            "hist-noluc-C": {
+                "activity_id": [
+                    "CNP-MIP"
+                ],
+                "experiment": "hist-noluc-C",
+                "additional_allowed_model_components": [
+                    "AER",
+                    "CHEM",
+                    "BGC"
+                ],
+                "required_model_components": [
+                    "AOGCM"
+                ],
+                "experiment_id": "hist-noluc-C",
+                "parent_experiment_id": [
+                    "piControl"
+                ],
+                "parent_activity_id": [
+                    "CMIP"
+                ],
+                "sub_experiment_id": [
+                    "none"
+                ]
+            },
+            "hist-noluc-CN": {
+                "activity_id": [
+                    "CNP-MIP"
+                ],
+                "experiment": "hist-noluc-CN",
+                "additional_allowed_model_components": [
+                    "AER",
+                    "CHEM",
+                    "BGC"
+                ],
+                "required_model_components": [
+                    "AOGCM"
+                ],
+                "experiment_id": "hist-noluc-CN",
+                "parent_experiment_id": [
+                    "piControl"
+                ],
+                "parent_activity_id": [
+                    "CMIP"
                 ],
                 "sub_experiment_id": [
                     "none"

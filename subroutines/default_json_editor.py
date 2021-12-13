@@ -26,7 +26,7 @@ else: parent=False
 if parent: 
     parent_experiment_id=os.environ.get('parent_experiment_id')
     parent_activity_id=os.environ.get('parent_activity_id')
-    parent_mip_era=os.environ.get('parent_mip_era')
+    parent_mip_era='CMIP6'
     parent_time_units=os.environ.get('parent_time_units')
     branch_time_in_parent=os.environ.get('branch_time_in_parent')
     parent_variant_label=os.environ.get('parent_variant_label')

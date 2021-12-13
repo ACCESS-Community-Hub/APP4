@@ -14,11 +14,11 @@ fi
 
 # Variables input options
 #
-export TABLE_TO_PROCESS=Amon            # CMIP6 table to process. Default is 'all'
+export TABLE_TO_PROCESS=all             # CMIP6 table to process. Default is 'all'
 export VARIABLE_TO_PROCESS=all          # CMIP6 variable to process. Default is 'all'
 export SUBDAILY=true                    # subdaily selection options - select one of: [true, false, only]
-export PRIORITY_ONLY=false              # sub-set list of variables to process, as defined in setup_env_cmip6.sh
-export FORCE_DREQ=false                 # use input_files/default_mode_cmor-tables/Tables/CMIP6_CV.json
+export PRIORITY_ONLY=true               # sub-set list of variables to process, as defined in setup_env_cmip6.sh
+export FORCE_DREQ=true                  # use input_files/default_mode_cmor-tables/Tables/CMIP6_CV.json
 
 # Additional NCI information:
 #
@@ -103,6 +103,7 @@ module purge
 # pre
 export EXP_TO_PROCESS=${EXP_TO_PROCESS}
 export MODE=${MODE}
+export CDAT_ANONYMOUS_LOG=no
 source ./subroutines/setup_env_cmip6.sh ${CMIP6_ENV}
 # main
 python ./subroutines/app_wrapper.py

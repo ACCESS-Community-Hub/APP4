@@ -208,7 +208,7 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
     if realm in CICE_realms:
         if access_vars.find('fld_') != -1:
             realm='atmos'
-    #6hrLev cases:
+    #6hr cases:
     if cmipvar in ['ta','ua','va','hus']:
         if table.find('6hrLev') != -1:
             if axes_modifier.find('6hrLev') != -1:
@@ -225,6 +225,9 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
                 skip=True
             else:
                 skip=False
+    if cmipvar in ['tsl'] and table.find('6hrPlevPt') != -1:
+        axes_modifier='{} topsoil'.format(axes_modifier)
+        calculation='\"topsoil(var[0])\"'
     #3hr cases:
     if cmipvar in ['ts']:
         if table.find('3hr') != -1: skip=True
@@ -299,7 +302,7 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
         else: pass
     #SIday in ESM:
     if table.find('SIday') != -1 and access_version.find('ESM') != -1:
-        skip=True
+        if cmipvar.find('siconca') == -1: skip=True
     #E[day,mon]z:
     if (table.find('Z') != -1):
         if calculation == '':
