@@ -55,7 +55,7 @@ echo "NCI queue to use: $QUEUE"
 cat << EOF > ${OUT_DIR}/qc_job.sh
 #!/bin/bash
 #PBS -P ${PROJ}
-#PBS -l walltime=12:00:00,ncpus=${NUM_CPUS},mem=${NUM_MEM}Gb,wd
+#PBS -l walltime=24:00:00,ncpus=${NUM_CPUS},mem=${NUM_MEM}Gb,wd
 #PBS -q ${QUEUE}
 #PBS -l storage=scratch/${PROJ}+gdata/${PROJ}+gdata/hh5+gdata/access${addstore}
 #PBS -j oe

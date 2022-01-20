@@ -3,8 +3,8 @@
 ################################################################
 # USE THIS FOR NON-CMIP6 EXPERIMENTS - "DEFAULT MODE"
 #
-# THE APP4 WILL INSERT THE DETAILS DEFINED BELOW INTO THE CV.JSON FILE
-#   TO ENABLE NON-CMIP6 EXPERIMENTS TO BE CMORISED
+# THE APP4 WILL INSERT THE DETAILS DEFINED BELOW INTO THE CMIP6_CV.JSON FILE
+# TO ENABLE NON-CMIP6 EXPERIMENTS TO BE CMORISED
 #
 # see https://git.nci.org.au/cm2704/ACCESS-Archiver for related tools
 ################################################################
@@ -14,11 +14,10 @@
 #
 export HISTORY_DATA=/g/data/p73/archive/non-CMIP/ACCESS-ESM1-5/HI-noluc-C-05/history
 export EXP_TO_PROCESS=HI-noluc-C-05                 # local name of experiment
-export VERSION=ESM                          # select one of: [CM2, ESM, OM2(TBC)]
+export VERSION=ESM                          # select one of: [CM2, ESM, OM2[-025]]
 export START_YEAR=1850                      # internal year to begin CMORisation
 export END_YEAR=2014                        # internal year to end CMORisation (inclusive)
 export CONTACT=access_csiro@csiro.au        # please insert your contact email
-export DREQ=input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv   # default=input_files/dreq/cmvme_all_piControl_3_3.csv
 
 # Standard experiment details:
 #
@@ -43,6 +42,7 @@ export parent_variant_label=r1i1p1f1                # e.g. r1i1p1f1
 
 # Variables to CMORise:
 # CMIP6 table/variable to process. Default is 'all'.
+export DREQ=input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_historical_1_2.csv   # default=input_files/dreq/cmvme_all_piControl_3_3.csv
 export TABLE_TO_PROCESS=all             # CMIP6 table to process. Default is 'all'
 export VARIABLE_TO_PROCESS=all          # CMIP6 variable to process. Default is 'all'
 export SUBDAILY=false                    # subdaily selection options - select one of: [true, false, only]
@@ -122,7 +122,7 @@ cat << EOF > $APP_JOB
 #PBS -P $PROJECT
 #PBS -q $QUEUE
 #PBS -l storage=scratch/$PROJECT+gdata/$PROJECT+gdata/hh5+gdata/access${addstore}
-#PBS -l ncpus=${NUM_CPUS},walltime=12:00:00,mem=${NUM_MEM}Gb,wd
+#PBS -l ncpus=${NUM_CPUS},walltime=24:00:00,mem=${NUM_MEM}Gb,wd
 #PBS -j oe
 #PBS -o ${JOB_OUTPUT}
 #PBS -e ${JOB_OUTPUT}
