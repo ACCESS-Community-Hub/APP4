@@ -31,7 +31,7 @@ CICE_tables=['SImon','SIday']
 CMIP_tables=UM_tables+MOM_tables+CICE_tables
 
 # non-boolean vars
-prioritylist=os.environ.get('PRIORITY_LIST')
+prioritylist=os.environ.get('VAR_SUBSET_LIST')
 experimentstable=os.environ.get('EXPERIMENTS_TABLE')
 exptoprocess=os.environ.get('EXP_TO_PROCESS')
 tabletoprocess=os.environ.get('TABLE_TO_PROCESS')
@@ -53,7 +53,7 @@ elif os.environ.get('SUBDAILY').lower() == 'only':
 else:
     subdaily=False
     daymonyr=True
-if os.environ.get('PRIORITY_ONLY').lower() == 'true': priorityonly=True
+if os.environ.get('VAR_SUBSET').lower() == 'true': priorityonly=True
 else: priorityonly=False
 try:
     if os.environ.get('FORCE_DREQ').lower() == 'true': forcedreq=True
@@ -63,18 +63,18 @@ if os.environ.get('DREQ_YEARS').lower() == 'true': dreq_years=True
 else: dreq_years=False
 
 
-# Default mode vars
-if os.environ.get('MODE').lower() == 'default': mode='default'
+# Custom mode vars
+if os.environ.get('MODE').lower() == 'custom': mode='custom'
 elif os.environ.get('MODE').lower() == 'ccmi': mode='ccmi'
 else: mode='cmip6'
-if mode == 'default':
+if mode == 'custom':
     def_hist_data=os.environ.get('HISTORY_DATA')
     def_version=os.environ.get('VERSION')
     def_start=int(os.environ.get('START_YEAR'))
     def_end=int(os.environ.get('END_YEAR'))
 
 try:
-    if mode == 'default':
+    if mode == 'custom':
         access_version=def_version
         if os.environ.get('DREQ') == 'default': dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
         elif not os.environ.get('DREQ').endswith('.csv'): 
@@ -402,7 +402,7 @@ def read_dreq_vars(dreq,table):
                                 years='"{}"'.format(years)
                             except: years='all'
                     except: years='all'
-                    if (mode == 'default') or not dreq_years: years='all'
+                    if (mode == 'custom') or not dreq_years: years='all'
                     if variabletoprocess.lower() == 'all':
                         dreq_variables.append([cmorname,realm,freq,cfname,years,dimensions])
                     else:
@@ -417,7 +417,7 @@ def priority_check(cmipvar,table):
     priority_ret=0
     if priorityonly:
         for item in priority_vars:
-            if (cmipvar == item[0]) and (table == item[1]):
+            if (table == item[0]) and (cmipvar == item[1]):
                 priority_ret=1
             else:
                 pass

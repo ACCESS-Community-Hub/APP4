@@ -75,11 +75,6 @@ def app(option_dictionary):
     #Load the CMIP tables into memory.
     #
     tables=[]
-    #if opts['mode'] == 'ccmi':
-    #    print('{}/{}.json'.format(opts['cmip_table_path'],opts['cmip_table']))
-    #    tables.append(cmor.load_table('{}/CCMI2022_grids.json'.format(opts['cmip_table_path'])))
-    #    tables.append(cmor.load_table('{}/{}.json'.format(opts['cmip_table_path'],opts['cmip_table'])))
-    #else:
     tables.append(cmor.load_table('{}/CMIP6_grids.json'.format(opts['cmip_table_path'])))
     tables.append(cmor.load_table('{}/{}.json'.format(opts['cmip_table_path'],opts['cmip_table'])))
     #
@@ -1382,7 +1377,7 @@ parser.add_option('--access_version',dest='access_version',default='CM2',
 parser.add_option('--reference_date',dest='reference_date',default='0001',
     help='The internally-consistent date that the experiment began')
 parser.add_option('--mode',dest='mode',default='cmip6',
-    help='CMIP6, CCMI2022, or default mode')
+    help='CMIP6, CCMI2022, or custom mode')
 (options, args)=parser.parse_args()
 opts=dict()
 #produce a dictionary out of the options object

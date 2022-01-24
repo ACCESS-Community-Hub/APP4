@@ -13,7 +13,7 @@ cd152,/g/data/p73/archive/CMIP6/ACCESS-CM2/cd152/history,input_files/json/cd152.
 cd153,/g/data/p73/archive/CMIP6/ACCESS-CM2/cd153/history,input_files/json/cd153.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r3-f2(SST-corrected)
 bn570,/g/data/p73/archive/CMIP6/ACCESS-CM2/bn570/history,input_files/json/bn570.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_abrupt-4xCO2_1_2.csv,950,950,1099,CM2,abrupt-4xCO2
 bk243,/g/data/p73/archive/CMIP6/ACCESS-CM2/bk243/history,input_files/json/bk243.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_1pctCO2_1_2.csv,950,950,1099,CM2,1pctCO2
-bj594,/g/data/p73/archive/CMIP6/ACCESS-CM2/bj594/history,input_files/json/bj594.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r1
+bj594,/g/data/p73/archive/CMIP6/ACCESS-CM2/bj594/history,input_files/json/bj594.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,2013,2014,CM2,historical-r1
 bl655,/g/data/p73/archive/CMIP6/ACCESS-CM2/bl655/history,input_files/json/bl655.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r2
 bm652,/g/data/p73/archive/CMIP6/ACCESS-CM2/bm652/history,input_files/json/bm652.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r3
 cd659,/g/data/p73/archive/CMIP6/ACCESS-CM2/cd659/history,input_files/json/cd659.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_historical_1_2.csv,1850,1850,2014,CM2,historical-r4

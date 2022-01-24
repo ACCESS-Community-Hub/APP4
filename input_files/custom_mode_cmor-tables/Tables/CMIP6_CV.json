@@ -10614,6 +10614,30 @@
                 "sub_experiment_id": [
                     "none"
                 ]
+            },
+            "1pctCO2-C": {
+                "activity_id": [
+                    "CNP-MIP"
+                ],
+                "experiment": "1pctCO2-C",
+                "additional_allowed_model_components": [
+                    "AER",
+                    "CHEM",
+                    "BGC"
+                ],
+                "required_model_components": [
+                    "AOGCM"
+                ],
+                "experiment_id": "1pctCO2-C",
+                "parent_experiment_id": [
+                    "piControl"
+                ],
+                "parent_activity_id": [
+                    "CMIP"
+                ],
+                "sub_experiment_id": [
+                    "none"
+                ]
             }
         },
         "product": [

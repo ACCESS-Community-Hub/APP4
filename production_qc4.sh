@@ -5,6 +5,7 @@
 ################################################################
 
 export EXP_TO_PROCESS=lig127k
+#
 # If inline argument is passed
 if [ ! -z $1 ]; then
   export EXP_TO_PROCESS=$1
@@ -17,8 +18,8 @@ export PUB_DIR=/scratch/p66/CMIP6/APP_publishable/CMIP6
 export QC_DIR=/g/data/p66/CMIP6/APP_QC/CMIP6
 export ONLINE_PLOT_DIR=/g/data/p66/accessdev-web/$USER/CMIP6_QC
 export MODE=cmip6
-export PROJ=p66
-export ADDPROJS=( p73 )
+export PROJ=$PROJECT
+export ADDPROJS=( p66 p73 )
 
 ################################################################
 
@@ -67,7 +68,6 @@ export PUB_DIR=${PUB_DIR}
 export QC_DIR=${QC_DIR}
 export ONLINE_PLOT_DIR=${ONLINE_PLOT_DIR}
 export USER=$USER
-export DEFAULT_MODE=$DEFAULT_MODE
 export NCPUS=$NUM_CPUS
 # Set up environment
 source ./subroutines/setup_env_cmip6.sh publication

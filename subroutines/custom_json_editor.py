@@ -1,5 +1,5 @@
-# This script takes the experiment information in default-mode APP4 and edits it into:
-#   input_files/default_mode_cmor-tables/Tables/CMIP6_CV.json
+# This script takes the experiment information in custom-mode APP4 and edits it into:
+#   input_files/custom_mode_cmor-tables/Tables/CMIP6_CV.json
 #   input_files/json/default_[version].json
 # This allows CMOR to be generalised for non-CMIP6 experiment-level vocabulary.
 
@@ -40,7 +40,7 @@ else:
 
 if version == 'ESM':  json_exp='input_files/json/default_esm.json'
 elif version == 'CM2': json_exp='input_files/json/default_cm2.json'
-json_cv='input_files/default_mode_cmor-tables/Tables/CMIP6_CV.json'
+json_cv='input_files/custom_mode_cmor-tables/Tables/CMIP6_CV.json'
 
 #
 # Edit experiment-specific json
@@ -73,7 +73,7 @@ def edit_exp_json():
     return
 
 #
-# Edit 'default' CMOR tables with experiment details
+# Edit 'custom' CMOR tables with experiment details
 #
 def edit_cv_json():
     with open(json_cv,'r') as f:
@@ -115,13 +115,13 @@ def edit_cv_json():
     return
 
 def main():
-    print '\nstarting default_json_editor...'
+    print '\nstarting custom_json_editor...'
     print 'using experiment json template: {}'.format(json_exp)
     edit_exp_json()
     print 'created experiment file: {}/{}.json'.format(outdir,exptoprocess)
     print 'editing CV json file: {}'.format(json_cv)
     edit_cv_json()
-    print 'default_json_editor complete, metadata prepared for use in CMOR'
+    print 'custom_json_editor complete, metadata prepared for use in CMOR'
 
 if __name__ == "__main__":
     main()

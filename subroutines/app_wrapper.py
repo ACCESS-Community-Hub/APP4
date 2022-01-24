@@ -29,7 +29,7 @@ conn=sqlite3.connect(database,timeout=200.0)
 conn.text_factory=str
 cursor=conn.cursor()
 database_updater='{}/database_updater.py'.format(out_dir)
-if os.environ.get('MODE').lower() == 'default': mode='default'
+if os.environ.get('MODE').lower() == 'custom': mode='custom'
 elif os.environ.get('MODE').lower() == 'ccmi': mode='ccmi'
 else: mode='cmip6'
 
@@ -67,9 +67,6 @@ def process_row(row):
     vin=row[8].split()
     vcmip=row[9]
     table=row[10]
-    #if mode == 'ccmi':
-    #    cmip_table='CCMI2022_{}'.format(row[10])
-    #else:
     cmip_table='CMIP6_{}'.format(row[10])
     frequency=row[11]
     tstart=row[12]

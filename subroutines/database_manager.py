@@ -21,7 +21,7 @@ import time
 import json
 exptoprocess=os.environ.get('EXP_TO_PROCESS')
 out_dir=os.environ.get('OUT_DIR')
-if os.environ.get('MODE').lower() == 'default': mode='default'
+if os.environ.get('MODE').lower() == 'custom': mode='custom'
 elif os.environ.get('MODE').lower() == 'ccmi': mode='ccmi'
 else: mode='cmip6'
 
@@ -109,7 +109,7 @@ def experiments_setup(conn,exps_file):
                 access_version text,
                 cmip_exp_id text,
                 primary key (local_exp_id,json_file_path,start_year)) ''')
-        if mode == 'default':
+        if mode == 'custom':
             def_hist_data=os.environ.get('HISTORY_DATA')
             def_version=os.environ.get('VERSION')
             def_json='{}/{}.json'.format(out_dir,exptoprocess)
@@ -117,7 +117,7 @@ def experiments_setup(conn,exps_file):
             def_start=os.environ.get('START_YEAR')
             def_end=os.environ.get('END_YEAR')
             def_dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
-            def_line=[exptoprocess,def_hist_data,def_json,def_dreq,def_start,def_start,def_end,def_version,'default']
+            def_line=[exptoprocess,def_hist_data,def_json,def_dreq,def_start,def_start,def_end,def_version,'custom']
             cursor.execute('insert into experiments values (?,?,?,?,?,?,?,?,?)', def_line)
         else:
             f=csv.reader(open(exps_file,'r'))

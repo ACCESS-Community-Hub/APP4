@@ -1,4 +1,5 @@
 #!/bin/bash
+set -a
 # Set up  environment for running scripts
 
 echo -e "\nsetting up environment..."
@@ -16,7 +17,7 @@ module load parallel
 
 # CMIP6-pub env
 module load conda
-export PATH=${PATH}:/g/data3/hh5/public/apps/miniconda3/envs/cmip6-publication/bin:/g/data3/hh5/public/apps/miniconda3/bin
+PATH=${PATH}:/g/data3/hh5/public/apps/miniconda3/envs/cmip6-publication/bin:/g/data3/hh5/public/apps/miniconda3/bin
 source activate cmip6-publication
 
 module list
@@ -24,53 +25,52 @@ python -V
 
 # Environment variables
 
-if [[ $MODE == default ]]; then
-  export CONTACT=$CONTACT
+if [[ $MODE == custom ]]; then
+  CONTACT=$CONTACT
 else
-  export CONTACT=access_csiro@csiro.au
+  CONTACT=access_csiro@csiro.au
 fi
 
 # Inputs:
-export APP_DIR=$(pwd)
+APP_DIR=$(pwd)
 #export APP_DIR=/g/data/p66/$USER/post_processing/APP4-0
 # Input subdirectories
-export ANCILLARY_FILES=/g/data/p66/CMIP6/APP_ancils
+ANCILLARY_FILES=/g/data/p66/CMIP6/APP_ancils
 if [[ $MODE == ccmi ]]; then
-  export CMIP_TABLES=${APP_DIR}/input_files/ccmi-2022/Tables
-elif [[ $MODE == default ]]; then
-  export CMIP_TABLES=${APP_DIR}/input_files/default_mode_cmor-tables/Tables
+  CMIP_TABLES=${APP_DIR}/input_files/ccmi-2022/Tables
+elif [[ $MODE == custom ]]; then
+  CMIP_TABLES=${APP_DIR}/input_files/custom_mode_cmor-tables/Tables
 else
-  export CMIP_TABLES=${APP_DIR}/input_files/cmip6-cmor-tables/Tables
+  CMIP_TABLES=${APP_DIR}/input_files/cmip6-cmor-tables/Tables
 fi
 # Input files
-export EXPERIMENTS_TABLE=${APP_DIR}/input_files/experiments.csv
-export MASTER_MAP=${APP_DIR}/input_files/master_map.csv
-export PRIORITY_LIST=${APP_DIR}/input_files/priority_lists/priority_vars_ACS.csv
+EXPERIMENTS_TABLE=${APP_DIR}/input_files/experiments.csv
+MASTER_MAP=${APP_DIR}/input_files/master_map.csv
 
 # Outputs:
 # output logs and job scripts/files go to MAIN_DIR
-export MAIN_DIR=/g/data/p66/CMIP6
+MAIN_DIR=/g/data/p66/CMIP6
 # write cmorised data to DATA_DIR
 #export DATA_DIR=${MAIN_DIR}
-export DATA_DIR=/scratch/p73/CMIP6
+DATA_DIR=/scratch/p73/CMIP6
 # Default mode
-if [[ $MODE == default ]]; then
-  export MAIN_DIR=$OUTPUT_LOC
-  export DATA_DIR=$OUTPUT_LOC
+if [[ $MODE == custom ]]; then
+  MAIN_DIR=$OUTPUT_LOC
+  DATA_DIR=$OUTPUT_LOC
 fi
-export OUT_DIR=${MAIN_DIR}/APP_job_files/${EXP_TO_PROCESS}
+OUT_DIR=${MAIN_DIR}/APP_job_files/${EXP_TO_PROCESS}
 # Output subdirectories
-export VARIABLE_MAPS=${OUT_DIR}/variable_maps
-export SUCCESS_LISTS=${OUT_DIR}/success_lists
-export CMOR_LOGS=${OUT_DIR}/cmor_logs
-export VAR_LOGS=${OUT_DIR}/variable_logs
+VARIABLE_MAPS=${OUT_DIR}/variable_maps
+SUCCESS_LISTS=${OUT_DIR}/success_lists
+CMOR_LOGS=${OUT_DIR}/cmor_logs
+VAR_LOGS=${OUT_DIR}/variable_logs
 # Output files
-export APP_JOB=${OUT_DIR}/app_job.sh
-export JOB_OUTPUT=${OUT_DIR}/job_output.OU
-export DATABASE=${OUT_DIR}/database.db
+APP_JOB=${OUT_DIR}/app_job.sh
+JOB_OUTPUT=${OUT_DIR}/job_output.OU
+DATABASE=${OUT_DIR}/database.db
 
 # Extra options
-export OVERRIDEFILES=True
-export PLOT=False
-export DREQ_YEARS=False
+OVERRIDEFILES=True
+PLOT=False
+DREQ_YEARS=False
 

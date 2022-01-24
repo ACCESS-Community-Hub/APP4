@@ -1,35 +1,50 @@
 #!/bin/bash
+set -a
+################################################################
+#
+# This is the ACCESS Post-Processor, v4.1
+# 24/01/2022
+# 
+# Developed by Chloe Mackallah, CSIRO Aspendale
+# based on prior work by Peter Uhe and others at CSIRO
 #
 ################################################################
-# CHOOSE OPTIONS
+#
+# PRODUCTION MODE - USE THIS FOR PRODUCTION EXPERIMENTS (CMIP6, CCMI2022)
+#
+# see https://git.nci.org.au/cm2704/ACCESS-Archiver for related tools
+#
 ################################################################
+#
+# USER OPTIONS
 
 # Local experiment to process
-export EXP_TO_PROCESS=ca587
+EXP_TO_PROCESS=ca587
 #
-# If inline argument is passed
+# If inline argument is passed from multiwrap_app4.sh
 if [ ! -z $1 ]; then
   export EXP_TO_PROCESS=$1
 fi
 
 # Variables input options
 #
-export TABLE_TO_PROCESS=all             # CMIP6 table to process. Default is 'all'
-export VARIABLE_TO_PROCESS=all          # CMIP6 variable to process. Default is 'all'
-export SUBDAILY=true                    # subdaily selection options - select one of: [true, false, only]
-export PRIORITY_ONLY=true               # sub-set list of variables to process, as defined in setup_env_cmip6.sh
-export FORCE_DREQ=true                  # use input_files/default_mode_cmor-tables/Tables/CMIP6_CV.json
+TABLE_TO_PROCESS=Amon             # CMIP6 table to process. Default is 'all'
+VARIABLE_TO_PROCESS=all          # CMIP6 variable to process. Default is 'all'
+SUBDAILY=true                    # subdaily selection options - select one of: [true, false, only]
+FORCE_DREQ=true                  # use input_files/dreq/cmvme_all_piControl_3_3.csv
+VAR_SUBSET=false                  # sub-set list of variables to process, as defined by 'VAR_SUBSET_LIST'
+VAR_SUBSET_LIST=input_files/var_subset_lists/var_subset_ACS.csv
 
 # Additional NCI information:
 #
-export PROJ=p66                         # NCI project to charge compute and use in storage flags
-export ADDPROJS=( p73 )                 # additional NCI projects to be included in the storage flags
-export QUEUE=hugemem                    # NCI queue to use
-export MEM_PER_CPU=24                   # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
+PROJ=p66                         # NCI project to charge compute and use in storage flags
+ADDPROJS=( p73 )                 # additional NCI projects to be included in the storage flags
+QUEUE=hugemem                    # NCI queue to use
+MEM_PER_CPU=24                   # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
 
 # Select mode [cmip6, ccmi]
 #
-export MODE=cmip6
+MODE=cmip6
 
 #
 #
@@ -45,8 +60,8 @@ source ./subroutines/setup_env_cmip6.sh
 ./subroutines/cleanup.sh $OUT_DIR
 
 # Update 'version' in experiment json file to today or chosen date
-export datevers=$(date '+%Y%m%d')
-#export datevers=20210802
+datevers=$(date '+%Y%m%d')
+#datevers=20210802
 ./input_files/json/update_json.sh
 
 # Create variable maps
@@ -98,12 +113,13 @@ cat << EOF > $APP_JOB
 #PBS -j oe
 #PBS -o ${JOB_OUTPUT}
 #PBS -e ${JOB_OUTPUT}
-#PBS -N app_${EXP_TO_PROCESS}
+#PBS -N prod_app4_${EXP_TO_PROCESS}
 module purge
+set -a
 # pre
-export EXP_TO_PROCESS=${EXP_TO_PROCESS}
-export MODE=${MODE}
-export CDAT_ANONYMOUS_LOG=no
+EXP_TO_PROCESS=${EXP_TO_PROCESS}
+MODE=${MODE}
+CDAT_ANONYMOUS_LOG=no
 source ./subroutines/setup_env_cmip6.sh ${CMIP6_ENV}
 # main
 python ./subroutines/app_wrapper.py
