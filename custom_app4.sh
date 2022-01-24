@@ -68,7 +68,7 @@ VAR_SUBSET_LIST=input_files/var_subset_lists/var_subset_ACS.csv
 OUTPUT_LOC=/scratch/$PROJECT/$USER/APP4_output 
 PROJECT=$PROJECT                                 # NCI project to charge compute; $PROJECT = your default project
 ADDPROJS=( p73 p66 )                             # additional NCI projects to be included in the storage flags
-QUEUE=hugemem                                    # NCI queue to use
+QUEUE=hugemem                                    # NCI queue to use; hugemem is recommended
 MEM_PER_CPU=24                                   # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
 
 #
