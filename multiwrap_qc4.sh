@@ -9,8 +9,8 @@ SSP-585-10-re1
 )
 
 for exp in ${loc_exp[@]}; do
-  ./check_qc4.sh $exp
-  #./production_qc4.sh $exp
+  #./check_qc4.sh $exp
+  ./production_qc4.sh $exp
   #break
 done
 exit
