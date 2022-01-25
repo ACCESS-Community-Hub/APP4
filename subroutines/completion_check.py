@@ -22,16 +22,18 @@ parser.add_argument('--multi', dest='multi', default=False, action='store_true',
 args = parser.parse_args()
 
 successlists=os.environ.get('SUCCESS_LISTS')
-multilist=os.environ.get('MULTI_LIST')
 variablemapsdir=os.environ.get('VARIABLE_MAPS')
 exptoprocess=os.environ.get('EXP_TO_PROCESS')
 joboutputfile=os.environ.get('JOB_OUTPUT')
 app_dir=os.environ.get('APP_DIR')
-qc_dir=os.environ.get('QC_DIR')
 out_dir=os.environ.get('OUT_DIR')
-pub_dir=os.environ.get('PUB_DIR')
-cmip6tables=os.environ.get('CMIP6_TABLES')
 experimentstable=os.environ.get('EXPERIMENTS_TABLE')
+mode=os.environ.get('MODE')
+
+#qc_dir=os.environ.get('QC_DIR')
+#pub_dir=os.environ.get('PUB_DIR')
+#cmiptables=os.environ.get('CMIP_TABLES')
+#multilist=os.environ.get('MULTI_LIST')
 
 print(successlists)
 
@@ -81,27 +83,30 @@ try:
                 v.close()
         else: raise Exception('E: no variable map directory found at {}'.format(variablemapsdir))
     except: raise Exception('E: failed to read variable maps in {}'.format(variablemapsdir))
-    try:
-        if os.path.exists(experimentstable):
-            with open(experimentstable,'r') as f:
-                reader=csv.reader(f, delimiter=',')
-                for row in reader:
-                    try: row[0]
-                    except: row='#'
-                    if row[0].startswith('#'): pass
-                    elif row[0] == exptoprocess: 
-                        jsonfile=row[2]
-                        dreq=row[3]
-            f.close()
-            with open(jsonfile) as j:
-                json_dict=json.load(j)
-            j.close()
-            outpath_root=json_dict['outpath']
-            dreq
-        else: raise Exception('E: no experiments table found at {}'.format(experimentstable))
-    except:
-        if os.path.exists(experimentstable): raise Exception('E: check experiment and experiments table')
-        else: raise Exception('E: no experiments table found at {}'.format(experimentstable))
+    if mode == 'production':
+        try:
+            if os.path.exists(experimentstable):
+                with open(experimentstable,'r') as f:
+                    reader=csv.reader(f, delimiter=',')
+                    for row in reader:
+                        try: row[0]
+                        except: row='#'
+                        if row[0].startswith('#'): pass
+                        elif row[0] == exptoprocess: 
+                            jsonfile=row[2]
+                            #dreq=row[3]
+                f.close()
+                with open(jsonfile) as j:
+                    json_dict=json.load(j)
+                j.close()
+                outpath_root=json_dict['outpath']
+                #dreq
+            else: raise Exception('E: no experiments table found at {}'.format(experimentstable))
+        except:
+            if os.path.exists(experimentstable): raise Exception('E: check experiment and experiments table')
+            else: raise Exception('E: no experiments table found at {}'.format(experimentstable))
+    elif mode == 'custom':
+        outpath_root=os.environ.get('OUTPUT_LOC')
 except Exception, e: sys.exit('E: failed to read in required files: {}'.format(e))
 
 print '\n#### CHECKING VARIABLE MAPS AGAINST SUCCESS/FAIL LISTS'

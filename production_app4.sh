@@ -54,7 +54,7 @@ MODE=cmip6
 ################################################################
 
 # Set up environment
-source ./subroutines/setup_env_cmip6.sh
+source ./setup_env.sh
 
 # Cleanup output_files
 ./subroutines/cleanup.sh $OUT_DIR
@@ -120,7 +120,7 @@ set -a
 EXP_TO_PROCESS=${EXP_TO_PROCESS}
 MODE=${MODE}
 CDAT_ANONYMOUS_LOG=no
-source ./subroutines/setup_env_cmip6.sh ${CMIP6_ENV}
+source ./setup_env.sh
 # main
 python ./subroutines/app_wrapper.py
 # post

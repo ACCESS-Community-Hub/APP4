@@ -22,25 +22,25 @@ set -a
 # USER OPTIONS
 
 # Details of local experiment to process:
-# HISTORY_DATA must point to dir containing atm/ ocn/ ice/
+# DATA_LOC must point to dir above experiment; and experiment subdir must contain history/atm/[,ocn/,ice/]
 #
-HISTORY_DATA=/g/data/p73/archive/non-CMIP/ACCESS-ESM1-5/PI-1pct-C-01/history
-EXP_TO_PROCESS=PI-C-rev-01           # local name of experiment
-VERSION=ESM                          # select one of: [CM2, ESM, OM2[-025]]
-START_YEAR=101                      # internal year to begin CMORisation
-END_YEAR=102                        # internal year to end CMORisation (inclusive)
-CONTACT=access_csiro@csiro.au        # please insert your contact email
+DATA_LOC=/g/data/p73/archive/non-CMIP/ACCESS-ESM1-5/
+EXP_TO_PROCESS=PI-1pct-C-01                  # local name of experiment
+VERSION=ESM                                  # select one of: [CM2, ESM, OM2[-025]]
+START_YEAR=101                               # internal year to begin CMORisation
+END_YEAR=102                                 # internal year to end CMORisation (inclusive)
+CONTACT=access_csiro@csiro.au                # please insert your contact email
 
 # Standard experiment details:
 #
-experiment_id=1pctCO2-C              # standard experiment name; e.g. piControl
-activity_id=CNP-MIP                  # activity name; e.g. CMIP
-realization_index=1                  # "r1"[i1p1f1]; e.g. 1
-initialization_index=1               # [r1]"i1"[p1f1]; e.g. 1
-physics_index=1                      # [r1i1]"p1"[f1]; e.g. 1
-forcing_index=1                      # [r1i1p1]"f1"; e.g. 1
-source_type=AOGCM                    # see input_files/custom_mode_cmor-tables/Tables/CMIP6_CV.json
-branch_time_in_child=0D0             # specifies the difference between the time units base and the first internal year; e.g. 365D0
+experiment_id=1pctCO2-C                      # standard experiment name; e.g. piControl
+activity_id=CNP-MIP                          # activity name; e.g. CMIP
+realization_index=1                          # "r1"[i1p1f1]; e.g. 1
+initialization_index=1                       # [r1]"i1"[p1f1]; e.g. 1
+physics_index=1                              # [r1i1]"p1"[f1]; e.g. 1
+forcing_index=1                              # [r1i1p1]"f1"; e.g. 1
+source_type=AOGCM                            # see input_files/custom_mode_cmor-tables/Tables/CMIP6_CV.json
+branch_time_in_child=0D0                     # specifies the difference between the time units base and the first internal year; e.g. 365D0
 
 # Parent experiment details:
 # if parent=false, all parent fields are automatically set to "no parent". If true, defined values are used.
@@ -55,21 +55,21 @@ parent_variant_label=r1i1p1f1                # e.g. r1i1p1f1
 # Variables to CMORise: 
 # CMIP6 table/variable to process; default is 'all'. Or create a file listing variables to process (VAR_SUBSET[_LIST]).
 #
-DREQ=default                     # default=input_files/dreq/cmvme_all_piControl_3_3.csv
-TABLE_TO_PROCESS=all             # CMIP6 table to process. Default is 'all'
-VARIABLE_TO_PROCESS=all          # CMIP6 variable to process. Default is 'all'
-SUBDAILY=false                   # subdaily selection options - select one of: [true, false, only]
-VAR_SUBSET=false                 # use a sub-set list of variables to process, as defined by 'VAR_SUBSET_LIST'
+DREQ=default                                 # default=input_files/dreq/cmvme_all_piControl_3_3.csv
+TABLE_TO_PROCESS=all                         # CMIP6 table to process. Default is 'all'
+VARIABLE_TO_PROCESS=all                      # CMIP6 variable to process. Default is 'all'
+SUBDAILY=false                               # subdaily selection options - select one of: [true, false, only]
+VAR_SUBSET=false                             # use a sub-set list of variables to process, as defined by 'VAR_SUBSET_LIST'
 VAR_SUBSET_LIST=input_files/var_subset_lists/var_subset_ACS.csv
 
 # Additional NCI information:
 # OUTPUT_LOC defines directory for all generated data (CMORISED files & logs)
 #
 OUTPUT_LOC=/scratch/$PROJECT/$USER/APP4_output 
-PROJECT=$PROJECT                                 # NCI project to charge compute; $PROJECT = your default project
-ADDPROJS=( p73 p66 )                             # additional NCI projects to be included in the storage flags
-QUEUE=hugemem                                    # NCI queue to use; hugemem is recommended
-MEM_PER_CPU=24                                   # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
+PROJECT=$PROJECT                             # NCI project to charge compute; $PROJECT = your default project
+ADDPROJS=( p73 p66 )                         # additional NCI projects to be included in the storage flags
+QUEUE=hugemem                                # NCI queue to use; hugemem is recommended
+MEM_PER_CPU=24                               # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
 
 #
 #
@@ -81,10 +81,13 @@ MEM_PER_CPU=24                                   # memory (GB) per CPU (recommen
 ################################################################
 # SETTING UP ENVIROMENT, VARIABLE MAPS, AND DATABASE
 ################################################################
+# exit back to check_app4 script if being used
+if [[ $check_app4 == 'true' ]] ; then return ; fi
 
 # Set up environment
 MODE=custom
-source ./subroutines/setup_env_cmip6.sh
+HISTORY_DATA=$DATA_LOC/$EXP_TO_PROCESS/history
+source ./setup_env.sh
 
 # Cleanup output_files
 ./subroutines/cleanup.sh $OUT_DIR
@@ -149,7 +152,7 @@ OUTPUT_LOC=$OUTPUT_LOC
 MODE=$MODE
 CONTACT=$CONTACT
 CDAT_ANONYMOUS_LOG=no
-source ./subroutines/setup_env_cmip6.sh ${CMIP6_ENV}
+source ./setup_env.sh
 # main
 python ./subroutines/app_wrapper.py
 # post

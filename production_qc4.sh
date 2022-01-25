@@ -24,7 +24,7 @@ export ADDPROJS=( p66 p73 )
 ################################################################
 
 # Set up environment
-source ./subroutines/setup_env_cmip6.sh publication
+source ./setup_env.sh
 echo "publishing = $PUBLISH"
 
 ################################################################
@@ -70,7 +70,7 @@ export ONLINE_PLOT_DIR=${ONLINE_PLOT_DIR}
 export USER=$USER
 export NCPUS=$NUM_CPUS
 # Set up environment
-source ./subroutines/setup_env_cmip6.sh publication
+source ./setup_env.sh
 # Run checks
 echo "completion checking exp ${EXP_TO_PROCESS}..."
 python ./subroutines/completion_check.py --multi
