@@ -597,11 +597,6 @@ def write_variable_map(outpath,table,matches):
             print '  {}'.format(line)
             h.write('{}\n'.format(line))
     h.close()
-    #if args.multi:
-    #    with open('{}'.format(multilist),'a+') as j:
-    #        for line in matches:
-    #            j.write('{},{}\n'.format(table,line.split(',')[0]))
-    #    j.close()
 
 def create_variable_map(dreq,master_map,outpath,table):
     dreq_variables=read_dreq_vars(dreq,table)

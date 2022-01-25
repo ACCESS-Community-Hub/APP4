@@ -27,24 +27,23 @@ READ_FROM_CUSTOM_WRAPPER=true
 ################################################################
 #
 USER=$USER
-if [ ! -z $1 ]; then
+if [[ $MODE == "production" ]]; then
   EXP_TO_PROCESS=$1
-  MODE=$2
 else
+  MODE=custom
   if $READ_FROM_CUSTOM_WRAPPER; then
     check_app4=true
     source ./custom_app4.sh
   fi
-  MODE=custom
 fi
 
 #
 # Set up environment
-source ./setup_env.sh
+source ./subroutines/setup_env.sh
 # Run completion check
 echo "custom-mode APP4 checking tool"
 echo "completion checking exp ${EXP_TO_PROCESS}..."
 python ./subroutines/completion_check.py --multi
 echo ""
-grep 'file name does not match expected' $JOB_OUTPUT
+grep "file name does not match expected" $JOB_OUTPUT
 echo -e "\ncompleted quality checking exp ${EXP_TO_PROCESS}"

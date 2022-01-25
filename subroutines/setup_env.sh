@@ -33,7 +33,7 @@ fi
 
 # Inputs:
 APP_DIR=$(pwd)
-#export APP_DIR=/g/data/p66/$USER/post_processing/APP4-0
+#export APP_DIR=/g/data/p66/$USER/post_processing/APP4
 # Input subdirectories
 ANCILLARY_FILES=/g/data/p66/CMIP6/APP_ancils
 if [[ $MODE == ccmi ]]; then
@@ -70,7 +70,6 @@ JOB_OUTPUT=${OUT_DIR}/job_output.OU
 DATABASE=${OUT_DIR}/database.db
 
 # Extra options
-OVERRIDEFILES=True
-PLOT=False
-DREQ_YEARS=False
+OVERRIDEFILES=true    # override any existing output data files
+DREQ_YEARS=false      # only process variables for the years defined in the data request file
 

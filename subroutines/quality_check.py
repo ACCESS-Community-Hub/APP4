@@ -411,7 +411,6 @@ def main():
         results_comp=pool_handler_comp(successes)
         print '\nCompliance check complete. Results:'
         check_compliance_results(results_comp)
-    #sys.exit('exiting, line 383')
     if args.timeseries:
         print '\n#### PRODUCING DATA SUMMARY NETCDF4 FILES AND PLOTS'
         pathlib2.Path.mkdir(pathlib2.Path(summaryncdir),parents=True,exist_ok=True)

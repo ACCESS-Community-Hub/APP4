@@ -1,5 +1,5 @@
 from app import app
-from app_functions import plotVar
+#from app_functions import plotVar
 import sqlite3
 import traceback
 import csv
@@ -37,8 +37,8 @@ else: mode='cmip6'
 #
 if os.environ.get('OVERRIDEFILES').lower() in ['true','yes']: overRideFiles=True
 else: overRideFiles=False
-if os.environ.get('PLOT').lower() == 'true': plot=True
-else: plot=False
+#if os.environ.get('PLOT').lower() == 'true': plot=True
+#else: plot=False
 if os.environ.get('DREQ_YEARS').lower() == 'true': dreq_years=True
 else: dreq_years=False
 print 'dreq years = ',dreq_years
@@ -209,12 +209,12 @@ def process_row(row):
                         dbu.write("setStatus('processed',{})\n".format(rowid))
                     dbu.close()
                     #plot variable
-                    try:
-                        if plot:
-                            plotVar(outpath,ret,cmip_table,vcmip,source_id,experiment_id)
-                    except: 
-                        msg='{},plot_fail: '.format(msg)
-                        traceback.print_exc()
+                    #try:
+                    #    if plot:
+                    #        plotVar(outpath,ret,cmip_table,vcmip,source_id,experiment_id)
+                    #except: 
+                    #    msg='{},plot_fail: '.format(msg)
+                    #    traceback.print_exc()
                 else :
                     print 'expected file: {}'.format(expected_file)
                     print 'expected and cmor file paths do not match'

@@ -87,7 +87,7 @@ if [[ $check_app4 == 'true' ]] ; then return ; fi
 # Set up environment
 MODE=custom
 HISTORY_DATA=$DATA_LOC/$EXP_TO_PROCESS/history
-source ./setup_env.sh
+source ./subroutines/setup_env.sh
 
 # Cleanup output_files
 ./subroutines/cleanup.sh $OUT_DIR
@@ -152,7 +152,7 @@ OUTPUT_LOC=$OUTPUT_LOC
 MODE=$MODE
 CONTACT=$CONTACT
 CDAT_ANONYMOUS_LOG=no
-source ./setup_env.sh
+source ./subroutines/setup_env.sh
 # main
 python ./subroutines/app_wrapper.py
 # post

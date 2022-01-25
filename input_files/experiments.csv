@@ -558,17 +558,6 @@ SSP-245-fos-28,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-245-fos-28/history,in
 SSP-245-fos-29,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-245-fos-29/history,input_files/json/SSP-245-fos-29.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp245_1_2.csv,1850,2020,2050,ESM,ssp245-cov-fossil-r29
 SSP-245-fos-30,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-245-fos-30/history,input_files/json/SSP-245-fos-30.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp245_1_2.csv,1850,2020,2050,ESM,ssp245-cov-fossil-r30
 #
-## NON-CMIP6-ESM1.5
-#
-#CNP-1pct-variations
-PI-CN-02,/scratch/p66/cm2704/archive/PI-CN-02/history,input_files/json/PI-CN-02.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_piControl_1_2.csv,101,101,250,ESM,piControl-CN
-PI-1pct-CN-01,/scratch/p66/cm2704/archive/PI-1pct-CN-01/history,input_files/json/PI-1pct-CN-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2_1_2.csv,101,101,250,ESM,1pctCO2-CN
-PI-1pbgc-CN-01,/scratch/p66/cm2704/archive/PI-1pbgc-CN-01/history,input_files/json/PI-1pbgc-CN-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-bgc_1_2.csv,101,101,250,ESM,1pctCO2-bgc-CN
-PI-1prad-CN-01,/scratch/p66/cm2704/archive/PI-1prad-CN-01/history,input_files/json/PI-1prad-CN-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-rad_2_2.csv,101,101,250,ESM,1pctCO2-rad-CN
-PI-C-02,/scratch/p66/cm2704/archive/PI-C-02/history,input_files/json/PI-C-02.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_piControl_1_2.csv,101,101,250,ESM,piControl-C-only
-PI-1pct-C-01,/scratch/p66/cm2704/archive/PI-1pct-C-01/history,input_files/json/PI-1pct-C-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2_1_2.csv,101,101,250,ESM,1pctCO2-C-only
-PI-1pbgc-C-01,/scratch/p66/cm2704/archive/PI-1pbgc-C-01/history,input_files/json/PI-1pbgc-C-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-bgc_1_2.csv,101,101,250,ESM,1pctCO2-bgc-C-only
-PI-1prad-C-01,/scratch/p66/cm2704/archive/PI-1prad-C-01/history,input_files/json/PI-1prad-C-01.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_1pctCO2-rad_2_2.csv,101,101,250,ESM,1pctCO2-rad-C-only
 #
 ## ACCESS-CM2-Chem
 #

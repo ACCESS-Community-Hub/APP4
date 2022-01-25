@@ -20,7 +20,6 @@ set -a
 
 # Local experiment to process
 EXP_TO_PROCESS=ca587
-#
 # If inline argument is passed from multiwrap_app4.sh
 if [ ! -z $1 ]; then
   export EXP_TO_PROCESS=$1
@@ -54,7 +53,7 @@ MODE=cmip6
 ################################################################
 
 # Set up environment
-source ./setup_env.sh
+source ./subroutines/setup_env.sh
 
 # Cleanup output_files
 ./subroutines/cleanup.sh $OUT_DIR
@@ -120,7 +119,7 @@ set -a
 EXP_TO_PROCESS=${EXP_TO_PROCESS}
 MODE=${MODE}
 CDAT_ANONYMOUS_LOG=no
-source ./setup_env.sh
+source ./subroutines/setup_env.sh
 # main
 python ./subroutines/app_wrapper.py
 # post
