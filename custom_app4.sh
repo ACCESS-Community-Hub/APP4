@@ -102,7 +102,7 @@ python ./subroutines/dreq_mapping.py --multi
 
 # Create database
 python ./subroutines/database_manager.py
-exit
+#exit
 
 # FOR TESTING
 #python ./subroutines/app_wrapper.py; exit
