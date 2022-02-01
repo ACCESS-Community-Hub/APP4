@@ -7,9 +7,8 @@ CSIRO, O&A Aspendale.
 
 ---
 
-The APP4 is a CMORisation tool designed to convert [ACCESS](https://research.csiro.au/access/) model output to [ESGF](https://esgf-node.llnl.gov/)-compliant formats, primarily for publication to [CMIP6](https://www.wcrp-climate.org/wgcm-cmip/wgcm-cmip6). 
-The code was originally built for CMIP5, and was further developed for CMIP6-era activities. 
-Uses [CMOR3](https://cmor.llnl.gov/) and files created with the [CMIP6 data request](https://github.com/cmip6dr/dreqPy) to generate CF-compliant files according to the [CMIP6 data standards](https://docs.google.com/document/d/1os9rZ11U0ajY7F8FWtgU4B49KcB59aFlBVGfLC4ahXs/edit).  
+The APP4 is a CMORisation tool designed to convert [ACCESS](https://research.csiro.au/access/) model output to [ESGF](https://esgf-node.llnl.gov/)-compliant formats, primarily for publication to [CMIP6](https://www.wcrp-climate.org/wgcm-cmip/wgcm-cmip6). The code was originally built for CMIP5, and was further developed for CMIP6-era activities.  
+Uses [CMOR3](https://cmor.llnl.gov/) and files created with the [CMIP6 data request](https://github.com/cmip6dr/dreqPy) to generate CF-compliant files according to the [CMIP6 data standards](https://docs.google.com/document/d/1os9rZ11U0ajY7F8FWtgU4B49KcB59aFlBVGfLC4ahXs/edit). The APP4 runs in a Python2.7 environment.
 
 Supported versions are CM2 (coupled, amip & chem versions), ESM1.5 (script & payu versions), OM2[-025]. 
 For use on NCI's [Gadi](https://opus.nci.org.au/display/Help/Gadi+User+Guide) system only. 
