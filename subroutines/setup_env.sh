@@ -17,7 +17,7 @@ module load parallel
 
 # CMIP6-pub env
 module load conda
-PATH=${PATH}:/g/data3/hh5/public/apps/miniconda3/envs/cmip6-publication/bin:/g/data3/hh5/public/apps/miniconda3/bin
+PATH=${PATH}:/g/data/hh5/public/apps/miniconda3/envs/cmip6-publication/bin:/g/data/hh5/public/apps/miniconda3/bin
 source activate cmip6-publication
 
 module list
