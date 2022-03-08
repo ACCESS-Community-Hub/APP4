@@ -14,6 +14,16 @@ Supported versions are CM2 (coupled, amip & chem versions), ESM1.5 (script & pay
 For use on NCI's [Gadi](https://opus.nci.org.au/display/Help/Gadi+User+Guide) system only. 
 Designed for use on ACCESS model output that has been archived using the ACCESS Archiver tool.
 
+### Toubleshooting
+Many users cannot immediately load the necessary conda environment that APP4 uses ('cmip6-publication'). The NCI project *hh5* must be joined (https://my.nci.org.au/mancini/project/hh5), and the following file created in your home directory:
+
+Filename: ***~/.condarc***  
+Contents:
+
+    auto_activate_base: false
+    envs_dirs:
+      - /g/data/hh5/public/apps/miniconda3/envs
+
 ## Custom Mode
 
 In custom mode, the APP4 can process non-CMIP6 experiments, allowing the user to create CMORise using custom metadata (experiment ids, MIP names, etc) rather than requiring the use of the CMIP6 Controlled Vocabulary. However, only [CMIP6 variables](http://clipc-services.ceda.ac.uk/dreq/index.html) can be generated (CCMI2022 also included for CM2-Chem model).
