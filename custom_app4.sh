@@ -32,7 +32,7 @@ END_YEAR=2014                                # internal year to end CMORisation 
 REFERENCE_YEAR=1970                          # reference date for time units (set as 'default' to use START_YEAR)
 CONTACT=access_csiro@csiro.au                # please insert your contact email
 # Please provide a short description of the experiment. For those created from the p73 archive, it's ok to just link to the Archive Wiki.
-EXP_DESCRIPTION="see: https://confluence.csiro.au/display/ACCESS/ACCESS+Model+Output+Archive+%28p73%29+Wiki"
+EXP_DESCRIPTION="Pacemaker, Topical Atlantic, HadISST obs. see: https://confluence.csiro.au/display/ACCESS/ACCESS+Model+Output+Archive+%28p73%29+Wiki"
 
 # Standard experiment details:
 #
