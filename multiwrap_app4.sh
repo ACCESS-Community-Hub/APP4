@@ -2,7 +2,7 @@
 set -a 
 
 loc_exp=(
-bj594
+SSP-245-40
 )
 
 MODE=production

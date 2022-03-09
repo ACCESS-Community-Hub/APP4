@@ -3,7 +3,7 @@
 # Originally written for CMIP5 by Peter Uhe
 #
 # Adapted for CMIP6 by Chloe Mackallah
-# Version 3.4 March 2019
+# Version 4 March 2022
 #
 from optparse import OptionParser
 import netCDF4
@@ -65,11 +65,11 @@ def app(option_dictionary):
     #
     #Write a global variable called notes which is used for CSIRO purposes.
     #
-    try:
-        cmor.set_cur_dataset_attribute('notes',opts['notes'])
-    except:
-        print 'E: Unable to add a global attribute called notes'
-        raise Exception('E: Unable to add a global attribute called notes')
+    cmor.set_cur_dataset_attribute('notes',opts['notes'])
+    #except:
+    #    print 'E: Unable to add a global attribute called notes'
+    #    raise Exception('E: Unable to add a global attribute called notes')
+    cmor.set_cur_dataset_attribute('exp_description',opts['exp_description'])
     cmor.set_cur_dataset_attribute('contact',os.environ.get('CONTACT'))
     #
     #Load the CMIP tables into memory.
@@ -1378,6 +1378,8 @@ parser.add_option('--reference_date',dest='reference_date',default='0001',
     help='The internally-consistent date that the experiment began')
 parser.add_option('--mode',dest='mode',default='cmip6',
     help='CMIP6, CCMI2022, or custom mode')
+parser.add_option('--exp_description',dest='exp_description',default='cmip6 standard experiment',
+    help='Description of the experiment setup')
 (options, args)=parser.parse_args()
 opts=dict()
 #produce a dictionary out of the options object
@@ -1400,6 +1402,7 @@ opts['access_version']=options.access_version
 opts['reference_date']=options.reference_date
 opts['frequency']=options.frequency
 opts['mode']=options.mode
+opts['exp_description']=options.exp_description
 
 if __name__ == "__main__":
     app(opts)

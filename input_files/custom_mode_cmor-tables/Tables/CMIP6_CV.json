@@ -68,7 +68,8 @@
             "VIACSAB": "Vulnerability, Impacts, Adaptation and Climate Services Advisory Board",
             "VolMIP": "Volcanic Forcings Model Intercomparison Project",
             "SOMIP": "SOMIP",
-            "CNP-MIP": "CNP-MIP"
+            "CNP-MIP": "CNP-MIP",
+            "PacemakerMIP": "PacemakerMIP"
         },
         "institution_id": {
             "AER": "Research and Climate Group, Atmospheric and Environmental Research, 131 Hartwell Avenue, Lexington, MA 02421, USA",
@@ -10634,6 +10635,102 @@
                 ],
                 "parent_activity_id": [
                     "CMIP"
+                ],
+                "sub_experiment_id": [
+                    "none"
+                ]
+            },
+            "1pctCO2-CN": {
+                "activity_id": [
+                    "CNP-MIP"
+                ],
+                "experiment": "1pctCO2-CN",
+                "additional_allowed_model_components": [
+                    "AER",
+                    "CHEM",
+                    "BGC"
+                ],
+                "required_model_components": [
+                    "AOGCM"
+                ],
+                "experiment_id": "1pctCO2-CN",
+                "parent_experiment_id": [
+                    "piControl"
+                ],
+                "parent_activity_id": [
+                    "CMIP"
+                ],
+                "sub_experiment_id": [
+                    "none"
+                ]
+            },
+            "hist-pacemaker-pacific": {
+                "activity_id": [
+                    "PacemakerMIP"
+                ],
+                "experiment": "hist-pacemaker-pacific",
+                "additional_allowed_model_components": [
+                    "AER",
+                    "CHEM",
+                    "BGC"
+                ],
+                "required_model_components": [
+                    "AOGCM"
+                ],
+                "experiment_id": "hist-pacemaker-pacific",
+                "parent_experiment_id": [
+                    "1pctCO2-C"
+                ],
+                "parent_activity_id": [
+                    "CNP-MIP"
+                ],
+                "sub_experiment_id": [
+                    "none"
+                ]
+            },
+            "hist-control": {
+                "activity_id": [
+                    "PacemakerMIP"
+                ],
+                "experiment": "hist-control",
+                "additional_allowed_model_components": [
+                    "AER",
+                    "CHEM",
+                    "BGC"
+                ],
+                "required_model_components": [
+                    "AOGCM"
+                ],
+                "experiment_id": "hist-control",
+                "parent_experiment_id": [
+                    "piControl"
+                ],
+                "parent_activity_id": [
+                    "CMIP"
+                ],
+                "sub_experiment_id": [
+                    "none"
+                ]
+            },
+            "1pctCO2-cdr-C": {
+                "activity_id": [
+                    "CNP-MIP"
+                ],
+                "experiment": "1pctCO2-cdr-C",
+                "additional_allowed_model_components": [
+                    "AER",
+                    "CHEM",
+                    "BGC"
+                ],
+                "required_model_components": [
+                    "AOGCM"
+                ],
+                "experiment_id": "1pctCO2-cdr-C",
+                "parent_experiment_id": [
+                    "1pctCO2-C"
+                ],
+                "parent_activity_id": [
+                    "CNP-MIP"
                 ],
                 "sub_experiment_id": [
                     "none"

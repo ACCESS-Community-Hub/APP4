@@ -116,8 +116,12 @@ def experiments_setup(conn,exps_file):
             print(def_json) 
             def_start=os.environ.get('START_YEAR')
             def_end=os.environ.get('END_YEAR')
+            if os.environ.get('REFERENCE_YEAR').lower() == 'default':
+                def_reference=def_start
+            else:
+                def_reference=os.environ.get('REFERENCE_YEAR')
             def_dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
-            def_line=[exptoprocess,def_hist_data,def_json,def_dreq,def_start,def_start,def_end,def_version,'custom']
+            def_line=[exptoprocess,def_hist_data,def_json,def_dreq,def_reference,def_start,def_end,def_version,'custom']
             cursor.execute('insert into experiments values (?,?,?,?,?,?,?,?,?)', def_line)
         else:
             f=csv.reader(open(exps_file,'r'))

@@ -92,7 +92,9 @@ def process_row(row):
     reference_date=row[31]
     version=row[32]
     rowid=row[33]
-    notes='Exp: {e1}-{e2}; Local ID: {le}; Variable: {v1} ({v2})'.format(e1=access_version,e2=experiment_id,le=local_exp_id,v1=vcmip,v2=vin)
+    notes='Local exp ID: {le}; Variable: {v1} ({v2})'.format(le=local_exp_id,v1=vcmip,v2=vin)
+    try: exp_description=os.environ.get('EXP_DESCRIPTION')
+    except: exp_description='Exp: {}'.format(experiment_id)
     if dreq_years:
         try:
             int(years[0])
@@ -147,6 +149,7 @@ def process_row(row):
     print 'physics_idx = {}'.format(physics_idx)
     print 'forcing_idx = {}'.format(forcing_idx)
     print 'json_file_path = {}'.format(json_file_path)
+    print 'exp_description = {}'.format(exp_description)
     print 'expected file name = {}'.format(file_name)
     print 'status = {}'.format(status)
     #
@@ -165,7 +168,7 @@ def process_row(row):
             'notes':notes,'cmip_table_path':cmip_table_path,'frequency':frequency,\
             'calculation':calculation,'axes_modifier':axes_modifier,'in_units':in_units,'positive':positive,\
             'json_file_path':json_file_path,'timeshot':timeshot,'access_version':access_version,\
-            'reference_date':reference_date,'mode':mode}
+            'reference_date':reference_date,'mode':mode,'exp_description':exp_description}
             #process the file,
             ret=app(dictionary)
             try: os.chmod(ret,0644)

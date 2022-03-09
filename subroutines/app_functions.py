@@ -1584,16 +1584,33 @@ def toz(o3):
         return o3
 
 def mcu_gravity(var):
+    t,z,y,x=np.shape(var)
     a_theta_85,b_theta_85,dim_val_bounds_theta_85,b_bounds_theta_85=getHybridLevels('theta',85)
     R_e=6.378E+06
     grav_h=np.ma.zeros([len(a_theta_85)],dtype=np.float32)
     for i in range(len(a_theta_85)):
         grav_h[i]=9.8*(R_e/(R_e+a_theta_85[i]))**2
-    t,z,y,x=np.shape(var)
     mcu=np.ma.zeros([t,z,y,x],dtype=np.float32)
     for k in range(z):
         mcu[:,k,:,:]=var[:,k,:,:]/grav_h[k]
     return mcu
+
+def mc_gravity(var):
+    t,z,y,x=np.shape(var)
+    if z == 85:
+        a_theta,b_theta,dim_val_bounds_theta,b_bounds_theta=getHybridLevels('theta',85)
+    elif z == 38:
+        a_theta,b_theta,dim_val_bounds_theta,b_bounds_theta=getHybridLevels('theta',38)
+    else: sys.exit('levels undefined in mc_gravity')
+    R_e=6.378E+06
+    grav_h=np.ma.zeros([len(a_theta)],dtype=np.float32)
+    for i in range(len(a_theta)):
+        grav_h[i]=9.8*(R_e/(R_e+a_theta[i]))**2
+    mc=np.ma.zeros([t,z,y,x],dtype=np.float32)
+    for k in range(z):
+        mc[:,k,:,:]=var[:,k,:,:]/grav_h[k]
+    return mc
+
 
 #calculates an average over southern or northern hemisphere
 #assumes 4D (3D+ time) variable

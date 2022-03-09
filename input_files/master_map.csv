@@ -94,7 +94,7 @@ wap,yes,fld_s30i208,,Pa s-1,,,ESM,atmos,
 zfull,yes,fld_s15i101,,m,,,both,atmos,
 zg,yes,fld_s30i297,,m,,,CM2,atmos,
 zg,yes,fld_s30i207,,m,,,ESM,atmos,
-#mc,no,fld_s05i250 fld_s05i251,var[0]-var[1],Pa s-1,switchlevs,up,both,atmos,Units need to be kg/m2/s
+mc,yes,fld_s05i250 fld_s05i251,((var[0]-var[1])/9.80665),kg m-2 s-1,switchlevs,up,both,atmos,
 intuaw,yes,fld_s30i428,,kg m-1 s-1,,,both,atmos,
 intvaw,yes,fld_s30i429,,kg m-1 s-1,,,both,atmos,
 rls,yes,fld_s02i201,,W m-2,,,both,atmos,

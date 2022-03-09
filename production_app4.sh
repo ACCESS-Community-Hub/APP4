@@ -28,7 +28,7 @@ fi
 # Variables input options
 #
 TABLE_TO_PROCESS=Amon             # CMIP6 table to process. Default is 'all'
-VARIABLE_TO_PROCESS=all          # CMIP6 variable to process. Default is 'all'
+VARIABLE_TO_PROCESS=mc            # CMIP6 variable to process. Default is 'all'
 SUBDAILY=true                    # subdaily selection options - select one of: [true, false, only]
 FORCE_DREQ=true                  # use input_files/dreq/cmvme_all_piControl_3_3.csv
 VAR_SUBSET=false                  # sub-set list of variables to process, as defined by 'VAR_SUBSET_LIST'
@@ -72,7 +72,7 @@ python ./subroutines/database_manager.py
 #exit
 
 # FOR TESTING
-#python ./subroutines/app_wrapper.py; exit
+python ./subroutines/app_wrapper.py; exit
 #
 
 ################################################################

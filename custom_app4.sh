@@ -24,33 +24,36 @@ set -a
 # Details of local experiment to process:
 # DATA_LOC must point to dir above experiment; and experiment subdir must contain history/atm/[,ocn/,ice/]
 #
-DATA_LOC=/g/data/p73/archive/non-CMIP/ACCESS-ESM1-5/
-EXP_TO_PROCESS=PI-1pct-C-01                  # local name of experiment
-VERSION=ESM                                  # select one of: [CM2, ESM, OM2[-025]]
-START_YEAR=101                               # internal year to begin CMORisation
-END_YEAR=102                                 # internal year to end CMORisation (inclusive)
+DATA_LOC=/g/data/p73/archive/non-CMIP/ACCESS-CM2/
+EXP_TO_PROCESS=bx994                         # local name of experiment
+VERSION=CM2                                  # select one of: [CM2, ESM, OM2[-025]]
+START_YEAR=1970                              # internal year to begin CMORisation
+END_YEAR=2014                                # internal year to end CMORisation (inclusive)
+REFERENCE_YEAR=1970                          # reference date for time units (set as 'default' to use START_YEAR)
 CONTACT=access_csiro@csiro.au                # please insert your contact email
+# Please provide a short description of the experiment. For those created from the p73 archive, it's ok to just link to the Archive Wiki.
+EXP_DESCRIPTION="see: https://confluence.csiro.au/display/ACCESS/ACCESS+Model+Output+Archive+%28p73%29+Wiki"
 
 # Standard experiment details:
 #
-experiment_id=1pctCO2-C                      # standard experiment name; e.g. piControl
-activity_id=CNP-MIP                          # activity name; e.g. CMIP
-realization_index=1                          # "r1"[i1p1f1]; e.g. 1
-initialization_index=1                       # [r1]"i1"[p1f1]; e.g. 1
-physics_index=1                              # [r1i1]"p1"[f1]; e.g. 1
-forcing_index=1                              # [r1i1p1]"f1"; e.g. 1
+experiment_id=hist-control                   # standard experiment name (e.g. piControl)
+activity_id=PacemakerMIP                     # activity/MIP name (e.g. CMIP)
+realization_index=1                          # "r1"[i1p1f1] (e.g. 1)
+initialization_index=1                       # [r1]"i1"[p1f1] (e.g. 1)
+physics_index=1                              # [r1i1]"p1"[f1] (e.g. 1)
+forcing_index=1                              # [r1i1p1]"f1" (e.g. 1)
 source_type=AOGCM                            # see input_files/custom_mode_cmor-tables/Tables/CMIP6_CV.json
-branch_time_in_child=0D0                     # specifies the difference between the time units base and the first internal year; e.g. 365D0
+branch_time_in_child=0D0                     # specifies the difference between the time units base and the first internal year (e.g. 365D0)
 
 # Parent experiment details:
 # if parent=false, all parent fields are automatically set to "no parent". If true, defined values are used.
 #
 parent=true 
-parent_experiment_id=piControl               # e.g. piControl-spinup
-parent_activity_id=CMIP                      # e.g. CMIP
-parent_time_units="days since 0101-01-01"    # e.g. "days since 0001-01-01"
-branch_time_in_parent=0D0                    # e.g. 0D0
-parent_variant_label=r1i1p1f1                # e.g. r1i1p1f1
+parent_experiment_id=piControl               # experiment name of the parent (e.g. piControl-spinup)
+parent_activity_id=CMIP                      # activity/MIP name of the parent (e.g. CMIP)
+parent_time_units="days since 0950-01-01"    # time units of the parent (e.g. "days since 0001-01-01")
+branch_time_in_parent=0D0                    # internal time of the parent at which the branching occured (e.g. 0D0)
+parent_variant_label=r1i1p1f1                # variable label of the parent (e.g. r1i1p1f1)
 
 # Variables to CMORise: 
 # CMIP6 table/variable to process; default is 'all'. Or create a file listing variables to process (VAR_SUBSET[_LIST]).

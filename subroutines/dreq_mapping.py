@@ -458,7 +458,6 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                 varnotes=row[9]
                 if realm == 'uncertain': realm = realm2
                 #elif realm != realm2: realm = realm2
-                var_notes=row[9]
                 #check for special cases
                 freq,axes_modifier,calculation,realm,realm2,timeshot,access_vars,skip=\
                     special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,realm2,\
@@ -572,7 +571,7 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
                         file_structure=atm_file_struc+'*_chem.nc'
                 #
                 if file_structure != None:
-                    matches.append('{},{},{},{},{},{},{},{},{},{},{},{},{}'.format(cmipvar,definable,access_vars,file_structure,calculation,units,axes_modifier,positive,timeshot,years,var_notes,cfname,dimension))
+                    matches.append('{},{},{},{},{},{},{},{},{},{},{},{},{}'.format(cmipvar,definable,access_vars,file_structure,calculation,units,axes_modifier,positive,timeshot,years,varnotes,cfname,dimension))
                     if not cmorname in matchlist:
                         matchlist.append(cmipvar)
                 elif (file_structure == None) and (not skip):
@@ -592,7 +591,7 @@ def find_matches(table,master_map,cmorname,realm,freq,cfname,years,dimensions,ma
 def write_variable_map(outpath,table,matches):
     with open('{}/{}.csv'.format(outpath,table),'w') as h:
         h.write('#cmip table: {},,,,,,,,,,,,\n'.format(table))
-        h.write('#cmipvar,definable,access_vars,file_structure,calculation,units,axes_modifier,positive,timeshot,years,var_notes,cfname,dimension\n')
+        h.write('#cmipvar,definable,access_vars,file_structure,calculation,units,axes_modifier,positive,timeshot,years,varnotes,cfname,dimension\n')
         for line in matches:
             print '  {}'.format(line)
             h.write('{}\n'.format(line))
