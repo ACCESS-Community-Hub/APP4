@@ -5,6 +5,8 @@ This is the ACCESS Post-Processor (APP), version 4.1
 Initially created by Peter Uhe for CMIP5, and further developed for CMIP6-era by Chloe Mackallah.  
 CSIRO, O&A Aspendale.
 
+CSIRO DAP: http://hdl.handle.net/102.100.100/437645?index=1
+
 ---
 
 The APP4 is a CMORisation tool designed to convert [ACCESS](https://research.csiro.au/access/) model output to [ESGF](https://esgf-node.llnl.gov/)-compliant formats, primarily for publication to [CMIP6](https://www.wcrp-climate.org/wgcm-cmip/wgcm-cmip6). The code was originally built for CMIP5, and was further developed for CMIP6-era activities.  
