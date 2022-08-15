@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Mackallah
+    given-names: Chloe
+    orcid: https://orcid.org/0000-0003-4989-5530
+  - family-names: Uhe
+    given-names: Peter
+  - family-names: Collier
+    given-names: Mark
+    orcid: https://orcid.org/0000-0003-1391-9473
+title: "ACCESS Post-Processor v4"
+version: v1
+pid: http://hdl.handle.net/102.100.100/437645?index=1
+date-released: 2022-03-24
