@@ -2,13 +2,13 @@
 set -a 
 
 loc_exp=(
-bj594
+SSP-534-lu-05
 )
 
-mode=production
+MODE=production
 for exp in ${loc_exp[@]}; do
-  ./check_app4.sh $exp
-  #./production_qc4.sh $exp
+  #./check_app4.sh $exp
+  ./production_qc4.sh $exp
   #break
 done
 exit

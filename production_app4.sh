@@ -19,7 +19,7 @@ set -a
 # USER OPTIONS
 
 # Local experiment to process
-EXP_TO_PROCESS=ca587
+EXP_TO_PROCESS=HI-10-re1
 # If inline argument is passed from multiwrap_app4.sh
 if [ ! -z $1 ]; then
   export EXP_TO_PROCESS=$1
@@ -27,10 +27,10 @@ fi
 
 # Variables input options
 #
-TABLE_TO_PROCESS=Amon             # CMIP6 table to process. Default is 'all'
-VARIABLE_TO_PROCESS=mc            # CMIP6 variable to process. Default is 'all'
-SUBDAILY=true                    # subdaily selection options - select one of: [true, false, only]
-FORCE_DREQ=true                  # use input_files/dreq/cmvme_all_piControl_3_3.csv
+TABLE_TO_PROCESS=all              # CMIP6 table to process. Default is 'all'
+VARIABLE_TO_PROCESS=all           # CMIP6 variable to process. Default is 'all'
+SUBDAILY=false                     # subdaily selection options - select one of: [true, false, only]
+FORCE_DREQ=false                   # use input_files/dreq/cmvme_all_piControl_3_3.csv
 VAR_SUBSET=false                  # sub-set list of variables to process, as defined by 'VAR_SUBSET_LIST'
 VAR_SUBSET_LIST=input_files/var_subset_lists/var_subset_ACS.csv
 
@@ -40,6 +40,7 @@ PROJ=p66                         # NCI project to charge compute and use in stor
 ADDPROJS=( p73 )                 # additional NCI projects to be included in the storage flags
 QUEUE=hugemem                    # NCI queue to use
 MEM_PER_CPU=24                   # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
+WALLTIME=48:00:00
 
 # Select mode [cmip6, ccmi]
 #
@@ -72,7 +73,7 @@ python ./subroutines/database_manager.py
 #exit
 
 # FOR TESTING
-python ./subroutines/app_wrapper.py; exit
+#python ./subroutines/app_wrapper.py; exit
 #
 
 ################################################################
@@ -84,13 +85,13 @@ for addproj in ${ADDPROJS[@]}; do
   addstore="${addstore}+scratch/${addproj}+gdata/${addproj}"
 done
 #
-QUEUE=hugemem
+QUEUE=$QUEUE
 #
 NUM_ROWS=$( cat $OUT_DIR/database_count.txt )
-if (($NUM_ROWS <= 24)); then
+if (($NUM_ROWS <= 48)); then
   NUM_CPUS=$NUM_ROWS
 else
-  NUM_CPUS=24
+  NUM_CPUS=48
 fi
 NUM_MEM=$(echo "${NUM_CPUS} * ${MEM_PER_CPU}" | bc)
 if ((${NUM_MEM} >= 1470)); then
@@ -108,7 +109,7 @@ cat << EOF > $APP_JOB
 #PBS -P ${PROJ}
 #PBS -q ${QUEUE}
 #PBS -l storage=scratch/${PROJ}+gdata/${PROJ}+gdata/hh5+gdata/access${addstore}
-#PBS -l ncpus=${NUM_CPUS},walltime=48:00:00,mem=${NUM_MEM}Gb,wd
+#PBS -l ncpus=${NUM_CPUS},walltime=${WALLTIME},mem=${NUM_MEM}Gb,wd
 #PBS -j oe
 #PBS -o ${JOB_OUTPUT}
 #PBS -e ${JOB_OUTPUT}

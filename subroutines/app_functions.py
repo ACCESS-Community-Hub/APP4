@@ -1070,6 +1070,9 @@ def landmask(var):
 
 def topsoil(var):
     return var[:,0,:,:]+var[:,1,:,:]+var[:,2,:,:]*.012987
+    
+def topsoil_tsl(var):
+    return (var[:,0,:,:]+var[:,1,:,:])/2
 
 def tslsi(sf_temp,si_temp):
     tileFrac=tileFraci317()

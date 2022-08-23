@@ -227,7 +227,7 @@ def special_cases(exptoprocess,cmipvar,freq,axes_modifier,calculation,realm,real
                 skip=False
     if cmipvar in ['tsl'] and table.find('6hrPlevPt') != -1:
         axes_modifier='{} topsoil'.format(axes_modifier)
-        calculation='\"topsoil(var[0])\"'
+        calculation='\"topsoil_tsl(var[0])\"'
     #3hr cases:
     if cmipvar in ['ts']:
         if table.find('3hr') != -1: skip=True

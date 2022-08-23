@@ -330,6 +330,17 @@ SSP-585-42,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-585-42/history,input_file
 SSP-585-43,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-585-43/history,input_files/json/SSP-585-43.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2015,2100,ESM,ssp585-r39
 SSP-585-44,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-585-44/history,input_files/json/SSP-585-44.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2015,2100,ESM,ssp585-r40
 SSP-534-05,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-05/history,input_files/json/SSP-534-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r1
+SSP-534-lu-05,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-05/history,input_files/json/SSP-534-lu-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r1-f2
+SSP-534-lu-06,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-06/history,input_files/json/SSP-534-lu-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r2-f2
+SSP-534-lu-07,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-07/history,input_files/json/SSP-534-lu-07.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r3-f2
+SSP-534-lu-08,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-08/history,input_files/json/SSP-534-lu-08.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r4-f2
+SSP-534-lu-09,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-09/history,input_files/json/SSP-534-lu-09.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r5-f2
+SSP-534-lu-10,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-10/history,input_files/json/SSP-534-lu-10.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r6-f2
+SSP-534-lu-11,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-11/history,input_files/json/SSP-534-lu-11.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r7-f2
+SSP-534-lu-12,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-12/history,input_files/json/SSP-534-lu-12.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r8-f2
+SSP-534-lu-13,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-13/history,input_files/json/SSP-534-lu-13.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r9-f2
+SSP-534-lu-14,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-14/history,input_files/json/SSP-534-lu-14.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r10-f2
+SSP-534-lu-15,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-534-lu-15/history,input_files/json/SSP-534-lu-15.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp585_1_2.csv,1850,2041,2100,ESM,ssp534-over-r11-f2
 # ScenarioMIP-exts
 SSP-126-ext-05,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-126-ext-05/history,input_files/json/SSP-126-ext-05.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2101,2300,ESM,ssp126-r1-ext
 SSP-126-ext-06,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-126-ext-06/history,input_files/json/SSP-126-ext-06.json,input_files/dreq/esm/cmvme_c4.cd.cm.rf.sc_ssp126_1_2.csv,1850,2101,2300,ESM,ssp126-r2-ext
@@ -562,6 +573,7 @@ SSP-245-fos-30,/g/data/p73/archive/CMIP6/ACCESS-ESM1-5/SSP-245-fos-30/history,in
 ## ACCESS-CM2-Chem
 #
 # CCMI2022
-ca547,/scratch/p66/cm2704/archive/ca547/history,input_files/json/ca547.json,input_files/dreq/CCMI/ccmi_dreq.csv,1960,1960,2018,CM2-Chem,REF-D1-r1
-ca548,/scratch/p66/cm2704/archive/ca548/history,input_files/json/ca548.json,input_files/dreq/CCMI/ccmi_dreq.csv,1960,1960,2018,CM2-Chem,REF-D1-r2
-ca587,/scratch/p66/cm2704/archive/ca587/history,input_files/json/ca587.json,input_files/dreq/CCMI/ccmi_dreq.csv,1960,1960,2018,CM2-Chem,REF-D1-r3
+ca547,/g/data/p73/archive/non-CMIP/ACCESS-CM2/ca547/history,input_files/json/ca547.json,input_files/dreq/CCMI/ccmi_dreq.csv,1960,1960,2018,CM2-Chem,REF-D1-r1
+ca548,/g/data/p73/archive/non-CMIP/ACCESS-CM2/ca548/history,input_files/json/ca548.json,input_files/dreq/CCMI/ccmi_dreq.csv,1960,1960,2018,CM2-Chem,REF-D1-r2
+ca587,/g/data/p73/archive/non-CMIP/ACCESS-CM2/ca587/history,input_files/json/ca587.json,input_files/dreq/CCMI/ccmi_dreq.csv,1960,1960,2018,CM2-Chem,REF-D1-r3
+ch097,/g/data/p73/archive/non-CMIP/ACCESS-CM2/ch097/history,input_files/json/ch097.json,input_files/dreq/CCMI/ccmi_dreq.csv,1960,1960,2100,CM2-Chem,REF-D2-r1

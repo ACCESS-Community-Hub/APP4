@@ -10538,7 +10538,7 @@
                     "piControl"
                 ],
                 "parent_activity_id": [
-                    "CMIP"
+                    "CNP-MIP"
                 ],
                 "sub_experiment_id": [
                     "none"
@@ -10586,7 +10586,7 @@
                     "piControl"
                 ],
                 "parent_activity_id": [
-                    "CMIP"
+                    "CNP-MIP"
                 ],
                 "sub_experiment_id": [
                     "none"
@@ -10751,7 +10751,7 @@
                 ],
                 "experiment_id": "1pctCO2-cdr-CN",
                 "parent_experiment_id": [
-                    "1pctCO2-CN"
+                    "1pctCO2-C"
                 ],
                 "parent_activity_id": [
                     "CNP-MIP"
