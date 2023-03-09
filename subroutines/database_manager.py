@@ -19,11 +19,15 @@ import csv
 import hashlib
 import time
 import json
-exptoprocess=os.environ.get('EXP_TO_PROCESS')
-out_dir=os.environ.get('OUT_DIR')
-if os.environ.get('MODE').lower() == 'custom': mode='custom'
-elif os.environ.get('MODE').lower() == 'ccmi': mode='ccmi'
-else: mode='cmip6'
+
+exptoprocess = os.environ.get('EXP_TO_PROCESS')
+out_dir = os.environ.get('OUT_DIR')
+if os.environ.get('MODE').lower() == 'custom':
+    mode='custom'
+elif os.environ.get('MODE').lower() == 'ccmi':
+    mode='ccmi'
+else:
+    mode='cmip6'
 
 def master_setup(conn):
     cursor=conn.cursor()
@@ -66,8 +70,8 @@ def master_setup(conn):
             version text,
             primary key(local_exp_id,experiment_id,vcmip,cmip_table,realization_idx,initialization_idx,physics_idx,forcing_idx,tstart))''')
     except Exception,e:
-        print 'Unable to create the APP file_master table.'
-        print e
+        print("Unable to create the APP file_master table.")
+        print(e)
         raise e
     conn.commit()
 
@@ -86,13 +90,13 @@ def grids_setup(conn,grid_file):
             max_file_years integer,
             primary key (dimensions,frequency)) ''')
         f=csv.reader(open(grid_file,'r'))
-        print 'using grid file: {}'.format(grid_file)
+        print(f"using grid file: {grid_file}")
         for line in f:
             if len(line) != 0:
                 if line[0][0] != '#':
                     cursor.execute('insert into grids values (?,?,?,?,?,?)', line[0:6])
     except Exception ,e:
-        print e, '\n unable to perform operations on grids table'
+        print( e, "\n unable to perform operations on grids table")
     conn.commit()
 
 def experiments_setup(conn,exps_file):
@@ -110,17 +114,17 @@ def experiments_setup(conn,exps_file):
                 cmip_exp_id text,
                 primary key (local_exp_id,json_file_path,start_year)) ''')
         if mode == 'custom':
-            def_hist_data=os.environ.get('HISTORY_DATA')
-            def_version=os.environ.get('VERSION')
-            def_json='{}/{}.json'.format(out_dir,exptoprocess)
+            def_hist_data = os.environ.get('HISTORY_DATA')
+            def_version = os.environ.get('VERSION')
+            def_json = f"{out_dir}/{exptoprocess}.json"
             print(def_json) 
-            def_start=os.environ.get('START_YEAR')
-            def_end=os.environ.get('END_YEAR')
+            def_start = os.environ.get('START_YEAR')
+            def_end = os.environ.get('END_YEAR')
             if os.environ.get('REFERENCE_YEAR').lower() == 'default':
                 def_reference=def_start
             else:
-                def_reference=os.environ.get('REFERENCE_YEAR')
-            def_dreq='input_files/dreq/cmvme_all_piControl_3_3.csv'
+                def_reference = os.environ.get('REFERENCE_YEAR')
+            def_dreq = "input_files/dreq/cmvme_all_piControl_3_3.csv"
             def_line=[exptoprocess,def_hist_data,def_json,def_dreq,def_reference,def_start,def_end,def_version,'custom']
             cursor.execute('insert into experiments values (?,?,?,?,?,?,?,?,?)', def_line)
         else:
@@ -130,8 +134,9 @@ def experiments_setup(conn,exps_file):
                     #print(line)
                     cursor.execute('insert or replace into experiments values (?,?,?,?,?,?,?,?,?)', line)
     except Exception,e:
-        print e, '\n unable to setup experiments table'
+        print(e, "\n unable to setup experiments table")
     conn.commit()
+
 
 def champions_setup(champions_dir,conn):
     cursor=conn.cursor()
@@ -154,107 +159,104 @@ def champions_setup(champions_dir,conn):
             dimension text,
             primary key (cmip_variable,cmip_table))''')
     except:    
-        print 'Unable to create the champions table.'
+        print("Unable to create the champions table.")
     cursor.execute('delete from champions')
     files=os.listdir(champions_dir)
     for table in files:
-        if os.path.isdir('{}/{}'.format(champions_dir,table)):
+        if os.path.isdir(f"{champions_dir}/{table}"):
             continue
         if not table.startswith('.'): #hidden file, directory
             try:
-                f=csv.reader(open('{}/{}'.format(champions_dir,table),'r'))
+                f=csv.reader(open(f"{champions_dir}/{table}", 'r'))
                 for line in f:
                     if line[0][0] != '#':
                         row=['N/A']*15
                         for i, item in enumerate(line):
                             row[i+1]=item
                         #cmip_table
-                        row[0]=table[:-4]  #champions file with .csv removed        
+                        row[0] = table[:-4]  #champions file with .csv removed        
                         try:
-                            cursor.execute('insert into champions values (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ',row[0:14])
+                            cursor.execute('insert into champions values (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ',
+                                    row[0:14])
                         except Exception , e:
-                            print 'error inserting line into champions file: {}\n{}'.format(e,row)
+                            print(f"error inserting line into champions file: {e}\n{row}"
                 conn.commit()
             except Exception ,e: 
-                print e, table
+                print(e, table)
                 raise
     conn.commit()
 
 def buildFileName(opts):
     #date=datetime.today().strftime('%Y%m%d')
     date=opts['version']
-    tString=''
-    frequency=opts['frequency']
+    tString = ''
+    frequency = opts['frequency']
     if frequency != 'fx':
         #time values
-        st_date=opts['tstart']
-        fin_date=opts['tend']
+        st_date = opts['tstart']
+        fin_date = opts['tend']
         if opts['timeshot'] in ['mean','clim']:
             #for variables that contain time mean values
-            start=str(st_date).zfill(4)
-            fin=str(fin_date).zfill(4)
+            start = str(st_date).zfill(4)
+            fin = str(fin_date).zfill(4)
             if frequency == 'yr':
                 pass
             elif frequency == 'mon':
                 #add month to string
-                start='{}01'.format(start)
-                fin='{}12'.format(fin)
+                start = f"{start}01"
+                fin = f"{fin}12"
             elif frequency == 'day':
                 #add day to string
-                start='{}0101'.format(start)
-                fin='{}1231'.format(fin)
+                start = "{start}0101"
+                fin = f"{fin}1231"
             elif frequency == '6hr':
-                start=str(st_date).zfill(4)
-                fin=str(fin_date+1).zfill(4)
-                start='{}01010300'.format(start)
-                fin='{}12312100'.format(fin)
+                start = str(st_date).zfill(4)
+                fin = str(fin_date+1).zfill(4)
+                start = f"'{start}01010300"
+                fin = "{fin}12312100"
             elif frequency == '3hr':
                 #add minutes to string
-                start='{}01010130'.format(start)
-                fin='{}12312230'.format(fin)
+                start = f"{start}01010130"
+                fin = f"{fin}12312230"
             #hack to fix time for variables where only a single value is used (time invariant)
             if opts['axes_modifier'].find('firsttime') != -1:
-                fin=start
+                fin = start
         elif opts['timeshot'] == 'inst':
             #snapshot time bounds:
-            if frequency == 'yr':
+            if frequency in ['3hr', '6hr']:
                 start=str(st_date).zfill(4)
-                fin=str(fin_date).zfill(4)
-            elif frequency == 'mon':
-                start=str(st_date).zfill(4)
-                fin=str(fin_date).zfill(4)
+                fin=str(fin_date+1).zfill(4)
+            else:
+                start = str(st_date).zfill(4)
+                fin = str(fin_date).zfill(4)
+            if frequency == 'mon':
                 #add month to string
-                start='{}01'.format(start)
-                fin='{}12'.format(fin)
+                start = f"{start}01"
+                fin = f"{fin}12"
             elif frequency == '10day':
-                start=str(st_date).zfill(4)
-                fin=str(fin_date).zfill(4)
                 #add day to string
-                start='{}0111'.format(start)
-                fin='{}0101'.format(int(fin)+1)
+                start = f"{start}0111"
+                fin = f"{fin}0101"
             elif frequency == 'day':
-                start=str(st_date).zfill(4)
-                fin=str(fin_date).zfill(4)
                 #add day to string
-                start='{}0101'.format(start)
-                fin='{}1231'.format(fin)
+                start = f"{start}0101"
+                fin = f"{fin}1231"
             elif frequency == '6hr':
-                start=str(st_date).zfill(4)
-                fin=str(fin_date+1).zfill(4)
-                start='{}01010600'.format(start)
-                fin='{}01010000'.format(fin)
+                start = f"{start}01010600"
+                fin = "{fin}01010000"
             elif frequency == '3hr':
-                start=str(st_date).zfill(4)
-                fin=str(fin_date+1).zfill(4)
-                start='{}01010300'.format(start)
-                fin='{}01010000'.format(fin)
-            else: raise Exception('Error creating file name for snapshot data: 6hr or 3hr data expected')
-        else: raise Exception('Error creating file name: no timeshot in champions table')
+                start = f"{start}01010300"
+                fin = f"{fin}01010000"
+            else:
+                raise Exception('Error creating file name for snapshot data: 6hr or 3hr data expected')
+        else:
+            raise Exception('Error creating file name: no timeshot in champions table')
         #add time elements into one string        
-        tString='_{}-{}'.format(start,fin)
+        tString = f"_{start}-{fin}"
         if opts['timeshot'] == 'clim':
-            tString=tString+'-clim'
-    app_out="{outpath}/"\
+            tString = tString + '-clim'
+    # PP probably need to adapt this with python3 string??
+    app_out = "{outpath}/"\
     "{activity_id}/"\
     "{institution_id}/"\
     "{source_id}/"\
@@ -281,24 +283,37 @@ def buildFileName(opts):
     return app_out
         
 #Calculate an estimated output file size (in megabytes)
-def computeFileSize(grid_points,frequency,length):  
-    #additional amount to takin into acount space the grid and metadata takes up    
-    length=float(length)
+def computeFileSize(grid_points, frequency, length):  
+    #additional amount to take into account space the grid and metadata take up    
+    length = float(length)
+    # base size is for fixed data 
+    #    return grid_points*4/1024/1024.0
+    size = grid_points*4/1024.0^2
     if frequency == 'yr':
-        return length/365*grid_points*4/1024/1024.0
+        size = size*length/365
+        #return ((length/365)*grid_points*4))/1024.0^2
     elif frequency == 'mon':
-        return length/365*12*grid_points*4/1024/1024.0
+        size = size * length * 12/365
+        #return length/365*12*grid_points*4/1024/1024.0
     elif frequency == 'day':
-        return length*grid_points*4/1024/1024.0
+        size = size * length
+        #return length*grid_points*4/1024/1024.0
     elif frequency == 'monClim':
-        return 12*grid_points*4/1024/1024.0
-    elif frequency == 'fx':
-        return grid_points*4/1024/1024.0
+        size = size * 12
+        #return 12*grid_points*4/1024/1024.0
     elif frequency == '6hr':
+        size = size * length * 4
         return length*grid_points*4/1024/1024.0*4
     elif frequency == '3hr':
+        size = size * length * 8 
         return length*grid_points*4/1024/1024.0*8
-    else: return -1
+    elif frequency == '1hr':
+        size = size * length * 24 
+    elif frequency == '10min':
+        size = size * length * 144 
+    else:
+        size = -1
+    return size
 
 def sumFileSizes(conn):
     cursor=conn.cursor()
@@ -306,46 +321,47 @@ def sumFileSizes(conn):
     sizeList=cursor.fetchall()
     size=0.0
     for s in sizeList:
-        size+=float(s[0])
+        size += float(s[0])
     return size
 
 #define the frequency of variable from the cmip table (and variable name (pfull and phalf only))
 def tableToFreq(table):
-    dictionary={'3hr':'3hr'\
-    ,'6hrLev':'6hr'\
-    ,'6hrPlevPt':'6hr'\
-    ,'6hrPlev':'6hr'\
-    ,'AERday':'day'\
-    ,'AERmon':'mon'\
-    ,'AERmonZ':'mon'\
-    ,'Amon':'mon'\
-    ,'AmonZ':'mon'\
-    ,'CFday':'day'\
-    ,'CF3hr':'3hr'\
-    ,'CFmon':'mon'\
-    ,'E3hr':'3hr'\
-    ,'E3hrPt':'3hr'\
-    ,'Eday':'day'\
-    ,'EdayZ':'day'\
-    ,'Aday':'day'\
-    ,'AdayZ':'day'\
-    ,'A10dayPt':'10day'\
-    ,'Efx':'fx'\
-    ,'Emon':'mon'\
-    ,'EmonZ':'mon'\
-    ,'Eyr':'yr'\
-    ,'ImonGre':'mon'\
-    ,'ImonAnt':'mon'\
-    ,'LImon':'mon'\
-    ,'Lmon':'mon'\
-    ,'Oclim':'monClim'\
-    ,'Oday':'day'\
-    ,'Ofx':'fx'\
-    ,'Omon':'mon'\
-    ,'Oyr':'yr'\
-    ,'SIday':'day'\
-    ,'SImon':'mon'\
-    ,'day':'day'\
+    # save it as ocnfig file and read it!!!
+    dictionary={'3hr': '3hr',
+                '6hrLev': '6hr',
+                '6hrPlevPt': '6hr',
+                '6hrPlev': '6hr',
+                'AERday': 'day',
+                'AERmon': 'mon',
+    ,'AERmonZ':'mon'
+    ,'Amon':'mon'
+    ,'AmonZ':'mon'
+    ,'CFday':'day'
+    ,'CF3hr':'3hr'
+    ,'CFmon':'mon'
+    ,'E3hr':'3hr'
+    ,'E3hrPt':'3hr'
+    ,'Eday':'day'
+    ,'EdayZ':'day'
+    ,'Aday':'day'
+    ,'AdayZ':'day'
+    ,'A10dayPt':'10day'
+    ,'Efx':'fx'
+    ,'Emon':'mon'
+    ,'EmonZ':'mon'
+    ,'Eyr':'yr'
+    ,'ImonGre':'mon'
+    ,'ImonAnt':'mon'
+    ,'LImon':'mon'
+    ,'Lmon':'mon'
+    ,'Oclim':'monClim'
+    ,'Oday':'day'
+    ,'Ofx':'fx'
+    ,'Omon':'mon'
+    ,'Oyr':'yr'
+    ,'SIday':'day'
+    ,'SImon':'mon'
+    ,'day':'day'
     ,'fx':'fx'}
     return dictionary[table]
 
@@ -362,8 +378,7 @@ def addRow(values,cursor):
             :frequency,:tstart,:tend,:status,:file_size,:local_exp_id,:calculation,:axes_modifier,:in_units,:positive,
             :timeshot,:years,:var_notes,:cfname,:activity_id,:institution_id,:source_id,:grid_label,:access_version,:json_file_path,:reference_date,:version)''', values)
     except sqlite3.IntegrityError , e:
-        print "Row already exists"
-        print e
+        print(f"Row already exists:\n{e}")
     return cursor.lastrowid
 
 #Takes rows (list of rows in champions table)
@@ -378,50 +393,51 @@ def populateRows(rows,opts,cursor):
     for champ in rows:
         #defaults    
         #from champions table:
-        frequency=tableToFreq(champ[0])
-        opts['frequency']=frequency            
-        opts['cmip_table']=champ[0]
-        opts['vcmip']=champ[1]
-        opts['vin']=champ[3]
+        frequency = tableToFreq(champ[0])
+        opts['frequency'] = frequency            
+        opts['cmip_table'] = champ[0]
+        opts['vcmip'] = champ[1]
+        opts['vin'] = champ[3]
         try:
-            [a,b]=champ[4].split()
-            opts['infile']='{}/{} {}/{}'.format(opts['local_exp_dir'],a,opts['local_exp_dir'],b)
+            [a,b] = champ[4].split()
+            opts['infile'] = f"{opts['local_exp_dir']}/{a} {opts['local_exp_dir']}/{b}"
         except:    
-            opts['infile']='{}/{}'.format(opts['local_exp_dir'],champ[4])
-        opts['calculation']=champ[5]
-        opts['in_units']=champ[6]
-        opts['axes_modifier']=champ[7]
-        opts['positive']=champ[8]
-        opts['timeshot']=champ[9]
-        opts['years']=champ[10]
-        opts['var_notes']=champ[11]
-        opts['cfname']=champ[12]
-        dimension=champ[13]
-        time=opts['exp_start']
-        finish=opts['exp_end']
+            opts['infile'] = f"{opts['local_exp_dir']}/{champ[4]}"
+        opts['calculation'] = champ[5]
+        opts['in_units'] = champ[6]
+        opts['axes_modifier'] = champ[7]
+        opts['positive'] = champ[8]
+        opts['timeshot'] = champ[9]
+        opts['years'] = champ[10]
+        opts['var_notes'] = champ[11]
+        opts['cfname'] = champ[12]
+        dimension = champ[13]
+        time = opts['exp_start']
+        finish = opts['exp_end']
         cursor.execute('select max_file_years,gridpoints from grids where dimensions=? and frequency=?',[dimension,frequency])
         #TODO add in check that there is only one value
         try:
             if opts['vcmip'] == 'co2':
-                stepyears=10
-                gridpoints=528960
-            else: stepyears,gridpoints=cursor.fetchone()
+                stepyears = 10
+                gridpoints = 528960
+            else:
+                stepyears,gridpoints=cursor.fetchone()
         except:
-            print 'error: no grid specification for'
-            print 'frequency: {}'.format(frequency)
-            print dimension
-            print opts['vcmip']
+            print("error: no grid specification for")
+            print("frequency: {frequency}"
+            print(dimension)
+            print(opts['vcmip'])
             raise
         #loop over times
         while (time <= finish):        
-            newtime=min(time+stepyears-1,finish)
-            stepDays=(datetime(newtime+1,1,1)-datetime(time,1,1)).days
-            opts['tstart']=time     
-            opts['tend']=newtime 
-            opts['file_size']=computeFileSize(gridpoints,frequency,stepDays)
-            opts['file_name']=buildFileName(opts)
-            rowid=addRow(opts,cursor)
-            time=newtime+1
+            newtime = min(time+stepyears-1,finish)
+            stepDays = (datetime(newtime+1,1,1)-datetime(time,1,1)).days
+            opts['tstart'] = time     
+            opts['tend'] = newtime 
+            opts['file_size'] = computeFileSize(gridpoints,frequency,stepDays)
+            opts['file_name'] = buildFileName(opts)
+            rowid = addRow(opts,cursor)
+            time = newtime+1
 
 #populate the database for variables that are requested for all times for all experiments
 def populate_unlimited(cursor,opts):
@@ -479,7 +495,7 @@ def populate(conn):
         opts['exp_end']=exp[6]
         opts['access_version']=exp[7]
         opts['cmip_exp_id']=exp[8]
-        print 'found local experiment: {}'.format(opts['local_exp_id'])
+        print("found local experiment: {}'.format(opts['local_exp_id'])
         populate_unlimited(cursor,opts)
         conn.commit()
 
@@ -512,7 +528,7 @@ def count_rows(conn):
     cursor=conn.cursor()
     cursor.execute('select * from file_master where status==\'unprocessed\' and local_exp_id==?',[exptoprocess])
     rows=cursor.fetchall()
-    print 'number of rows: ',len(rows)
+    print("number of rows: ',len(rows)
     #for row in rows:
     #    print(row)
     database_count='{}/database_count.txt'.format(out_dir)
@@ -521,24 +537,24 @@ def count_rows(conn):
     dbc.close()
 
 def main():
-    print '\nstarting database_manager...'
+    print("\nstarting database_manager...'
     #Global variable:
     #set champions tables directory from environment variable
     champions_dir=os.environ.get('VARIABLE_MAPS')
     if not champions_dir: sys.exit('missing variable maps')
-    print 'champions directory: {}'.format(champions_dir)
+    print("champions directory: {}'.format(champions_dir)
     #set Experiments table from environment variable
     exp_table=os.environ.get('EXPERIMENTS_TABLE')
     #Set default experiments table
     if not exp_table:
-        print 'no experiments table specified, using default'
+        print("no experiments table specified, using default'
         exp_table=sys.path[0]+'/../input_files/experiments.csv'
-    print 'experiments table: {}'.format(exp_table)
+    print("experiments table: {}'.format(exp_table)
     #Create a connection to the database.    
     #get database from environment var
     database=os.environ.get('DATABASE')
     if not database: sys.exit('missing database')
-    print 'creating & using database: {}'.format(database)
+    print("creating & using database: {}'.format(database)
     conn=sqlite3.connect(database)
     conn.text_factory=str
     #setup database tables
@@ -550,7 +566,7 @@ def main():
     populate(conn)
     create_database_updater()
     count_rows(conn)
-    print 'max total file size is: {} GB'.format(sumFileSizes(conn)/1024)
+    print("max total file size is: {sumFileSizes(conn)/1024} GB")
 
 if __name__ == "__main__":
     main()
