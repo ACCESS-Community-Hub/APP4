@@ -1,3 +1,12 @@
+'''
+Changes to script
+
+14/03/23:
+SG - Updated print statements to work with python3.
+SG- Added spacesa and formatted script to read better.
+'''
+
+
 import datetime
 import numpy as np
 import re
@@ -16,16 +25,16 @@ from scipy.interpolate import interp1d
 warnings.simplefilter(action='ignore', category=FutureWarning)
 np.set_printoptions(threshold=sys.maxsize)
 
-ancillary_path=os.environ.get('ANCILLARY_FILES')+'/'
+ancillary_path = os.environ.get('ANCILLARY_FILES')+'/'
 
 #function to give a sample plot of a variable
 def plotVar(outpath,ret,cmip_table,vcmip,parent_source_id,experiment_id):
-    f=cdms2.open(ret,'r')
-    var=f.variables[vcmip]
-    dims=var.shape
-    units=var.units
+    f = cdms2.open(ret,'r')
+    var = f.variables[vcmip]
+    dims = var.shape
+    units = var.units
     plt.figure()
-    print 'plotting...'
+    print('plotting...')
     #3D field: 
     #plot lat-lon plots at different levels, 
     #for first time step only
@@ -49,9 +58,9 @@ def plotVar(outpath,ret,cmip_table,vcmip,parent_source_id,experiment_id):
         #average
         plt.subplot(224)
         plt.title('ave over z')
-        print 'calculating ave over z...'
+        print('calculating ave over z...')
         plt.imshow(np.ma.average(var[0,:],axis=0),origin='lower')
-        print 'done'        
+        print('done')        
         plt.colorbar()
     elif len(dims)==3: 
     #
@@ -77,34 +86,34 @@ def plotVar(outpath,ret,cmip_table,vcmip,parent_source_id,experiment_id):
     #
     #make output directory and save figure:
     #
-    folder=outpath+'/plots/'+parent_source_id+'/'+experiment_id+'/'+cmip_table
+    folder = outpath+'/plots/'+parent_source_id+'/'+experiment_id+'/'+cmip_table
     if not os.path.isdir(folder):
         os.makedirs(folder)
     plt.savefig(folder+'/'+vcmip+'.png')
-    figloc=folder+'/'+vcmip+'.png'
-    print "saved figure for variable '{}': {}".format(vcmip,figloc)
+    figloc = folder+'/'+vcmip+'.png'
+    print(f"saved figure for variable '{vcmip}': {figloc}")
     #cleanup
     plt.clf()
     f.close()
 
 def calcRefDate(time):
-    ref= re.search('\d{4}-\d{2}-\d{2}', time.units).group(0).split('-')
+    ref = re.search('\d{4}-\d{2}-\d{2}', time.units).group(0).split('-')
     return datetime.date(int(ref[0]), int(ref[1]), int(ref[2]))
 
 #function to call the calculation defined in the 'calculation' string in the database
 def calculateVals(access_file,varNames,calculation):
     #Set array for coordinates if used by calculation
     if calculation.find('times')!=-1:
-        times=access_file[0].variables[varNames[0]].getTime()
+        times = access_file[0].variables[varNames[0]].getTime()
     if calculation.find('depth')!=-1:
-        depth=access_file[0].variables[varNames[0]].getAxis(1)
+        depth = access_file[0].variables[varNames[0]].getAxis(1)
     if calculation.find('lat')!=-1:
-        lat=access_file[0].variables[varNames[0]].getLatitude()
+        lat = access_file[0].variables[varNames[0]].getLatitude()
     if calculation.find('lon')!=-1:
-        lon=access_file[0].variables[varNames[0]].getLatitude()
-    var=[]
+        lon = access_file[0].variables[varNames[0]].getLatitude()
+    var = []
     for v in varNames:
-        print 'variable[{}] = {}'.format(varNames.index(v),v)
+        print(f'variable[{varNames.index(v)}] = {v}')
         try: 
             #extract variable out of file
             var.append(access_file[0].variables[v][:])
@@ -113,8 +122,8 @@ def calculateVals(access_file,varNames,calculation):
             var.append(access_file[0].axes[v][:])
     try:
         return eval(calculation)
-    except Exception, e:
-        print 'error evaluating calculation: {}'.format(calculation)
+    except Exception as e:
+        print(f'error evaluating calculation, {calculation}: {e}')
         raise
 
 #Calculate the y_overturning mass streamfunction
@@ -124,46 +133,46 @@ def calculateVals(access_file,varNames,calculation):
 #2 Global Basin
 def meridionalOverturning(transList,typ,om2=1):
 #TODO remove masks once satified with these calculations
-    ty_trans=transList[0]
+    ty_trans = transList[0]
     #print type(ty_trans), np.shape(ty_trans) ,np.shape(ty_trans.mask)
     #initialise array
-    dims=list(np.shape(ty_trans[:,:,:,0])) +[3] #remove x, add dim for 3 basins
-    transports= np.ma.zeros(dims,dtype=np.float32)
+    dims = list(np.shape(ty_trans[:,:,:,0])) +[3] #remove x, add dim for 3 basins
+    transports = np.ma.zeros(dims,dtype=np.float32)
     #first calculate for global basin
     #2: global basin
-    transports[:,:,:,2]=calcOverturning(transList,typ)
+    transports[:,:,:,2] = calcOverturning(transList,typ)
     try:
         if ty_trans.mask==False: 
         #if there is no mask: set masks to arrays of zeros
             for trans in transList:
-                trans.mask=np.zeros(np.shape(trans),dtype=bool)
+                trans.mask = np.zeros(np.shape(trans),dtype=bool)
     except: pass
     #grab land mask out of ty_trans file (assuming the only masked values are land)
-    landMask=np.array(ty_trans.mask[0,:,:,:],dtype=bool)
+    landMask = np.array(ty_trans.mask[0,:,:,:],dtype=bool)
     #Get basin masks
     if om2 == 025:
-        mask=getBasinMask_025()
+        mask = getBasinMask_025()
     else:
-        mask=getBasinMask()
+        mask = getBasinMask()
     #0: atlantic arctic basin
     #set masks
     #atlantic and arctic basin are given by mask values 2 and 4 #TODO double check this
-    atlantic_arctic_mask=np.ma.make_mask(np.logical_and(mask!=2.0,mask!=4.0))
+    atlantic_arctic_mask = np.ma.make_mask(np.logical_and(mask!=2.0,mask!=4.0))
     for t in range(np.shape(ty_trans)[0]):
         for z in range(np.shape(ty_trans)[1]):
             for trans in transList:
-                trans.mask[t,z,:,:]=np.ma.mask_or(atlantic_arctic_mask,landMask[z,:,:])
+                trans.mask[t,z,:,:] = np.ma.mask_or(atlantic_arctic_mask,landMask[z,:,:])
     #calculate MOC with atlantic basin mask
-    transports[:,:,:,0]=calcOverturning(transList,typ)
+    transports[:,:,:,0] = calcOverturning(transList,typ)
     #1: indoPacific basin:
     #set masks
     #Indian and Pacific basin are given by mask values 3 and 5 #TODO double check this
-    indoPac_mask=np.ma.make_mask(np.logical_and(mask!=3.0,mask!=5.0))
+    indoPac_mask = np.ma.make_mask(np.logical_and(mask!=3.0,mask!=5.0))
     for t in range(np.shape(ty_trans)[0]):
         for z in range(np.shape(ty_trans)[1]):
             for trans in transList:
-                trans.mask[t,z,:,:]=np.ma.mask_or(indoPac_mask,landMask[z,:,:])
-    transports[:,:,:,1]=calcOverturning(transList,typ)
+                trans.mask[t,z,:,:] = np.ma.mask_or(indoPac_mask,landMask[z,:,:])
+    transports[:,:,:,1] = calcOverturning(transList,typ)
     return transports
 
 #calculate overturning circulation depending on what inputs are given    
@@ -177,14 +186,14 @@ def calcOverturning(transList,typ):
     #sum over the longditudes and 
     #for ty_trans run a cumalative sum over depths (not for gm or submeso)
     #The result for each variable in transList are added together
-    typ=typ.split('_')
-    n=len(transList)
+    typ = typ.split('_')
+    n = len(transList)
     print('type = ',typ)
     print('n = ',n)
     if len(typ)==1:
         #normal case for cmip5, need to convert units
         # gm and submeso quantities are output in Sv so need to be multiplied by 10**9
-        typ=typ[0]
+        typ = typ[0]
         if n==1:
             if typ=='bolus':
                 #should be bolus transport for rho levels 
@@ -195,8 +204,8 @@ def calcOverturning(transList,typ):
                 return ( transList[0].sum(3)+transList[1].sum(3) ) #*10**9
             elif typ=='full':
                 #full y overturning on rho levels, where trans and trans_gm are present (no submeso)
-                tmp= transList[0].sum(3).cumsum(1)+transList[1].sum(3) #*10**9
-                s=transList[0].sum(3).sum(1)
+                tmp = transList[0].sum(3).cumsum(1)+transList[1].sum(3) #*10**9
+                s=  transList[0].sum(3).sum(1)
                 for i in range(tmp.shape[1]):
                     tmp[:,i,:]=tmp[:,i,:]-s
                 return tmp
@@ -204,14 +213,14 @@ def calcOverturning(transList,typ):
             #assume full y overturning:
             #trans + trans_gm +trans_submeso
             if typ=='full':
-                tmp=transList[0].sum(3).cumsum(1)+transList[1].sum(3)+transList[2].sum(3)
-                s=transList[0].sum(3).sum(1)
+                tmp = transList[0].sum(3).cumsum(1)+transList[1].sum(3)+transList[2].sum(3)
+                s = transList[0].sum(3).sum(1)
                 for i in range(tmp.shape[1]):
-                    tmp[:,i,:]=tmp[:,i,:]-s
+                    tmp[:,i,:] = tmp[:,i,:]-s
                 return tmp
     elif typ[1]=='Sv':
         #case from old diagnostics, units all in sieverts 
-        typ=typ[0]
+        typ = typ[0]
         if n==1:
             if typ=='bolus':
                 #should be bolus transport for rho levels 
@@ -222,8 +231,8 @@ def calcOverturning(transList,typ):
                 return transList[0].sum(3)+transList[1].sum(3)
             elif typ=='full':
                 #full y overturning on rho levels, where trans and trans_gm are present (no submeso)
-                tmp= transList[0].sum(3).cumsum(1)+transList[1].sum(3)
-                s=transList[0].sum(3).sum(1)
+                tmp = transList[0].sum(3).cumsum(1)+transList[1].sum(3)
+                s = transList[0].sum(3).sum(1)
                 for i in range(tmp.shape[1]):
                     tmp[:,i,:]=tmp[:,i,:]-s
                 return tmp
@@ -231,71 +240,72 @@ def calcOverturning(transList,typ):
             #assume full y overturning:
             #trans + trans_gm +trans_submeso
             if typ=='full':
-                tmp=transList[0].sum(3).cumsum(1)+transList[1].sum(3)+transList[2].sum(3)
-                s=transList[0].sum(3).sum(1)
+                tmp = transList[0].sum(3).cumsum(1)+transList[1].sum(3)+transList[2].sum(3)
+                s = transList[0].sum(3).sum(1)
                 for i in range(tmp.shape[1]):
                     tmp[:,i,:]=tmp[:,i,:]-s
                 return tmp
 
 #Compute monthly average of daily values (for 2D variables)
 def monthAve(var,time):
-    datelist=time.asComponentTime()
-    monthave=[]
+    datelist = time.asComponentTime()
+    monthave = []
     #get month, value of first date
-    month=datelist[0].month
-    val_sum=var[0,:,:]
-    count=1
+    month = datelist[0].month
+    val_sum = var[0,:,:]
+    count = 1
     #loop over all dates
     for index, d in enumerate(datelist[1:]):
         if d.month==month: #same month 
-            count+=1
-            val_sum+=var[index+1,:,:] #add value to sum
+            count += 1
+            val_sum += var[index+1,:,:] #add value to sum
         else: #new month
             monthave.append(val_sum/count) #calculate average for previous month and add to list
-            val_sum=var[index+1,:,:] #get first value for the new month
-            count=1
-            month=d.month
+            val_sum = var[index+1,:,:] #get first value for the new month
+            count = 1
+            month = d.month
     #append last month to list 
     monthave.append(val_sum/count)
-    print 'monthly ave has shape:',np.shape(np.array(monthave))
+    monthave_shape = np.shape(np.array(monthave))
+    print(f'monthly ave has shape: {monthave_shape}')
     return np.array(monthave)
 
 #calculate a climatology of monthly means
 def monthClim(var,time,vals_wsum,clim_days):
-    datelist=time.asComponentTime()
-    print 'calculating climatology...'
+    datelist = time.asComponentTime()
+    print('calculating climatology...')
     #loop over all dates,
     try:
         for index, d in enumerate(datelist):
-            m=d.month #month
+            m = d.month #month
             #add the number of days for this month
-            dummy,days=calendar.monthrange(d.year,m)
+            dummy,days = calendar.monthrange(d.year,m)
 #            print index,d,m,days
-            clim_days[m-1]+=days
+            clim_days[m-1] += days
             #add values weighted by the number of days in this month
-            vals_wsum[m-1,:]+=(var[index,:]*days)
-    except Exception,e:
-        print e
+            vals_wsum[m-1,:] += (var[index,:]*days)
+    except Exception as e:
+        print(e)
         raise
 
     return vals_wsum,clim_days
 
 #calculate a average monthly means (average is vals_wsum/clim_days)
 def ave_months(var,time,vals_wsum,clim_days):
-    datelist=time.asComponentTime()
-    print 'calculating climatology...'
+    datelist = time.asComponentTime()
+    print('calculating climatology...')
     #loop over all dates,
     try:
         for index, d in enumerate(datelist):
-            m=d.month #month
+            m = d.month #month
             #add the number of days for this month
-            dummy,days=calendar.monthrange(d.year,m)
+            dummy,days = calendar.monthrange(d.year,m)
 #            print index,d,m,days
-            clim_days+=days
+            clim_days += days
             #add values weighted by the number of days in this month
-            vals_wsum[:]+=(var[index,:]*days)
-    except Exception,e:
-        print e
+            vals_wsum[:] += (var[index,:]*days)
+    except Exception as e:
+        print(e)
         raise
 
     return vals_wsum,clim_days
@@ -313,16 +323,16 @@ def ave_months(var,time,vals_wsum,clim_days):
 
 # returns days in month for time variable
 def daysInMonth(time):
-    tvals=time[:]
-    refdate=calcRefDate(time)
+    tvals = time[:]
+    refdate = calcRefDate(time)
     if len(tvals)==1:
-        d=datetime.timedelta(int(tvals[0]))+refdate
-        dummy,days=calendar.monthrange(d.year,d.month)
+        d = datetime.timedelta(int(tvals[0]))+refdate
+        dummy,days = calendar.monthrange(d.year,d.month)
     else:
-        days=[]
+        days = []
         for t in tvals:
-            d=datetime.timedelta(int(t))+refdate
-            dummy,d=calendar.monthrange(d.year,d.month)
+            d = datetime.timedelta(int(t))+refdate
+            dummy,d = calendar.monthrange(d.year,d.month)
             days.append(d)
     return days        
 
@@ -331,120 +341,125 @@ def daysInMonth(time):
 #and the min and max time for each month (bounds)
 #assumes time is in the gregorian calandar, relative to date reference date
 def day2mon(tvals,ref):
-    datelist=[]
+    datelist = []
     for t in tvals: 
         datelist.append(datetime.datetime(ref,1,1)+ datetime.timedelta(t))
     #get month, value of first date
-    month=datelist[0].month
-    val_sum=tvals[0]
-    count=1
-    tmonth=[] #List of average time value for each month
-    tmin=[] #list of start of month bounds
-    tmax=[] #list of end of month bounds
+    month = datelist[0].month
+    val_sum = tvals[0]
+    count = 1
+    tmonth = [] #List of average time value for each month
+    tmin = [] #list of start of month bounds
+    tmax = [] #list of end of month bounds
     tmin.append(np.floor(tvals[0]))
     #loop over all dates
     for index, d in enumerate(datelist[1:]):
         if d.month==month: #same month 
-            count+=1
-            val_sum+=tvals[index+1] #add value to sum
+            count += 1
+            val_sum += tvals[index+1] #add value to sum
         else: #new month
             tmonth.append(val_sum/count) #calculate average for previous month and add to list
-            val_sum=tvals[index+1] #get first value for the new month
-            count=1
-            month=d.month
+            val_sum = tvals[index+1] #get first value for the new month
+            count = 1
+            month = d.month
             tmin.append(np.floor(tvals[index+1]))
             tmax.append(np.floor(tvals[index+1]))
     #append last month to list 
     tmonth.append(val_sum/count)
-    print tmonth
+    print(tmonth)
     tmax.append(np.floor(tvals[index+1])+1)
     return np.array(tmonth), tmin,tmax
 
+# SG: CAN THE FOLLOWING 2 FUNCTIONS BE COMBINED IN ANY WAY??
 def mon2yr(tvals,refString):
-    tyr=[]
-    tmin=[]
-    tmax=[]
-    starttime=cdtime.reltime(tvals[0],refString).tocomp(cdtime.DefaultCalendar)
-    year=starttime.year
+    tyr = []
+    tmin = []
+    tmax = []
+    starttime = cdtime.reltime(tvals[0],refString).tocomp(cdtime.DefaultCalendar)
+    year = starttime.year
     tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
     for i in tvals:
-        yearnew=cdtime.reltime(i,refString).tocomp(cdtime.DefaultCalendar).year
+        yearnew = cdtime.reltime(i,refString).tocomp(cdtime.DefaultCalendar).year
         if yearnew==year:
             pass
         else:
             tyr.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value+(cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value - cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)/2)
-            year=yearnew
+            year = yearnew
             tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
             tmax.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
     tyr.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value + (cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value - cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)/2)
     tmax.append(cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value)
-    print 'tvals: {}'.format(np.array(tyr))
-    return np.array(tyr),tmin,tmax
+    tyr_ar = np.array(tyr)
+    print(f'tvals: {tyr_ar}')
+    return tyr_ar,tmin,tmax
 
 def yrpoint(tvals,refString):
-    tyr=[]
-    tmin=[]
-    tmax=[]
-    starttime=cdtime.reltime(tvals[0],refString).tocomp(cdtime.DefaultCalendar)
-    year=starttime.year
+    tyr = []
+    tmin = []
+    tmax = []
+    starttime = cdtime.reltime(tvals[0],refString).tocomp(cdtime.DefaultCalendar)
+    year = starttime.year
     tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
     for i,tval in enumerate(tvals):
-        yearnew=cdtime.reltime(tval,refString).tocomp(cdtime.DefaultCalendar).year
+        yearnew = cdtime.reltime(tval,refString).tocomp(cdtime.DefaultCalendar).year
         if yearnew==year:
             pass
         else:
             tyr.append(tvals[i-1])
-            year=yearnew
+            year = yearnew
             tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
             tmax.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
     tyr.append(tvals[-1])
     tmax.append(cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value)
-    print 'tvals: {}'.format(np.array(tyr))
-    return np.array(tyr),tmin,tmax
+    tyr_ar = np.array(tyr)
+    print('tvals: {tyr_ar}')
+    return tyr_ar,tmin,tmax
 
 def zonal_mean(var):
     return var.mean(axis=-1)
 
 def optical_depth(lbplev,var):
-    idx=lbplev-1
-    var0=np.array(var[0][:,idx,:,:])
-    var1=np.array(var[1][:,idx,:,:])
-    var2=np.array(var[2][:,idx,:,:])
+    idx = lbplev-1
+    var0 = np.array(var[0][:,idx,:,:])
+    var1 = np.array(var[1][:,idx,:,:])
+    var2 = np.array(var[2][:,idx,:,:])
     try: 
-        var3=np.array(var[3][:,idx,:,:])
+        var3 = np.array(var[3][:,idx,:,:])
     except:
         pass
     try:
-        var4=np.array(var[4][:,idx,:,:])
+        var4 = np.array(var[4][:,idx,:,:])
     except:
         pass
     try:
-        var5=np.array(var[5][:,idx,:,:])
+        var5 = np.array(var[5][:,idx,:,:])
     except: 
         pass
     if len(var) == 6: 
         print('6 variables')
-        vout=var0+var1+var2+var3+var4+var5
+        vout = var0 + var1 + var2 + var3 + var4 + var5
     elif len(var) == 5: 
         print('5 variables')
-        vout=var0+var1+var2+var3+var4
+        vout = var0 + var1 + var2 + var3 + var4
     elif len(var) == 4: 
         print('4 variables')
-        vout=var0+var1+var2+var3
+        vout = var0 + var1 + var2 + var3
     else:
         print('3 variables')
-        vout=var0+var1+var2
+        vout = var0 + var1 + var2
     return vout
     
 #List of strings giving the names of the straits used in the mass transports across lines
 def getTransportLines():
-    return ['barents_opening','bering_strait','canadian_archipelago','denmark_strait',\
+    lines = ['barents_opening','bering_strait','canadian_archipelago','denmark_strait',\
         'drake_passage','english_channel','pacific_equatorial_undercurrent',\
         'faroe_scotland_channel','florida_bahamas_strait','fram_strait','iceland_faroe_channel',\
         'indonesian_throughflow','mozambique_channel','taiwan_luzon_straits','windward_passage']
+    return lines
 
 def geticeTransportLines():
-    return ['fram_strait','canadian_archipelago','barents_opening','bering_strait']
+    ilines = ['fram_strait','canadian_archipelago','barents_opening','bering_strait']
+    return ilines
 
 #Calculates the mass transports across lines
 #for each line requested in cmip5
@@ -452,105 +467,105 @@ def geticeTransportLines():
 def lineTransports(tx_trans,ty_trans):
     #print tx_trans[0,:,34,64], tx_trans[0,:,34,64].sum()
     #initialise array
-    transports= np.zeros([len(tx_trans[:,0,0,0]),len(getTransportLines())],dtype=np.float32)
+    transports = np.zeros([len(tx_trans[:,0,0,0]),len(getTransportLines())],dtype=np.float32)
     #0 barents opening
-    transports[:,0]=transAcrossLine(ty_trans,292,300,271,271)
-    transports[:,0]+=transAcrossLine(tx_trans,300,300,260,271)
+    transports[:,0] = transAcrossLine(ty_trans,292,300,271,271)
+    transports[:,0] += transAcrossLine(tx_trans,300,300,260,271)
     #1 bering strait
-    transports[:,1]=transAcrossLine(ty_trans,110,111,246,246)
+    transports[:,1] = transAcrossLine(ty_trans,110,111,246,246)
     #2 canadian archipelago
-    transports[:,2]=transAcrossLine(ty_trans,206,212,285,285)
-    transports[:,2]+=transAcrossLine(tx_trans,235,235,287,288)
+    transports[:,2] = transAcrossLine(ty_trans,206,212,285,285)
+    transports[:,2] += transAcrossLine(tx_trans,235,235,287,288)
     #3 denmark strait
-    transports[:,3]=transAcrossLine(tx_trans,249,249,248,251)
-    transports[:,3]+=transAcrossLine(ty_trans,250,255,247,247)
+    transports[:,3] = transAcrossLine(tx_trans,249,249,248,251)
+    transports[:,3] += transAcrossLine(ty_trans,250,255,247,247)
     #4 drake passage
-    transports[:,4]=transAcrossLine(tx_trans,212,212,32,49)
+    transports[:,4] = transAcrossLine(tx_trans,212,212,32,49)
     #5 english channel is unresolved by the access model
     #6 pacific equatorial undercurrent
     #specified down to 350m not the whole depth
-    transports[:,6]=transAcrossLine(np.ma.masked_where(\
+    transports[:,6] = transAcrossLine(np.ma.masked_where(\
         tx_trans[:,0:25,:]<0,tx_trans[:,0:25,:]),124,124,128,145)
     #7 faroe scotland channel    
-    transports[:,7]=transAcrossLine(ty_trans,273,274,238,238)
-    transports[:,7]+=transAcrossLine(tx_trans,274,274,232,238)
+    transports[:,7] = transAcrossLine(ty_trans,273,274,238,238)
+    transports[:,7] += transAcrossLine(tx_trans,274,274,232,238)
     #8 florida bahamas strait
-    transports[:,8]=transAcrossLine(ty_trans,200,205,192,192)
+    transports[:,8] = transAcrossLine(ty_trans,200,205,192,192)
     #9 fram strait
-    transports[:,9]=transAcrossLine(tx_trans,267,267,279,279)
-    transports[:,9]+=transAcrossLine(ty_trans,268,284,278,278)
+    transports[:,9] = transAcrossLine(tx_trans,267,267,279,279)
+    transports[:,9] += transAcrossLine(ty_trans,268,284,278,278)
     #10 iceland faroe channel
-    transports[:,10]=transAcrossLine(ty_trans,266,268,243,243)
-    transports[:,10]+=transAcrossLine(tx_trans,268,268,240,243)
-    transports[:,10]+=transAcrossLine(ty_trans,269,272,239,239)
-    transports[:,10]+=transAcrossLine(tx_trans,272,272,239,239)
+    transports[:,10] = transAcrossLine(ty_trans,266,268,243,243)
+    transports[:,10] += transAcrossLine(tx_trans,268,268,240,243)
+    transports[:,10] += transAcrossLine(ty_trans,269,272,239,239)
+    transports[:,10] += transAcrossLine(tx_trans,272,272,239,239)
     #11 indonesian throughflow
-    transports[:,11]=transAcrossLine(tx_trans,31,31,117,127)
-    transports[:,11]+=transAcrossLine(ty_trans,35,36,110,110)
-    transports[:,11]+=transAcrossLine(ty_trans,43,44,110,110)
-    transports[:,11]+=transAcrossLine(tx_trans,46,46,111,112)
-    transports[:,11]+=transAcrossLine(ty_trans,47,57,113,113)
+    transports[:,11] = transAcrossLine(tx_trans,31,31,117,127)
+    transports[:,11] += transAcrossLine(ty_trans,35,36,110,110)
+    transports[:,11] += transAcrossLine(ty_trans,43,44,110,110)
+    transports[:,11] += transAcrossLine(tx_trans,46,46,111,112)
+    transports[:,11] += transAcrossLine(ty_trans,47,57,113,113)
     #12 mozambique channel    
-    transports[:,12]=transAcrossLine(ty_trans,320,323,91,91)
+    transports[:,12] = transAcrossLine(ty_trans,320,323,91,91)
     #13 taiwan luzon straits
-    transports[:,13]=transAcrossLine(ty_trans,38,39,190,190)
-    transports[:,13]+=transAcrossLine(tx_trans,40,40,184,188)
+    transports[:,13] = transAcrossLine(ty_trans,38,39,190,190)
+    transports[:,13] += transAcrossLine(tx_trans,40,40,184,188)
     #14 windward passage
-    transports[:,14]=transAcrossLine(ty_trans,205,206,185,185)
+    transports[:,14] = transAcrossLine(ty_trans,205,206,185,185)
     return transports
 
 def icelineTransports(ice_thickness,velx,vely):
     #ice mass transport across fram strait
-    tx_trans=iceTransport(ice_thickness,velx,'x').filled(0)
-    ty_trans=iceTransport(ice_thickness,vely,'y').filled(0)
-    transports= np.zeros([len(tx_trans[:,0,0]),len(geticeTransportLines())],dtype=np.float32)
+    tx_trans = iceTransport(ice_thickness,velx,'x').filled(0)
+    ty_trans = iceTransport(ice_thickness,vely,'y').filled(0)
+    transports = np.zeros([len(tx_trans[:,0,0]),len(geticeTransportLines())],dtype=np.float32)
     #0 fram strait
-    transports[:,0]=transAcrossLine(tx_trans,267,267,279,279)
-    transports[:,0]+=transAcrossLine(ty_trans,268,284,278,278)
+    transports[:,0] = transAcrossLine(tx_trans,267,267,279,279)
+    transports[:,0] += transAcrossLine(ty_trans,268,284,278,278)
     #1 canadian archipelago
-    transports[:,1]=transAcrossLine(ty_trans,206,212,285,285)
-    transports[:,1]+=transAcrossLine(tx_trans,235,235,287,288)
+    transports[:,1] = transAcrossLine(ty_trans,206,212,285,285)
+    transports[:,1] += transAcrossLine(tx_trans,235,235,287,288)
     #2 barents opening
-    transports[:,2]=transAcrossLine(ty_trans,292,300,271,271)
-    transports[:,2]+=transAcrossLine(tx_trans,300,300,260,271)
+    transports[:,2] = transAcrossLine(ty_trans,292,300,271,271)
+    transports[:,2] += transAcrossLine(tx_trans,300,300,260,271)
     #3 bering strait
-    transports[:,3]=transAcrossLine(ty_trans,110,111,246,246)
+    transports[:,3] = transAcrossLine(ty_trans,110,111,246,246)
     return transports
 
 def snowlineTransports(snow_thickness,velx,vely):
     #ice mass transport across fram strait
-    tx_trans=snowTransport(snow_thickness,velx,'x').filled(0)
-    ty_trans=snowTransport(snow_thickness,vely,'y').filled(0)
-    transports= np.zeros([len(tx_trans[:,0,0]),len(geticeTransportLines())],dtype=np.float32)
+    tx_trans = snowTransport(snow_thickness,velx,'x').filled(0)
+    ty_trans = snowTransport(snow_thickness,vely,'y').filled(0)
+    transports = np.zeros([len(tx_trans[:,0,0]),len(geticeTransportLines())],dtype=np.float32)
     #0 fram strait
-    transports[:,0]=transAcrossLine(tx_trans,267,267,279,279)
-    transports[:,0]+=transAcrossLine(ty_trans,268,284,278,278)
+    transports[:,0] = transAcrossLine(tx_trans,267,267,279,279)
+    transports[:,0] += transAcrossLine(ty_trans,268,284,278,278)
     #1 canadian archipelago
-    transports[:,1]=transAcrossLine(ty_trans,206,212,285,285)
-    transports[:,1]+=transAcrossLine(tx_trans,235,235,287,288)
+    transports[:,1] = transAcrossLine(ty_trans,206,212,285,285)
+    transports[:,1] += transAcrossLine(tx_trans,235,235,287,288)
     #2 barents opening
-    transports[:,2]=transAcrossLine(ty_trans,292,300,271,271)
-    transports[:,2]+=transAcrossLine(tx_trans,300,300,260,271)
+    transports[:,2] = transAcrossLine(ty_trans,292,300,271,271)
+    transports[:,2] += transAcrossLine(tx_trans,300,300,260,271)
     #3 bering strait
-    transports[:,3]=transAcrossLine(ty_trans,110,111,246,246)
+    transports[:,3] = transAcrossLine(ty_trans,110,111,246,246)
     return transports
 
 def icearealineTransports(ice_fraction,velx,vely):
     #ice mass transport across fram strait
-    tx_trans=iceareaTransport(ice_fraction,velx,'x').filled(0)
-    ty_trans=iceareaTransport(ice_fraction,vely,'y').filled(0)
-    transports= np.zeros([len(tx_trans[:,0,0]),len(geticeTransportLines())],dtype=np.float32)
+    tx_trans = iceareaTransport(ice_fraction,velx,'x').filled(0)
+    ty_trans = iceareaTransport(ice_fraction,vely,'y').filled(0)
+    transports = np.zeros([len(tx_trans[:,0,0]),len(geticeTransportLines())],dtype=np.float32)
     #0 fram strait
-    transports[:,0]=transAcrossLine(tx_trans,267,267,279,279)
-    transports[:,0]+=transAcrossLine(ty_trans,268,284,278,278)
+    transports[:,0] = transAcrossLine(tx_trans,267,267,279,279)
+    transports[:,0] += transAcrossLine(ty_trans,268,284,278,278)
     #1 canadian archipelago
-    transports[:,1]=transAcrossLine(ty_trans,206,212,285,285)
-    transports[:,1]+=transAcrossLine(tx_trans,235,235,287,288)
+    transports[:,1] = transAcrossLine(ty_trans,206,212,285,285)
+    transports[:,1] += transAcrossLine(tx_trans,235,235,287,288)
     #2 barents opening
-    transports[:,2]=transAcrossLine(ty_trans,292,300,271,271)
-    transports[:,2]+=transAcrossLine(tx_trans,300,300,260,271)
+    transports[:,2] = transAcrossLine(ty_trans,292,300,271,271)
+    transports[:,2] += transAcrossLine(tx_trans,300,300,260,271)
     #3 bering strait
-    transports[:,3]=transAcrossLine(ty_trans,110,111,246,246)
+    transports[:,3] = transAcrossLine(ty_trans,110,111,246,246)
     return transports
 
 #Calculate the mass trasport across a line
@@ -561,75 +576,82 @@ def icearealineTransports(ice_fraction,velx,vely):
 def transAcrossLine(var,i_start,i_end,j_start,j_end):
     if i_start==i_end or j_start==j_end:
         try:
-            trans= var[:,:,j_start:j_end+1,i_start:i_end+1].sum(1).sum(1).sum(1) #sum each axis apart from time (3d)
+            trans = var[:,:,j_start:j_end+1,i_start:i_end+1].sum(1).sum(1).sum(1) #sum each axis apart from time (3d)
         except:
-            trans= var[:,j_start:j_end+1,i_start:i_end+1].sum(1).sum(1) #sum each axis apart from time (2d)
+            trans = var[:,j_start:j_end+1,i_start:i_end+1].sum(1).sum(1) #sum each axis apart from time (2d)
         #print var[0,0,j_start:j_end+1,i_start:i_end+1]
         return trans
-    else: raise Exception('ERROR: Transport across a line needs to be calculated for a single value of i or j')
+    else: 
+        raise Exception('ERROR: Transport across a line needs to be calculated for a single value of i or j')
 
 def msftbarot(psiu,tx_trans):
     drake_trans=transAcrossLine(tx_trans,212,212,32,49)
     #loop over times
     for i,trans in enumerate(drake_trans):
         #offset psiu by the drake passage transport at that time
-        psiu[i,:]=psiu[i,:]+trans
+        psiu[i,:] = psiu[i,:]+trans
     return psiu
 
 #Calculate ice_mass transport. assumes only one time value
 def iceTransport(ice_thickness,vel,xy):
-    gridfile=ancillary_path+'cice_grid_20101208.nc' #file with grids specifications
-    f=cdms2.open(gridfile,'r')
+    gridfile = ancillary_path+'cice_grid_20101208.nc' #file with grids specifications
+    f = cdms2.open(gridfile,'r')
     if xy=='y':
         #for y_vel use length dx
-        L=np.float32(f.variables['hun'][:]/100) #grid cell length in m (from cm)
+        L = np.float32(f.variables['hun'][:]/100) #grid cell length in m (from cm)
     elif xy=='x':
         #for x_vel use length dy
-        L=np.float32(f.variables['hue'][:]/100) #grid cell length in m (from cm)
-    else: raise Exception('need to supply value either \'x\' or \'y\' for ice Transports')
-    ice_density=900 #kg/m3
+        L = np.float32(f.variables['hue'][:]/100) #grid cell length in m (from cm)
+    else: 
+        raise Exception('need to supply value either \'x\' or \'y\' for ice Transports')
+    ice_density = 900 #kg/m3
     f.close()
-    return (ice_density*ice_thickness*vel*L)
+    ice_mass = ice_density*ice_thickness*vel*L
+    return ice_mass
 
 #Calculate ice_mass transport. assumes only one time value
 def snowTransport(snow_thickness,vel,xy):
-    gridfile=ancillary_path+'cice_grid_20101208.nc' #file with grids specifications
-    f=cdms2.open(gridfile,'r')
+    gridfile = ancillary_path+'cice_grid_20101208.nc' #file with grids specifications
+    f = cdms2.open(gridfile,'r')
     if xy=='y':
         #for y_vel use length dx
-        L=np.float32(f.variables['hun'][:]/100) #grid cell length in m (from cm)
+        L = np.float32(f.variables['hun'][:]/100) #grid cell length in m (from cm)
     elif xy=='x':
         #for x_vel use length dy
-        L=np.float32(f.variables['hue'][:]/100) #grid cell length in m (from cm)
-    else: raise Exception('need to supply value either \'x\' or \'y\' for ice Transports')
-    snow_density=300 #kg/m3
+        L = np.float32(f.variables['hue'][:]/100) #grid cell length in m (from cm)
+    else: 
+        raise Exception('need to supply value either \'x\' or \'y\' for ice Transports')
+    snow_density = 300 #kg/m3
     f.close()
-    return (snow_density*snow_thickness*vel*L)
+    snow_mass = snow_density*snow_thickness*vel*L
+    return snow_mass
 
 def iceareaTransport(ice_fraction,vel,xy):
-    gridfile=ancillary_path+'cice_grid_20101208.nc' #file with grids specifications
-    f=cdms2.open(gridfile,'r')
+    gridfile = ancillary_path+'cice_grid_20101208.nc' #file with grids specifications
+    f = cdms2.open(gridfile,'r')
     if xy=='y':
         #for y_vel use length dx
-        L=np.float32(f.variables['hun'][:]/100) #grid cell length in m (from cm)
+        L = np.float32(f.variables['hun'][:]/100) #grid cell length in m (from cm)
     elif xy=='x':
         #for x_vel use length dy
-        L=np.float32(f.variables['hue'][:]/100) #grid cell length in m (from cm)
-    else: raise Exception('need to supply value either \'x\' or \'y\' for ice Transports')
+        L = np.float32(f.variables['hue'][:]/100) #grid cell length in m (from cm)
+    else: 
+        raise Exception('need to supply value either \'x\' or \'y\' for ice Transports')
     f.close()
-    return (ice_fraction*vel*L)
+    ice_area = ice_fraction*vel*L
+    return ice_area
 
 #
 #Calculate the heights of each atmospheric level at any lat and lon
 #uses the model orography and level a and b coefficients to calculate this
 def calcHeights(zgrid):
-    a_vals,b_vals,dummy1,dummy2=getHybridLevels(zgrid)
-    orog=getOrog()
-    z=len(a_vals)
-    [y,x]=np.shape(orog)
-    height=np.zeros([z,y,x],dtype=np.float32)
+    a_vals,b_vals,dummy1,dummy2 = getHybridLevels(zgrid)
+    orog = getOrog()
+    z = len(a_vals)
+    [y,x] = np.shape(orog)
+    height = np.zeros([z,y,x],dtype=np.float32)
     for i, a in enumerate(a_vals):
-        height[i,:]=a+b_vals[i]*orog[:]
+        height[i,:] = a+b_vals[i]*orog[:]
     #f=Scientific.IO.NetCDF.NetCDFFile('/home/599/pfu599/app/trunk/heights.nc','w')
     #f.createDimension('z',z)
     #f.createDimension('y',y)
@@ -644,32 +666,33 @@ def calcHeights(zgrid):
 # Concentration is mass mixing ratio* density
 # Density = P*rd/temp
 def calcConcentration(theta,pressure,var):
-    rd=287.0
-    cp=1003.5
-    p_0=100000.0
-    fac1=pressure/rd
+    rd = 287.0
+    cp = 1003.5
+    p_0 = 100000.0
+    fac1 = pressure/rd
     #convert theta (potential temp) to absolute temp
-    fac2=(1.0/theta)*((p_0/pressure)**(rd/cp)) 
-    return var*fac1*fac2
+    fac2 = (1.0/theta)*((p_0/pressure)**(rd/cp)) 
+    con = var*fac1*fac2
+    return con
     
 
 #Calculate gas/aerosol concentration from mixing ratio
 # Concentration is mass mixing ratio* density
 # Density = pressure*rd/temp
 def calcConcentration_temp(temp,pressure,var):
-    rd=287.0
-    return var*pressure/rd/temp
+    rd = 287.0
+    con_t = var*pressure/rd/temp
+    return con_t
 
 #idea use to reduce memory usage (doesn't seem to make a difference)
+# SG: This doesn't seem to be used or correct.
 def calcBurdens(variables):
-    theta=variables[0]
-    pressure=variables[1]
-    burden=calcBurden(theta,pressure,variables[2])
+    theta = variables[0]
+    pressure = variables[1]
+    burden = calcBurden(theta,pressure,variables[2])
     for i in range(3,len(variables)):
-        burden+=calcBurden(theta,pressure,variables[i])
+        burden += calcBurden(theta,pressure,variables[i])
     return burden
-        
-
 
 #returns a and b coefficients of the hybrid height levels
 #zgrid is either theta or rho, specifying which levels to use
@@ -677,7 +700,7 @@ def getHybridLevels(zgrid,mod_levs):
     #
     #THETA 38 models levels
     #
-    a_theta_38=[ 2.00003476841366E+01,    8.00013607367031E+01,    1.79999123674816E+02,     
+    a_theta_38 = [ 2.00003476841366E+01,    8.00013607367031E+01,    1.79999123674816E+02,     
         3.20001487465965E+02,    5.00000601144540E+02,    7.20000390195303E+02,    9.80000854619977E+02,
         1.27999806893725E+03,    1.61999988411616E+03,    1.99999844919269E+03,    2.42000161513650E+03,
         2.88000153098418E+03,    3.37999819673933E+03,    3.91999946337258E+03,    4.50000140540479E+03,
@@ -687,7 +710,7 @@ def getHybridLevels(zgrid,mod_levs):
         1.56946398824287E+04,    1.68753114372833E+04,    1.81386261933466E+04,    1.95030103694309E+04,
         2.09901875904244E+04,    2.26260817484206E+04,    2.44582854036469E+04,    2.65836402305355E+04,
         2.92190802158774E+04,    3.29086930549692E+04,    3.92548335760000E+04]    
-    b_theta_38=[ 0.99771646211176, 0.990881509969853, 0.97954257198, 
+    b_theta_38 = [ 0.99771646211176, 0.990881509969853, 0.97954257198, 
         0.963777064495466, 0.943695500215124, 0.919438385933089, 
         0.891177995326388, 0.85911834077804, 0.823493502026291, 
         0.784570542447329, 0.74264622270758, 0.698050213339009, 
@@ -700,7 +723,7 @@ def getHybridLevels(zgrid,mod_levs):
     #
     #THETA 85 models levels
     #
-    a_theta_85=[1.99999985e+01,    5.33333350e+01,    1.00000035e+02,    1.60000005e+02,    2.33333330e+02,     
+    a_theta_85 = [1.99999985e+01,    5.33333350e+01,    1.00000035e+02,    1.60000005e+02,    2.33333330e+02,     
         3.20000010e+02,    4.19999960e+02,    5.33333350e+02,    6.59999925e+02,    7.99999940e+02,    9.53333650e+02,
         1.11999995e+03,    1.30000020e+03,    1.49333355e+03,    1.70000000e+03,    1.91999955e+03,    2.15333305e+03,
         2.39999965e+03,    2.65999935e+03,    2.93333300e+03,    3.21999975e+03,    3.51999960e+03,    3.83333340e+03,
@@ -715,7 +738,7 @@ def getHybridLevels(zgrid,mod_levs):
         3.99679265e+04,    4.18248535e+04,    4.38438330e+04,    4.60462085e+04,    4.84558310e+04,    5.10993480e+04,
         5.40064245e+04,    5.72100150e+04,    6.07467035e+04,    6.46569585e+04,    6.89855240e+04,    7.37817680e+04,
         7.91000140e+04,    8.50000000e+04]
-    b_theta_85=[ 0.997741275086705, 0.99398240804637, 0.988731908699181, 
+    b_theta_85 = [ 0.997741275086705, 0.99398240804637, 0.988731908699181, 
         0.982001705304877, 0.973807111131548, 0.964166854107058, 
         0.953103076620072, 0.940641297950216, 0.926810489201526, 
         0.911642970668284, 0.895174468640199, 0.877444259574719, 
@@ -736,7 +759,7 @@ def getHybridLevels(zgrid,mod_levs):
     #
     #RHO 38 model levels
     #
-    a_rho_38=[ 9.99820611180720E+00,    4.99988815257512E+01,    1.30000232353639E+02,     
+    a_rho_38 = [ 9.99820611180720E+00,    4.99988815257512E+01,    1.30000232353639E+02,     
         2.49998333112114E+02,    4.10001034767890E+02,    6.10000486354252E+02,    8.50000613354558E+02,
         1.13000141576881E+03,    1.44999896811365E+03,    1.81000112135578E+03,    2.21000002452851E+03,
         2.64999960311518E+03,    3.12999985711579E+03,    3.65000078653035E+03,    4.20999846587549E+03,
@@ -746,7 +769,7 @@ def getHybridLevels(zgrid,mod_levs):
         1.51377197819288E+04,    1.62849736970543E+04,    1.75069688153084E+04,    1.88208202441304E+04,
         2.02465989799277E+04,    2.18081366321642E+04,    2.35421835760337E+04,    2.55209608543495E+04,
         2.79013582604648E+04,    3.10638885981650E+04,    3.60817633154846E+04]
-    b_rho_38=[ 0.998858128870133, 0.99429627308894, 0.985203884572179, 
+    b_rho_38 = [ 0.998858128870133, 0.99429627308894, 0.985203884572179, 
         0.971644051455324, 0.953709854688251, 0.931527464394211, 
         0.90525305068319, 0.875074548755025, 0.841211628160905, 
         0.803914038358856, 0.763464495026274, 0.720175811165861, 
@@ -759,7 +782,7 @@ def getHybridLevels(zgrid,mod_levs):
     #
     #RHO 85 model levels
     #
-    a_rho_85=[1.00000035e+01,    3.66666710e+01,    7.66666680e+01,    1.30000020e+02,    1.96666625e+02,     
+    a_rho_85 = [1.00000035e+01,    3.66666710e+01,    7.66666680e+01,    1.30000020e+02,    1.96666625e+02,     
         2.76666670e+02,    3.69999985e+02,    4.76666655e+02,    5.96666595e+02,    7.29999975e+02,    8.76667050e+02,
         1.03666680e+03,    1.20999965e+03,    1.39666645e+03,    1.59666635e+03,    1.81000020e+03,    2.03666630e+03,
         2.27666635e+03,    2.52999950e+03,    2.79666660e+03,    3.07666680e+03,    3.37000010e+03,    3.67666650e+03,
@@ -774,7 +797,7 @@ def getHybridLevels(zgrid,mod_levs):
         3.91109820e+04,    4.08963900e+04,    4.28343390e+04,    4.49450165e+04,    4.72510240e+04,    4.97775895e+04,
         5.25528905e+04,    5.56082240e+04,    5.89783550e+04,    6.27018310e+04,    6.68212455e+04,    7.13836375e+04,
         7.64408910e+04,    8.20500070e+04]
-    b_rho_85=[ 0.998870317837861, 0.995860954349445, 0.991355422277142, 
+    b_rho_85 = [ 0.998870317837861, 0.995860954349445, 0.991355422277142, 
         0.985363933974855, 0.977900121158012, 0.968980988270818, 
         0.958626984732528, 0.946861936587443, 0.933713093743072, 
         0.919211083274653, 0.90338992880522, 0.886287195763284, 0.86794369819746, 
@@ -795,545 +818,561 @@ def getHybridLevels(zgrid,mod_levs):
     #
     # 38 model levels (ESM)
     if zgrid=='theta' and mod_levs==38:
-        a_vals=a_theta_38
-        b_vals=b_theta_38
-        min_vals=[0]+a_rho_38[1:]
-        max_vals=a_rho_38[1:]+[4.24279038365e+04]
-        min_b=[1.0]+b_rho_38[1:]
-        max_b=b_rho_38[1:]+[0.0]
+        a_vals = a_theta_38
+        b_vals = b_theta_38
+        min_vals = [0] + a_rho_38[1:]
+        max_vals = a_rho_38[1:] + [4.24279038365e+04]
+        min_b = [1.0] + b_rho_38[1:]
+        max_b = b_rho_38[1:] + [0.0]
     if zgrid=='rho' and mod_levs==38:
-        a_vals=a_rho_38
-        b_vals=b_rho_38
-        min_vals=[0]+a_theta_38[:-1]
-        max_vals=a_theta_38
-        min_b=[1.0]+b_theta_38[:-1]
-        max_b=b_theta_38
+        a_vals = a_rho_38
+        b_vals = b_rho_38
+        min_vals = [0] + a_theta_38[:-1]
+        max_vals = a_theta_38
+        min_b = [1.0] + b_theta_38[:-1]
+        max_b = b_theta_38
     #
     # 85 model levels (CM2)
     if zgrid=='theta' and mod_levs==85:
-        a_vals=a_theta_85
-        b_vals=b_theta_85
-        min_vals=[0]+a_rho_85[1:]
-        max_vals=a_rho_85[1:]+[8.7949993e+04]
-        min_b=[1.0]+b_rho_85[1:]
-        max_b=b_rho_85[1:]+[0.0]
+        a_vals = a_theta_85
+        b_vals = b_theta_85
+        min_vals = [0] + a_rho_85[1:]
+        max_vals = a_rho_85[1:] + [8.7949993e+04]
+        min_b = [1.0] + b_rho_85[1:]
+        max_b = b_rho_85[1:] + [0.0]
     if zgrid=='rho' and mod_levs==85:
-        a_vals=a_rho_85
-        b_vals=b_rho_85
-        min_vals=[0]+a_theta_85[:-1]
-        max_vals=a_theta_85
-        min_b=[1.0]+b_theta_85[:-1]
-        max_b=b_theta_85
+        a_vals = a_rho_85
+        b_vals = b_rho_85
+        min_vals = [0] + a_theta_85[:-1]
+        max_vals = a_theta_85
+        min_b=[1.0] + b_theta_85[:-1]
+        max_b = b_theta_85
     #
     return a_vals,b_vals,np.column_stack((min_vals, max_vals)),np.column_stack((min_b,max_b))
 
 #gets the ACCESS model orography from a file and returns it
 def getOrog():
-    orog_fName=ancillary_path+'cm2_orog.nc'
-    orog_file=cdms2.open(orog_fName, 'r')
-    orog_vals=np.float32(orog_file.variables['fld_s00i033'][0,:,:])
+    orog_fName = ancillary_path+'cm2_orog.nc'
+    orog_file = cdms2.open(orog_fName, 'r')
+    orog_vals = np.float32(orog_file.variables['fld_s00i033'][0,:,:])
     orog_file.close()
     return orog_vals
 
 def areacella(nlat):
     if nlat == 145:
-        fName=ancillary_path+'esm_areacella.nc'
+        fName = ancillary_path+'esm_areacella.nc'
     elif nlat == 144:
-        fName=ancillary_path+'cm2_areacella.nc'
-    f=cdms2.open(fName, 'r')
-    vals=np.float32(f.variables['areacella'][:,:])
+        fName = ancillary_path+'cm2_areacella.nc'
+    f = cdms2.open(fName, 'r')
+    vals = np.float32(f.variables['areacella'][:,:])
     f.close()
     return vals
 
 def landFrac(nlat):
     if nlat == 145:
-        fName=ancillary_path+'esm_landfrac.nc'
+        fName = ancillary_path+'esm_landfrac.nc'
     if nlat == 144:
-        fName=ancillary_path+'cm2_landfrac.nc'
-    f=cdms2.open(fName, 'r')
-    vals=np.float32(f.variables['fld_s03i395'][0,:,:]).filled(0)
+        fName = ancillary_path+'cm2_landfrac.nc'
+    f = cdms2.open(fName, 'r')
+    vals = np.float32(f.variables['fld_s03i395'][0,:,:]).filled(0)
     f.close()
     return vals
 
 def fracLut(var,nwd):
     #nwd (non-woody vegetation only) - tiles 6,7,9,11 only
-    t,z,y,x=np.shape(var)
-    vout=np.ma.zeros([t,4,y,x],dtype=np.float32)
+    t,z,y,x = np.shape(var)
+    vout = np.ma.zeros([t,4,y,x],dtype=np.float32)
     #p_a_s_land tiles 1-7,11,14 (+8,16,17?)
     if nwd == 0:
         for i in [1,2,3,4,5,6,7,11,14]: 
-            t=i-1
-            vout[:,0,:,:]+=var[:,t,:,:]
+            t = i-1
+            vout[:,0,:,:] += var[:,t,:,:]
     elif nwd == 1:
         for i in [6,7,11]: 
-            t=i-1
-            vout[:,0,:,:]+=var[:,t,:,:]
+            t = i-1
+            vout[:,0,:,:] += var[:,t,:,:]
     #no pastures
-    vout[:,1,:,:]=vout[:,1,:,:]
+    vout[:,1,:,:] = vout[:,1,:,:]
     #crop tile 9
-    vout[:,2,:,:]=var[:,8,:,:]
+    vout[:,2,:,:] = var[:,8,:,:]
     #urban tile 15
     if nwd == 0:
-        vout[:,3,:,:]=var[:,14,:,:]
+        vout[:,3,:,:] = var[:,14,:,:]
     elif nwd == 1:
-        vout[:,3,:,:]=vout[:,3,:,:]
+        vout[:,3,:,:] = vout[:,3,:,:]
     if vout.shape[2] == 145:
-        landfrac=landFrac(145)
-        vout[:,0,:,:]=vout[:,0,:,:]*landfrac
-        vout[:,1,:,:]=vout[:,1,:,:]*landfrac
-        vout[:,2,:,:]=vout[:,2,:,:]*landfrac
-        vout[:,3,:,:]=vout[:,3,:,:]*landfrac
+        landfrac = landFrac(145)
+        vout[:,0,:,:] = vout[:,0,:,:]*landfrac
+        vout[:,1,:,:] = vout[:,1,:,:]*landfrac
+        vout[:,2,:,:] = vout[:,2,:,:]*landfrac
+        vout[:,3,:,:] = vout[:,3,:,:]*landfrac
     elif vout.shape[2] == 144:
         landfrac=landFrac(144)
-        vout[:,0,:,:]=vout[:,0,:,:]*landfrac
-        vout[:,1,:,:]=vout[:,1,:,:]*landfrac
-        vout[:,2,:,:]=vout[:,2,:,:]*landfrac
-        vout[:,3,:,:]=vout[:,3,:,:]*landfrac
+        vout[:,0,:,:] = vout[:,0,:,:]*landfrac
+        vout[:,1,:,:] = vout[:,1,:,:]*landfrac
+        vout[:,2,:,:] = vout[:,2,:,:]*landfrac
+        vout[:,3,:,:] = vout[:,3,:,:]*landfrac
     else:
         raise Exception('could not apply landFrac')
     return vout
     
 #list of the names of the cmip6 landUse dimension
 def getlandUse():
-    return ['primary_and_secondary_land','pastures','crops','urban']
+    landuse = ['primary_and_secondary_land','pastures','crops','urban']
+    return landuse
     
 #list of the names of the land tiles in cable
 def cableTiles():
-    return ['Evergreen_Needleleaf','Evergreen_Broadleaf','Deciduous_Needleleaf','Deciduous_Broadleaf','Shrub',\
+    cabletiles = ['Evergreen_Needleleaf','Evergreen_Broadleaf','Deciduous_Needleleaf','Deciduous_Broadleaf','Shrub',\
         'C3_grass','C4_grass','Tundra','C3_crop','C4_crop', 'Wetland','','','Barren','Urban','Lakes','Ice'] 
+    return cabletiles
 
 #level values and bounds for soil depths in moses
 def mosesSoilLevels():
-    levels=np.array([0.05, 0.225 ,0.675, 2.000])
-    boundmin=np.array([0.0,0.10, 0.350 ,1.0])
-    boundmax=np.array([0.10, 0.350 ,1.0, 3.0])
-    bounds=np.column_stack((boundmin,boundmax))
+    levels = np.array([0.05, 0.225 ,0.675, 2.000])
+    boundmin = np.array([0.0,0.10, 0.350 ,1.0])
+    boundmax = np.array([0.10, 0.350 ,1.0, 3.0])
+    bounds = np.column_stack((boundmin,boundmax))
     return levels,bounds
 
 #level values and bounds for soil depths in cable
 def cableSoilLevels():
-    levels=np.array([ 0.011 ,  0.051 ,  0.157 ,  0.4385,  1.1855,  2.872 ],dtype=np.float32)
-    boundmin=np.array([0,0.022,  0.08 ,  0.234,  0.643,  1.728],dtype=np.float32)
-    boundmax=np.array([ 0.022,  0.08 ,  0.234,  0.643,  1.728,  4.6  ],dtype=np.float32)
-    bounds=np.column_stack((boundmin,boundmax))
+    levels = np.array([ 0.011 ,  0.051 ,  0.157 ,  0.4385,  1.1855,  2.872 ],dtype=np.float32)
+    boundmin = np.array([0,0.022,  0.08 ,  0.234,  0.643,  1.728],dtype=np.float32)
+    boundmax = np.array([ 0.022,  0.08 ,  0.234,  0.643,  1.728,  4.6  ],dtype=np.float32)
+    bounds = np.column_stack((boundmin,boundmax))
     return levels,bounds
 
 #Calculate values for mrfso
 #using values in var (field8230) and soil level thicknesses for cable or moses
 def calc_mrfso(var,model):
     if model=='cable':
-        lev,bounds=cableSoilLevels()
+        lev,bounds = cableSoilLevels()
     elif model=='moses':
-        lev,bounds=mosesSoilLevels()
-    else: raise Exception('model passed must be cable or moses for calculation of mrfso')
-    thickness=bounds[:,1]-bounds[:,0]
+        lev,bounds = mosesSoilLevels()
+    else: 
+        raise Exception('model passed must be cable or moses for calculation of mrfso')
+    thickness = bounds[:,1] - bounds[:,0]
     #compute weighted sum of var*thickness along z-axis of var
-    [tn,zn,yn,xn]=np.shape(var)
-    out=np.ma.zeros([tn,yn,xn],dtype=np.float32)
+    [tn,zn,yn,xn] = np.shape(var)
+    out = np.ma.zeros([tn,yn,xn],dtype=np.float32)
     #Note using density of water not ice (1000kg/m^3)
     for z in range(len(thickness)):
-        out+=var[:,z,:,:]*thickness[z]*1000
+        out += var[:,z,:,:] * thickness[z] * 1000
     return out
 
 def calc_global_ave_ocean(var,rho_dzt,area_t):
-    mass=rho_dzt*area_t
-    print np.shape(var)
-    try: vnew=np.average(var,axis=(1,2,3),weights=mass)
-    except: vnew=np.average(var,axis=(1,2),weights=mass[:,0,:,:])
+    mass = rho_dzt*area_t
+    print(np.shape(var))
+    try: 
+        vnew = np.average(var,axis=(1,2,3),weights=mass)
+    except: 
+        vnew = np.average(var,axis=(1,2),weights=mass[:,0,:,:])
     return vnew
 
 def calc_global_ave_ocean_om2(var,rho_dzt,deg):
     if deg == 1:
-        fname=ancillary_path+'om2_grid.nc' #file with grids specifications
+        fname = ancillary_path+'om2_grid.nc' #file with grids specifications
     elif deg == 025:
-        fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
-    f=cdms2.open(fname,'r')
-    area_t=np.float32(f.variables['area_t'][:])
-    mass=rho_dzt*area_t
-    print np.shape(var)
-    try: vnew=np.average(var,axis=(1,2,3),weights=mass)
-    except: vnew=np.average(var,axis=(1,2),weights=mass[:,0,:,:])
+        fname = ancillary_path+'om2-025_grid.nc' #file with grids specifications
+    f = cdms2.open(fname,'r')
+    area_t = np.float32(f.variables['area_t'][:])
+    mass = rho_dzt*area_t
+    print(np.shape(var))
+    try: 
+        vnew = np.average(var,axis=(1,2,3),weights=mass)
+    except: 
+        vnew = np.average(var,axis=(1,2),weights=mass[:,0,:,:])
     return vnew
 
 def calc_hemi_seaice_area_vol(var,tarea,lat,hemi):
-    lat=np.array(lat,dtype='float32')
-    var=np.array(np.ma.filled(var[0],0),dtype='float64')
-    tarea=np.array(tarea,dtype='float64')
+    lat = np.array(lat,dtype='float32')
+    var = np.array(np.ma.filled(var[0],0),dtype='float64')
+    tarea = np.array(tarea,dtype='float64')
     nhlati = np.where(lat>=0.)
     shlati = np.where(lat<0.)
-    var=var[:]*tarea[:]
+    var = var[:] * tarea[:]
     if hemi.find('north') != -1:
-        var=var[nhlati]
+        var = var[nhlati]
     elif hemi.find('south') != -1:
-        var=var[shlati]
-    varn=np.sum(var)
-    return [varn]
+        var = var[shlati]
+    varn = np.sum(var)
+    return varn
 
 def calc_hemi_seaice_extent(aice,tarea,lat,hemi):
-    lat=np.array(lat,dtype='float32')
-    aice=np.array(np.ma.filled(aice[0],0),dtype='float64')
-    tarea=np.array(tarea,dtype='float64')
-    nhlatiext=np.where((aice>=.15)&(aice<=1.)&(lat>=0.))
-    shlatiext=np.where((aice>=.15)&(aice<=1.)&(lat<0.))
+    lat = np.array(lat,dtype='float32')
+    aice = np.array(np.ma.filled(aice[0],0),dtype='float64')
+    tarea = np.array(tarea,dtype='float64')
+    nhlatiext = np.where((aice>=.15)&(aice<=1.)&(lat>=0.))
+    shlatiext = np.where((aice>=.15)&(aice<=1.)&(lat<0.))
     if hemi.find('north') != -1:
-        var=tarea[nhlatiext]
+        var = tarea[nhlatiext]
     elif hemi.find('south') != -1:
-        var=tarea[shlatiext]
-    varn=np.sum(var)
-    return [varn]
+        var = tarea[shlatiext]
+    varn = np.sum(var)
+    return varn
 
 #calculate weighted average using tile fractions
 #sum of variable for each tile 
 # multiplied by tile fraction
 def tileAve(var,tileFrac,lfrac=1):
-    var=np.asarray(var[:])
-    t,z,y,x=np.shape(var)
-    vout=np.ma.zeros([t,y,x],dtype=np.float32)
+    var = np.asarray(var[:])
+    t,z,y,x = np.shape(var)
+    vout = np.ma.zeros([t,y,x],dtype=np.float32)
     try:
         if tileFrac == '317':
-            tileFrac=tileFraci317()
+            tileFrac = tileFraci317()
             #loop over pft tiles and sum
             for k in range(t):
                 for i in range(z):
-                    vout+=var[k,i,:,:]*tileFrac[i,:,:]
-        else: raise Exception
+                    vout += var[k,i,:,:] * tileFrac[i,:,:]
+        else: 
+            raise Exception
     except:
         #loop over pft tiles and sum
         for i in range(z):
-            vout+=var[:,i,:,:]*tileFrac[:,i,:,:]
+            vout += var[:,i,:,:] * tileFrac[:,i,:,:]
     if lfrac == 1:
         if vout.shape[1] == 145:
-            landfrac=landFrac(145)
-            vout=vout*landfrac
+            landfrac = landFrac(145)
+            vout = vout*landfrac
         elif vout.shape[1] == 144:
-            landfrac=landFrac(144)
-            vout=vout*landfrac
+            landfrac = landFrac(144)
+            vout = vout * landfrac
         else:
             raise Exception('could not apply landFrac')
     return vout
 
 def tileFraci317():
-    fName=ancillary_path+'cm2_tilefrac.nc' # surface tile fractions from CM2 piControl
-    f=cdms2.open(fName, 'r')
-    vals=np.float32(f.variables['fld_s03i317'][0,:,:,:]) #.filled(0)
+    fName = ancillary_path+'cm2_tilefrac.nc' # surface tile fractions from CM2 piControl
+    f = cdms2.open(fName, 'r')
+    vals = np.float32(f.variables['fld_s03i317'][0,:,:,:]) #.filled(0)
     f.close()
     return vals
 
 def tileSum(var,lfrac=1):
-    t,z,y,x=np.shape(var)
-    vout=np.ma.zeros([t,y,x],dtype=np.float32)
+    t,z,y,x = np.shape(var)
+    vout = np.ma.zeros([t,y,x],dtype=np.float32)
     for i in range(z):
-        vout+=var[:,i,:,:]
+        vout += var[:,i,:,:]
     if lfrac == 1:
         if vout.shape[1] == 145:
-            landfrac=landFrac(145)
-            vout=vout*landfrac
+            landfrac = landFrac(145)
+            vout = vout * landfrac
         elif vout.shape[1] == 144:
-            landfrac=landFrac(144)
-            vout=vout*landfrac
+            landfrac = landFrac(144)
+            vout = vout * landfrac
         else:
             raise Exception('could not apply landFrac')
     return vout
  
 def tileFracExtract(tileFrac,tilenum):
-    t,z,y,x=np.shape(tileFrac)
-    vout=np.ma.zeros([t,y,x],dtype=np.float32)
+    t,z,y,x = np.shape(tileFrac)
+    vout = np.ma.zeros([t,y,x],dtype=np.float32)
     if isinstance(tilenum, int) == 1:
-        n=tilenum-1
-        vout+=tileFrac[:,n,:,:]
+        n = tilenum-1
+        vout += tileFrac[:,n,:,:]
     elif isinstance(tilenum, list):
         for i,t in enumerate(tilenum):
-            n=t-1
-            vout+=tileFrac[:,n,:,:]
+            n = t-1
+            vout += tileFrac[:,n,:,:]
     else:
         raise Exception('E: tile number must be integer or list')
     if vout.shape[1] == 145:
-        landfrac=landFrac(145)
-        vout=vout*landfrac
+        landfrac = landFrac(145)
+        vout = vout * landfrac
     elif vout.shape[1] == 144:
-        landfrac=landFrac(144)
-        vout=vout*landfrac
+        landfrac = landFrac(144)
+        vout = vout*landfrac
     else:
         raise Exception('could not apply landFrac')
     return vout
     
 def landmask(var):
-    t,y,x=np.shape(var)
-    vout=np.ma.zeros([t,y,x],dtype=np.float32)
+    t,y,x = np.shape(var)
+    vout = np.ma.zeros([t,y,x],dtype=np.float32)
     if var.shape[1] == 145:
-        landfrac=landFrac(145)
+        landfrac = landFrac(145)
     elif var.shape[1] == 144:
-        landfrac=landFrac(144)
+        landfrac = landFrac(144)
     for i in range(t):
-        vout[i,:,:]=np.ma.masked_where(landfrac == 0,var[i,:,:])
+        vout[i,:,:] = np.ma.masked_where(landfrac == 0,var[i,:,:])
     return vout
 
 def topsoil(var):
-    return var[:,0,:,:]+var[:,1,:,:]+var[:,2,:,:]*.012987
+    soil = var[:,0,:,:]+var[:,1,:,:]+var[:,2,:,:]*.012987
+    return soil
     
 def topsoil_tsl(var):
-    return (var[:,0,:,:]+var[:,1,:,:])/2
+    soil_tsl = (var[:,0,:,:]+var[:,1,:,:])/2
+    return soil_tsl
 
 def tslsi(sf_temp,si_temp):
-    tileFrac=tileFraci317()
-    t,z,y,x=np.shape(sf_temp)
-    sf_temp_sum=np.ma.zeros([t,y,x],dtype=np.float32)
+    tileFrac = tileFraci317()
+    t,z,y,x = np.shape(sf_temp)
+    sf_temp_sum = np.ma.zeros([t,y,x],dtype=np.float32)
     #loop over pft tiles and sum
     for i in range(z):
-        sf_temp_sum+=sf_temp[:,i,:,:]*tileFrac[i,:,:]
+        sf_temp_sum += sf_temp[:,i,:,:] * tileFrac[i,:,:]
     if sf_temp_sum.shape[1] == 145:
-        landfrac=landFrac(145)
-        sf_temp_sum=sf_temp_sum*landfrac
+        landfrac = landFrac(145)
+        sf_temp_sum = sf_temp_sum * landfrac
     elif sf_temp_sum.shape[1] == 144:
-        landfrac=landFrac(144)
-        sf_temp_sum=sf_temp_sum*landfrac
+        landfrac = landFrac(144)
+        sf_temp_sum = sf_temp_sum * landfrac
     else:
         raise Exception('could not apply landFrac')
-    si_temp_mask=np.ma.masked_values(si_temp,271.35)
+    si_temp_mask = np.ma.masked_values(si_temp,271.35)
     #vout=sf_temp_sum
-    vout=np.ma.array(sf_temp_sum.data+si_temp_mask.data,mask=map(and_,sf_temp_sum.mask,si_temp_mask.mask))
+    vout = np.ma.array(sf_temp_sum.data+si_temp_mask.data,mask=map(and_,sf_temp_sum.mask,si_temp_mask.mask))
     return vout
 
 #temp for land or sea ice
 def calc_tslsi(var):
     #total temp,open sea temp,seaIce area fraction
-    ts,ts_sea,sic=var
+    ts,ts_sea,sic = var
     #land area Fraction
-    A_l=landFrac()
+    A_l = landFrac()
     #land or sea ice fraction
-    A_lsi=A_l+(1-A_l)*sic
+    A_lsi = A_l + (1 - A_l) * sic
     #open ocean fraction
-    A_o=(1-A_l)*(1-sic)
-    return (ts-ts_sea*A_o)/A_lsi
+    A_o = (1 - A_l) * (1 - sic)
+    return (ts - ts_sea * A_o) / A_lsi
 
 #hfbasin is output as the heat transport hfy, integrated over depth and longitude,
 # calculated for each of three ocean basins
 #hfy is given as the linear sum of the variables in transList
 def hfbasin(transList,om2=1):
-    dims=list(np.shape(transList[0][:,:,0])) +[3] #remove x add dim for 3 basins
-    output= np.ma.zeros(dims,dtype=np.float32)
+    dims = list(np.shape(transList[0][:,:,0])) + [3] #remove x add dim for 3 basins
+    output = np.ma.zeros(dims,dtype=np.float32)
     #grab land mask from first var (assuming the only masked values are land)
-    landMask=np.array(transList[0].mask[0,:,:],dtype=bool)
+    landMask = np.array(transList[0].mask[0,:,:],dtype=bool)
     #Get basin masks
     if om2 == 025:
         print('025deg')
-        basin=getBasinMask_025()
+        basin = getBasinMask_025()
     else:
         print('1deg')
-        basin=getBasinMask()
+        basin = getBasinMask()
     #2 global basin
     for trans in transList:
-        output[:,:,2]+=trans.sum(2)
+        output[:,:,2] += trans.sum(2)
     #0: atlantic arctic basin
     #atlantic and arctic basin are given by mask values 2 and 4 #TODO double check this
-    atlantic_arctic_mask=np.ma.make_mask(np.logical_and(basin!=2.0,basin!=4.0))
+    atlantic_arctic_mask = np.ma.make_mask(np.logical_and(basin!=2.0,basin!=4.0))
     for trans in transList:
         for t in range(np.shape(trans)[0]):
-                trans.mask[t,:,:]=np.ma.mask_or(atlantic_arctic_mask,landMask)    
-        output[:,:,0]+=trans.sum(2)
+                trans.mask[t,:,:] = np.ma.mask_or(atlantic_arctic_mask,landMask)    
+        output[:,:,0] += trans.sum(2)
     #1: indoPacific basin:
-    #Indian and Pacific basin are given by mask values 3 and 5 #TODO double check this
-    indoPac_mask=np.ma.make_mask(np.logical_and(basin!=3.0,basin!=5.0))
+    #Indian and Pacific basin are given by mask values 3 and 5 
+    # TODO double check this
+    indoPac_mask = np.ma.make_mask(np.logical_and(basin!=3.0,basin!=5.0))
     for trans in transList:
         for t in range(np.shape(trans)[0]):
-                trans.mask[t,:,:]=np.ma.mask_or(indoPac_mask,landMask)    
-        output[:,:,1]+=trans.sum(2)        
+                trans.mask[t,:,:] = np.ma.mask_or(indoPac_mask,landMask)    
+        output[:,:,1] += trans.sum(2)        
     return output
     
 #calculates the northward meridional fluxes for each basin
 #assumes that the x -coordinate has already been averaged over
 def basinMeridFlux(var):
-    glob,atlantic,arctic,pacific,indian=var
-    dims=list(np.shape(glob[:,:])) +[3] #remove x, add dim for 3 basins
-    output= np.ma.zeros(dims,dtype=np.float32)
+    glob,atlantic,arctic,pacific,indian = var
+    dims = list(np.shape(glob[:,:])) + [3] #remove x, add dim for 3 basins
+    output = np.ma.zeros(dims,dtype=np.float32)
     #atlantic,arctic
-    output[:,:,0]=atlantic[:,:]+arctic[:,:]
+    output[:,:,0] = atlantic[:,:] + arctic[:,:]
     #indo-pacific
-    output[:,:,1]=indian[:,:]+pacific[:,:]
+    output[:,:,1] = indian[:,:] + pacific[:,:]
     #global
-    output[:,:,2]=glob[:,:]
+    output[:,:,2] = glob[:,:]
     return output
 
 def tos_degC(var):
-    var=np.ma.asarray(var[:])
+    var = np.ma.asarray(var[:])
     if var[0].mean() >= 200:
-        print 'temp in K, converting to degC'
-        var=var[:]-273.15
+        print('temp in K, converting to degC')
+        var = var[:] - 273.15
     return var
     
 def tos_3hr(var):
-    var=tos_degC(var)
-    t,y,x=np.shape(var)
-    vout=np.ma.zeros([t,y,x],dtype=np.float32)
+    var = tos_degC(var)
+    t,y,x = np.shape(var)
+    vout = np.ma.zeros([t,y,x],dtype=np.float32)
     if var.shape[1] == 145:
-        landfrac=landFrac(145)
+        landfrac = landFrac(145)
     elif var.shape[1] == 144:
-        landfrac=landFrac(144)
+        landfrac = landFrac(144)
     for i in range(t):
-         vout[i,:,:]=np.ma.masked_where(landfrac == 1,var[i,:,:])
+         vout[i,:,:] = np.ma.masked_where(landfrac == 1,var[i,:,:])
     return vout
     
 def tossq_degC(var):
-    var=np.ma.asarray(var[:])
+    var = np.ma.asarray(var[:])
     if var[0].mean() >= 10000:
-        print 'temp in K^2, converting to degC^2'
-        var=((var[:]**0.5)-273.15)**2
+        print('temp in K^2, converting to degC^2')
+        var=((var[:] ** 0.5) - 273.15) ** 2
     return var
 
 def ocean_surface(var):
     return var[:,0,:,:]
 
 def ocean_floor(var):
-    var=np.ma.asarray(var)
-    lv=(~np.isnan(var)).sum(axis=1)-1
-    vout=np.take_along_axis(var,lv[:,None,:,:],axis=1).squeeze()
+    var = np.ma.asarray(var)
+    lv = (~np.isnan(var)).sum(axis=1)-1
+    vout = np.take_along_axis(var,lv[:,None,:,:],axis=1).squeeze()
     return vout
     
 def depth100(d95,d105):
-    vout=(d95+d105)/2
-    vout=np.ma.masked_where(np.ma.is_masked(d105),d105)
+    vout = (d95+d105) / 2
+    vout = np.ma.masked_where(np.ma.is_masked(d105),d105)
     return vout
 
 def calcrsdoabsorb(heat,flux):
-    t,z,y,x=np.shape(heat)
-    vout=np.ma.zeros([t,z,y,x],dtype=np.float32)
+    t,z,y,x = np.shape(heat)
+    vout = np.ma.zeros([t,z,y,x],dtype=np.float32)
     for i in range(z):
         if i == 0:
-            vout[:,0,:,:]=heat[:,0,:,:]+flux[:,:,:]
+            vout[:,0,:,:] = heat[:,0,:,:]+flux[:,:,:]
         else:
-            vout[:,i,:,:]=heat[:,i,:,:]
+            vout[:,i,:,:] = heat[:,i,:,:]
     return vout
 
 def ocnrmadvect_offine(var,tempsalt):
-    DIA=var[0]-var[1]
-    KPP=var[2]
-    EIT=var[3]+var[4]
-    SUB=var[5]
-    CON=var[1]+var[6]
-    RIV=var[7]
-    SIG=var[8]
-    NET=var[9]
+    DIA = var[0] - var[1]
+    KPP = var[2]
+    EIT = var[3] + var[4]
+    SUB = var[5]
+    CON = var[1] + var[6]
+    RIV = var[7]
+    SIG = var[8]
+    NET = var[9]
     if tempsalt == 'temp': #ocontemprmadvect
-        SWP=var[10]
-        FRZ=var[11]
-        PME=var[12] #2D
-        SMO=var[13] #2D
-        CON3D=DIA+KPP+EIT+SUB+CON+RIV+SIG+SWP+FRZ
-        CON2D=PME+SMO
-        t,z,y,x=np.shape(CON3D)
-        RHS=np.ma.zeros([t,z,y,x],dtype=np.float32)
-        RHS[:,0,:,:]=CON3D[:,0,:,:]+CON2D
-        RHS[:,1:,:,:]=CON3D[:,1:,:,:]
+        SWP = var[10]
+        FRZ = var[11]
+        PME = var[12] #2D
+        SMO = var[13] #2D
+        CON3D = DIA + KPP + EIT + SUB + CON + RIV + SIG + SWP + FRZ
+        CON2D = PME + SMO
+        t,z,y,x = np.shape(CON3D)
+        RHS = np.ma.zeros([t,z,y,x],dtype=np.float32)
+        RHS[:,0,:,:] = CON3D[:,0,:,:] + CON2D
+        RHS[:,1:,:,:] = CON3D[:,1:,:,:]
     elif tempsalt == 'salt': #osaltrmadvect
-        RHS=DIA+KPP+EIT+SUB+CON+RIV+SIG
-    else: raise Exception("E: var[1] must be 'temp' or 'salt'")
-    ADV=NET-RHS
-    vout=ADV+var[3]+SUB
+        RHS = DIA + KPP + EIT + SUB + CON + RIV + SIG
+    else: 
+        raise Exception("E: var[1] must be 'temp' or 'salt'")
+    ADV = NET - RHS
+    vout = ADV + var[3] + SUB
     return vout
 
 def ocndepthint(var,rho,dz):
-    landmask=oceanFrac()
-    var=tos_degC(var)
-    var=np.ma.filled(var[:],0)
-    rho=np.ma.filled(rho[:],0)
-    dz=np.ma.filled(dz[:],0)
-    t,z,y,x=np.shape(var)
-    vout=np.ma.zeros([t,y,x],dtype=np.float32)
-    vmul=var*rho*dz
+    landmask = oceanFrac()
+    var = tos_degC(var)
+    var = np.ma.filled(var[:],0)
+    rho = np.ma.filled(rho[:],0)
+    dz = np.ma.filled(dz[:],0)
+    t,z,y,x = np.shape(var)
+    vout = np.ma.zeros([t,y,x],dtype=np.float32)
+    vmul = var * rho * dz
     for i in range(z):
-        vout+=vmul[:,i,:,:]
+        vout += vmul[:,i,:,:]
     for i in range(t):
-        vout[i,:,:]=np.ma.masked_where(landmask == 0,vout[i,:,:])
+        vout[i,:,:] = np.ma.masked_where(landmask == 0,vout[i,:,:])
     return vout
 
 def ocndepthint_025(var,rho,dz):
-    landmask=oceanFrac_025()
-    var=tos_degC(var)
-    var=np.ma.filled(var[:],0)
-    rho=np.ma.filled(rho[:],0)
-    dz=np.ma.filled(dz[:],0)
-    t,z,y,x=np.shape(var)
-    vout=np.ma.zeros([t,y,x],dtype=np.float32)
-    vmul=var*rho*dz
+    landmask = oceanFrac_025()
+    var = tos_degC(var)
+    var = np.ma.filled(var[:],0)
+    rho = np.ma.filled(rho[:],0)
+    dz = np.ma.filled(dz[:],0)
+    t,z,y,x = np.shape(var)
+    vout = np.ma.zeros([t,y,x],dtype=np.float32)
+    vmul = var*rho*dz
     for i in range(z):
-        vout+=vmul[:,i,:,:]
+        vout += vmul[:,i,:,:]
     for i in range(t):
-        vout[i,:,:]=np.ma.masked_where(landmask == 0,vout[i,:,:])
+        vout[i,:,:] = np.ma.masked_where(landmask == 0,vout[i,:,:])
     return vout
 
 def oceanFrac():
-    fname=ancillary_path+'grid_spec.auscom.20110618.nc' #file with grids specifications
-    f=cdms2.open(fname,'r')
-    ofrac=np.float32(f.variables['wet'][:,:])
+    fname = ancillary_path+'grid_spec.auscom.20110618.nc' #file with grids specifications
+    f = cdms2.open(fname,'r')
+    ofrac = np.float32(f.variables['wet'][:,:])
     return ofrac
 
 def oceanFrac_025():
-    fname=ancillary_path+'om2-025_ocean_mask.nc' #file with grids specifications
-    f=cdms2.open(fname,'r')
-    ofrac=np.float32(f.variables['mask'][:,:])
+    fname = ancillary_path+'om2-025_ocean_mask.nc' #file with grids specifications
+    f = cdms2.open(fname,'r')
+    ofrac = np.float32(f.variables['mask'][:,:])
     return ofrac
 
 def getBasinMask():
-    mask_file=ancillary_path+'lsmask_ACCESS-OM2_1deg_20110618.nc'
-    return cdms2.open(mask_file,'r').variables['mask_ttcell'][0,:,:]
+    mask_file = ancillary_path+'lsmask_ACCESS-OM2_1deg_20110618.nc'
+    mask_ttcell = cdms2.open(mask_file,'r').variables['mask_ttcell'][0,:,:]
+    return mask_ttcell
 
 def getBasinMask_025():
     mask_file=ancillary_path+'lsmask_ACCESS-OM2_025deg_20201130.nc'
-    return cdms2.open(mask_file,'r').variables['mask_ttcell'][0,:,:]
+    mask_ttcell = cdms2.open(mask_file,'r').variables['mask_ttcell'][0,:,:]
+    return mask_ttcell
 
 def calc_rsds(sw_heat,swflx):
-    sw_heat[:,0,:,:]=swflx+sw_heat[:,0,:,:] #correct surface level
+    sw_heat[:,0,:,:] = swflx+sw_heat[:,0,:,:] #correct surface level
     return sw_heat
 
 def maskSeaIce(var,sic):
     #return np.ma.masked_where((np.array(var[1])==0).__and__(landFrac()==0),var[0])
-    return np.ma.masked_where(sic==0,var)
+    vout = np.ma.masked_where(sic==0,var)
+    return vout
 
 def sithick(hi,aice):
-    aice=np.ma.masked_where(aice<=1e-3,aice)
-    vout=hi/aice
+    aice = np.ma.masked_where(aice<=1e-3,aice)
+    vout = hi/aice
     return vout
 
 def sisnconc(sisnthick):
     #sisnthick=np.ma.masked_where(sisnthick<=1e-2,sisnthick)
-    return 1-np.exp(-0.2*330*sisnthick)
+    vout = 1-np.exp(-0.2*330*sisnthick)
+    return vout
 
 #take name of grid and find corresponding vertex positions from ancillary file
 def get_vertices(name):
     #dictionary to map grid names to names of vertex variables
-    dictionary={'geolon_t':'x_vert_T','geolat_t':'y_vert_T','geolon_c':'x_vert_C','geolat_c':'y_vert_C',\
+    dictionary = {'geolon_t':'x_vert_T','geolat_t':'y_vert_T','geolon_c':'x_vert_C','geolat_c':'y_vert_C',\
     'TLON':'lont_bonds','TLAT':'latt_bonds','ULON':'lonu_bonds','ULAT':'latu_bonds'}
     try:
-        vertexname=dictionary[name]
+        vertexname = dictionary[name]
     except:
         raise Exception('app_funcs.get_vertices: ocean grid specification unknown, '+name)
     try: #ocean grid
-        fname=ancillary_path+'grid_spec.auscom.20110618.nc'
-        f=cdms2.open(fname,'r')
-        vert=np.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))
+        fname = ancillary_path+'grid_spec.auscom.20110618.nc'
+        f = cdms2.open(fname,'r')
+        vert = np.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))
     except: #cice grid (convert from rad to degrees)
-        fname=ancillary_path+'cice_grid_20101208.nc'
-        f=cdms2.open(fname,'r')
-        vert=np.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))*57.2957795
+        fname = ancillary_path+'cice_grid_20101208.nc'
+        f = cdms2.open(fname,'r')
+        vert = np.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))*57.2957795
     #restrict longditudes to the range0-360
     return vert[:]
 
 def get_vertices_025(name):
     #dictionary to map grid names to names of vertex variables
-    dictionary={'geolon_t':'x_vert_T','geolat_t':'y_vert_T','geolon_c':'x_vert_C','geolat_c':'y_vert_C',\
+    dictionary = {'geolon_t':'x_vert_T','geolat_t':'y_vert_T','geolon_c':'x_vert_C','geolat_c':'y_vert_C',\
     'TLON':'lont_bonds','TLAT':'latt_bonds','ULON':'lonu_bonds','ULAT':'latu_bonds'}
     try:
-        vertexname=dictionary[name]
+        vertexname = dictionary[name]
     except:
         raise Exception('app_funcs.get_vertices: ocean grid specification unknown, '+name)
     try: #ocean grid
-        fname=ancillary_path+'grid_spec.auscom.20150514.nc'
-        f=cdms2.open(fname,'r')
-        vert=np.ma.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))
+        fname = ancillary_path+'grid_spec.auscom.20150514.nc'
+        f = cdms2.open(fname,'r')
+        vert = np.ma.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))
     except: #cice grid (convert from rad to degrees)
-        fname=ancillary_path+'cice_grid_20150514.nc'
-        f=cdms2.open(fname,'r')
-        vert=np.ma.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))*57.2957795
+        fname = ancillary_path+'cice_grid_20150514.nc'
+        f = cdms2.open(fname,'r')
+        vert = np.ma.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))*57.2957795
     #restrict longditudes to the range0-360
     return vert[:]
 
@@ -1341,152 +1380,153 @@ def get_vertices_025(name):
 #second variable is tile frac
 #the rest of the variables are the soil temp for one level, for each tile
 def calc_tsl(var):
-    vout=var[0]*0
+    vout = var[0] * 0
     #loop over soil levels, calculate tile average for each.
     for i in range(6):
-        vout[:,i,:,:]=tileAve(var[i+2],var[1])
+        vout[:,i,:,:] = tileAve(var[i+2],var[1])
     return vout
 
 def calc_areacello(area,mask_v):
-    area.mask=mask_v.mask
+    area.mask = mask_v.mask
     return area.filled(0)
 
 def calc_areacello_om2(deg):
     if deg == 1:
-        fname=ancillary_path+'om2_grid.nc' #file with grids specifications
+        fname = ancillary_path+'om2_grid.nc' #file with grids specifications
     elif deg == 025:
-        fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
-    f=cdms2.open(fname,'r')
-    area=np.float32(f.variables['area_t'][:])
-    mask_v=np.float32(f.variables['ht'][:])
-    area.mask=mask_v.mask
+        fname = ancillary_path+'om2-025_grid.nc' #file with grids specifications
+    f = cdms2.open(fname,'r')
+    area = np.float32(f.variables['area_t'][:])
+    mask_v = np.float32(f.variables['ht'][:])
+    area.mask = mask_v.mask
     return area.filled(0)
 
 def calc_volcello_om2(dht,deg):
     if deg == 1:
-        fname=ancillary_path+'om2_grid.nc' #file with grids specifications
+        fname = ancillary_path+'om2_grid.nc' #file with grids specifications
     elif deg == 025:
-        fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
-    f=cdms2.open(fname,'r')
-    area=np.float32(f.variables['area_t'][:])
-    return area*dht
+        fname = ancillary_path+'om2-025_grid.nc' #file with grids specifications
+    f = cdms2.open(fname,'r')
+    area = np.float32(f.variables['area_t'][:])
+    vout = area*dht
+    return vout
     
 def getdeptho(deg):
     if deg == 1:
-        fname=ancillary_path+'om2_grid.nc' #file with grids specifications
+        fname = ancillary_path+'om2_grid.nc' #file with grids specifications
     elif deg == 025:
-        fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
-    f=cdms2.open(fname,'r')
-    deptho=np.float32(f.variables['ht'][:])
+        fname = ancillary_path+'om2-025_grid.nc' #file with grids specifications
+    f = cdms2.open(fname,'r')
+    deptho = np.float32(f.variables['ht'][:])
     return deptho
     
 def plevinterp(var,pmod,heavy,lat,lat_v):
-    plev,bounds=plev19()
-    t,z,x,y=np.shape(var)
-    th,zh,xh,yh=np.shape(heavy)
+    plev,bounds = plev19()
+    t,z,x,y = np.shape(var)
+    th,zh,xh,yh = np.shape(heavy)
     if xh != x:
-        print 'heavyside not on same grid as variable; interpolating...'
-        hout=np.ma.zeros([th,zh,len(lat_v),yh],dtype=np.float32)
+        print('heavyside not on same grid as variable; interpolating...')
+        hout = np.ma.zeros([th,zh,len(lat_v),yh],dtype=np.float32)
         for k in range(th):
             for i in range(zh):
                 for j in range(yh):
-                    hint=interp1d(lat,heavy[k,i,:,j],kind="linear",fill_value="extrapolate")
-                    hout[k,i,:,j]=hint(lat_v)
-    hout=np.where(hout<=0.5,0,hout)
-    hout=np.where(hout>0.5,1,hout)
-    vout=np.ma.zeros([t,len(plev),x,y],dtype=np.float32)
-    print 'interpolating var from model levels to plev19...'
+                    hint = interp1d(lat,heavy[k,i,:,j],kind="linear",fill_value="extrapolate")
+                    hout[k,i,:,j] = hint(lat_v)
+    hout = np.where(hout<=0.5,0,hout)
+    hout = np.where(hout>0.5,1,hout)
+    vout = np.ma.zeros([t,len(plev),x,y],dtype=np.float32)
+    print('interpolating var from model levels to plev19...')
     for k in range(t):
         for i in range(x):
             for j in range(y):
-                vint=interp1d(pmod[k,:,i,j],var[k,:,i,j],kind="linear",fill_value="extrapolate")
-                vout[k,:,i,j]=vint(plev)
+                vint = interp1d(pmod[k,:,i,j],var[k,:,i,j],kind="linear",fill_value="extrapolate")
+                vout[k,:,i,j] = vint(plev)
     return vout/hout
 
 def plev19():
-    plev19=np.array([100000, 92500, 85000, 70000, 
+    plev19 = np.array([100000, 92500, 85000, 70000, 
         60000, 50000, 40000, 30000, 
         25000, 20000, 15000, 10000, 
         7000, 5000, 3000, 2000, 
         1000, 500, 100],dtype=np.float32)
-    plev19min=np.array([-1.0000e+02, 3.0000e+02, 7.5000e+02, 1.5000e+03, 2.5000e+03,
+    plev19min = np.array([-1.0000e+02, 3.0000e+02, 7.5000e+02, 1.5000e+03, 2.5000e+03,
         4.0000e+03, 6.0000e+03, 8.5000e+03, 1.2500e+04, 1.7500e+04, 
         2.2500e+04, 2.7500e+04, 3.5000e+04, 4.5000e+04, 5.5000e+04, 
         6.5000e+04, 7.7500e+04, 8.8750e+04, 9.6250e+04],dtype=np.float32)
-    plev19max=np.array([3.0000e+02, 7.5000e+02, 1.5000e+03, 2.5000e+03,
+    plev19max = np.array([3.0000e+02, 7.5000e+02, 1.5000e+03, 2.5000e+03,
         4.0000e+03, 6.0000e+03, 8.5000e+03, 1.2500e+04, 1.7500e+04, 
         2.2500e+04, 2.7500e+04, 3.5000e+04, 4.5000e+04, 5.5000e+04, 
         6.5000e+04, 7.7500e+04, 8.8750e+04, 9.6250e+04, 1.0375e+05],dtype=np.float32)
-    plev19b=np.column_stack((plev19min,plev19max))
-    return np.flip(plev19),plev19b
+    plev19b = np.column_stack((plev19min,plev19max))
+    return np.flip(plev19), plev19b
 
 #calculate clwvi by integrating over water collumn
 #assumes only one time step
 def calc_clwvi(var):
-    press=var[0]
-    print press.shape
-    out=np.ma.zeros([1]+list(press.shape[2:]),dtype=np.float32)
+    press = var[0]
+    print(press.shape)
+    out = np.ma.zeros([1]+list(press.shape[2:]),dtype=np.float32)
     for z in range(press.shape[1]-1):
-        mix=np.ma.zeros(press.shape[2:],dtype=np.float32)        
+        mix = np.ma.zeros(press.shape[2:],dtype=np.float32)        
         for v in var[1:]:
-            mix[:,:]+=v[0,z,:,:]
-        out[:,:]+=mix*(press[0,z,:]-press[0,z+1,:])
+            mix[:,:] += v[0,z,:,:]
+        out[:,:] += mix * (press[0,z,:] - press[0,z+1,:])
     return out*0.101972
 
 #calculates zostga from T and pressure
 def calc_zostoga(var,depth,lat):
     #extract variables
-    [T,dz,areacello]=var
-    [nt,nz,ny,nx]=T.shape #dimension lengths
-    zostoga=np.zeros([nt],dtype=np.float32)
+    [T,dz,areacello] = var
+    [nt,nz,ny,nx] = T.shape #dimension lengths
+    zostoga = np.zeros([nt],dtype=np.float32)
     #calculate pressure field
-    press=np.ma.array(sw_press(depth,lat))
-    press.mask=T[0,:].mask
+    press = np.ma.array(sw_press(depth,lat))
+    press.mask = T[0,:].mask
     #do calculation for each time step
     for t in range(nt):
-        tmp=((1. - rho_from_theta(T[t,:],35.00,press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(0)
-        areacello.mask=T[0,0,:].mask
-        zostoga[t]=(tmp*areacello).sum(0).sum(0)/areacello.sum()
+        tmp = ((1. - rho_from_theta(T[t,:],35.00,press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(0)
+        areacello.mask = T[0,0,:].mask
+        zostoga[t] = (tmp*areacello).sum(0).sum(0) / areacello.sum()
     return zostoga
 
 #calculates zostga from T and pressure
 def calc_zostoga_om2(var,depth,lat,deg):
     #extract variables
-    [T,dz]=var
+    [T,dz] = var
     if deg == 1:
-        fname=ancillary_path+'om2_grid.nc' #file with grids specifications
+        fname = ancillary_path+'om2_grid.nc' #file with grids specifications
     elif deg == 025:
-        fname=ancillary_path+'om2-025_grid.nc' #file with grids specifications
-    f=cdms2.open(fname,'r')
-    areacello=np.float32(f.variables['area_t'][:])
-    lat=f.variables['area_t'].getLatitude()
-    print 'lat: ',lat
-    [nt,nz,ny,nx]=T.shape #dimension lengths
-    zostoga=np.zeros([nt],dtype=np.float32)
+        fname = ancillary_path+'om2-025_grid.nc' #file with grids specifications
+    f = cdms2.open(fname,'r')
+    areacello = np.float32(f.variables['area_t'][:])
+    lat = f.variables['area_t'].getLatitude()
+    print(F'lat: {lat}')
+    [nt,nz,ny,nx] = T.shape #dimension lengths
+    zostoga = np.zeros([nt],dtype=np.float32)
     #calculate pressure field
-    press=np.ma.array(sw_press(depth,lat))
-    press.mask=T[0,:].mask
+    press = np.ma.array(sw_press(depth,lat))
+    press.mask = T[0,:].mask
     #do calculation for each time step
     for t in range(nt):
-        tmp=((1. - rho_from_theta(T[t,:],35.00,press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(0)
-        areacello.mask=T[0,0,:].mask
-        zostoga[t]=(tmp*areacello).sum(0).sum(0)/areacello.sum()
+        tmp = ((1. - rho_from_theta(T[t,:],35.00,press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(0)
+        areacello.mask = T[0,0,:].mask
+        zostoga[t] = (tmp*areacello).sum(0).sum(0)/areacello.sum()
     return zostoga
     
 #calculates zossga from T,S and pressure
 def calc_zossga(var,depth,lat):
     #extract variables
-    [T,S,dz,areacello]=var
-    [nt,nz,ny,nx]=T.shape
-    zossga=np.zeros([nt],dtype=np.float32)
+    [T,S,dz,areacello] = var
+    [nt,nz,ny,nx] = T.shape
+    zossga = np.zeros([nt],dtype=np.float32)
     #calculate pressure field
-    press=np.ma.array(sw_press(depth,lat))
-    press.mask=T[0,:].mask
+    press = np.ma.array(sw_press(depth,lat))
+    press.mask = T[0,:].mask
     #do calculation for each time step
     for t in range(nt):
-        tmp=((1. - rho_from_theta(T[t,:],S[t,:],press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(0)
-        areacello.mask=T[0,0,:].mask
-        zossga[t]=(tmp*areacello).sum(0).sum(0)/areacello.sum()
+        tmp = ((1. - rho_from_theta(T[t,:],S[t,:],press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(0)
+        areacello.mask = T[0,0,:].mask
+        zossga[t] = (tmp*areacello).sum(0).sum(0)/areacello.sum()
     return zossga
 
 #function to calculate density from temp, salinity and pressure
@@ -1510,7 +1550,7 @@ def rho_from_theta(th,s,p):
               th2*  1.8832689434804897e-10) +   \
             sqrts*( 5.7463776745432097e-06 +    \
               th2*  1.4716275472242334e-09))
-    pmask=(p!=0.0)
+    pmask = (p!=0.0)
     pth = p*th
     anum = anum +   pmask*(     p*( 1.1798263740430364e-02 +   \
                        th2*  9.8920219266399117e-08 +   \
@@ -1546,20 +1586,21 @@ def sw_press(dpth,lat):
 #return array on depth,lat,lon    
     pi = 4*np.arctan(1.)
     deg2rad = pi/180
-    x = np.sin(abs(lat[:])*deg2rad)  # convert to radians
-    c1 = 5.92e-3+x**2*5.25e-3
+    x = np.sin(abs(lat[:]) * deg2rad)  # convert to radians
+    c1 = 5.92e-3 + x ** 2 * 5.25e-3
     #expand arrays into 3 dimensions
     nd,=dpth.shape
-    nlat,nlon=lat.shape
-    dpth=np.expand_dims(np.expand_dims(dpth[:],1),2)
-    dpth=np.tile(dpth,(1,nlat,nlon))
-    c1=np.expand_dims(c1,0)
-    c1=np.tile(c1,(nd,1,1))
-    return ((1-c1)-np.sqrt(((1-c1)**2)-(8.84e-6*dpth)))/4.42e-6
+    nlat,nlon = lat.shape
+    dpth = np.expand_dims(np.expand_dims(dpth[:],1),2)
+    dpth = np.tile(dpth,(1,nlat,nlon))
+    c1 = np.expand_dims(c1,0)
+    c1 = np.tile(c1,(nd,1,1))
+    vout = ((1-c1)-np.sqrt(((1-c1)**2)-(8.84e-6*dpth)))/4.42e-6
+    return vout
 
 def fix_packing_division(num,den):
-    vout=num/den
-    vout[vout == 0.0] = 0.5*np.min(vout[vout > 0.0])
+    vout = num / den
+    vout[vout == 0.0] = 0.5 * np.min(vout[vout > 0.0])
     return vout
     
 #CCMI2022 functions
@@ -1570,14 +1611,14 @@ def extract_lvl(var,lvl):
     return var[:,lvl,:,:]
 
 def tropoz(o3plev,o3mod,troppres,plev):
-    t,z,y,x=np.shape(o3plev)
+    t,z,y,x = np.shape(o3plev)
     print(t,z,y,x)
-    vout=np.ma.zeros([t,y,x],dtype=np.float32)
+    vout = np.ma.zeros([t,y,x],dtype=np.float32)
     for k in range(t):
         for i in range(x):
             for j in range(y):
-                vint=np.interp(troppres[k,j,i],plev[::-1],o3plev[k,::-1,j,i])
-                vout[k,j,i]=np.max(o3mod[k,0,j,i])-vint
+                vint = np.interp(troppres[k,j,i],plev[::-1],o3plev[k,::-1,j,i])
+                vout[k,j,i] = np.max(o3mod[k,0,j,i]) - vint
     return vout
 
 def toz(o3):
@@ -1587,31 +1628,31 @@ def toz(o3):
         return o3
 
 def mcu_gravity(var):
-    t,z,y,x=np.shape(var)
-    a_theta_85,b_theta_85,dim_val_bounds_theta_85,b_bounds_theta_85=getHybridLevels('theta',85)
-    R_e=6.378E+06
-    grav_h=np.ma.zeros([len(a_theta_85)],dtype=np.float32)
+    t,z,y,x = np.shape(var)
+    a_theta_85,b_theta_85,dim_val_bounds_theta_85,b_bounds_theta_85 = getHybridLevels('theta',85)
+    R_e = 6.378E+06
+    grav_h = np.ma.zeros([len(a_theta_85)],dtype=np.float32)
     for i in range(len(a_theta_85)):
-        grav_h[i]=9.8*(R_e/(R_e+a_theta_85[i]))**2
-    mcu=np.ma.zeros([t,z,y,x],dtype=np.float32)
+        grav_h[i] = 9.8 * (R_e / (R_e + a_theta_85[i])) ** 2
+    mcu = np.ma.zeros([t,z,y,x],dtype=np.float32)
     for k in range(z):
-        mcu[:,k,:,:]=var[:,k,:,:]/grav_h[k]
+        mcu[:,k,:,:] = var[:,k,:,:] / grav_h[k]
     return mcu
 
 def mc_gravity(var):
-    t,z,y,x=np.shape(var)
+    t,z,y,x = np.shape(var)
     if z == 85:
-        a_theta,b_theta,dim_val_bounds_theta,b_bounds_theta=getHybridLevels('theta',85)
+        a_theta,b_theta,dim_val_bounds_theta,b_bounds_theta = getHybridLevels('theta',85)
     elif z == 38:
-        a_theta,b_theta,dim_val_bounds_theta,b_bounds_theta=getHybridLevels('theta',38)
+        a_theta,b_theta,dim_val_bounds_theta,b_bounds_theta = getHybridLevels('theta',38)
     else: sys.exit('levels undefined in mc_gravity')
-    R_e=6.378E+06
-    grav_h=np.ma.zeros([len(a_theta)],dtype=np.float32)
+    R_e = 6.378E+06
+    grav_h = np.ma.zeros([len(a_theta)],dtype=np.float32)
     for i in range(len(a_theta)):
-        grav_h[i]=9.8*(R_e/(R_e+a_theta[i]))**2
-    mc=np.ma.zeros([t,z,y,x],dtype=np.float32)
+        grav_h[i] = 9.8*(R_e / (R_e + a_theta[i])) ** 2
+    mc = np.ma.zeros([t,z,y,x],dtype=np.float32)
     for k in range(z):
-        mc[:,k,:,:]=var[:,k,:,:]/grav_h[k]
+        mc[:,k,:,:] = var[:,k,:,:] / grav_h[k]
     return mc
 
 
