@@ -2,7 +2,7 @@
 Changes to script
 
 14/03/23:
-SG - Updated print statements to work with python3.
+SG - Updated print statements and exceptions to work with python3.
 SG- Added spacesa and formatted script to read better.
 '''
 
