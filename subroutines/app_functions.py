@@ -4,6 +4,10 @@ Changes to script
 14/03/23:
 SG - Updated print statements and exceptions to work with python3.
 SG- Added spacesa and formatted script to read better.
+
+17/03/23:
+SG - Changed cdms2 to Xarray.
+SG - Refactored a several functions to make them cleaner.
 '''
 
 
@@ -15,7 +19,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import calendar
-import cdms2
+import xarray as xr
 import warnings
 import cdtime
 import math
@@ -25,12 +29,22 @@ from scipy.interpolate import interp1d
 warnings.simplefilter(action='ignore', category=FutureWarning)
 np.set_printoptions(threshold=sys.maxsize)
 
+# Global Variables
+#-----------------------------------
 ancillary_path = os.environ.get('ANCILLARY_FILES')+'/'
+
+ice_density = 900 #kg/m3
+snow_density = 300 #kg/m3
+
+rd = 287.0
+cp = 1003.5
+p_0 = 100000.0
+#-----------------------------------
 
 #function to give a sample plot of a variable
 def plotVar(outpath,ret,cmip_table,vcmip,parent_source_id,experiment_id):
-    f = cdms2.open(ret,'r')
-    var = f.variables[vcmip]
+    f = xr.open_dataset(ret)
+    var = f.fld_s00i033
     dims = var.shape
     units = var.units
     plt.figure()
@@ -592,53 +606,35 @@ def msftbarot(psiu,tx_trans):
         psiu[i,:] = psiu[i,:]+trans
     return psiu
 
-#Calculate ice_mass transport. assumes only one time value
-def iceTransport(ice_thickness,vel,xy):
-    gridfile = ancillary_path+'cice_grid_20101208.nc' #file with grids specifications
-    f = cdms2.open(gridfile,'r')
+# SG: Added function for code that was repeated in the following 3 functions.
+def gridfile(xy):
+    gridfile = xr.open_dataset(f'{ancillary_path}/cice_grid_20101208.nc')
     if xy=='y':
         #for y_vel use length dx
-        L = np.float32(f.variables['hun'][:]/100) #grid cell length in m (from cm)
+        L = np.float32(gridfile.hun[:]/100) #grid cell length in m (from cm)
     elif xy=='x':
         #for x_vel use length dy
-        L = np.float32(f.variables['hue'][:]/100) #grid cell length in m (from cm)
+        L = np.float32(gridfile.hue[:]/100) #grid cell length in m (from cm)
     else: 
         raise Exception('need to supply value either \'x\' or \'y\' for ice Transports')
-    ice_density = 900 #kg/m3
-    f.close()
-    ice_mass = ice_density*ice_thickness*vel*L
+    gridfile.close()
+    return L
+
+#Calculate ice_mass transport. assumes only one time value
+def iceTransport(ice_thickness,vel,xy):
+    L = gridfile(xy)
+    ice_mass = ice_density * ice_thickness * vel * L
     return ice_mass
 
 #Calculate ice_mass transport. assumes only one time value
 def snowTransport(snow_thickness,vel,xy):
-    gridfile = ancillary_path+'cice_grid_20101208.nc' #file with grids specifications
-    f = cdms2.open(gridfile,'r')
-    if xy=='y':
-        #for y_vel use length dx
-        L = np.float32(f.variables['hun'][:]/100) #grid cell length in m (from cm)
-    elif xy=='x':
-        #for x_vel use length dy
-        L = np.float32(f.variables['hue'][:]/100) #grid cell length in m (from cm)
-    else: 
-        raise Exception('need to supply value either \'x\' or \'y\' for ice Transports')
-    snow_density = 300 #kg/m3
-    f.close()
-    snow_mass = snow_density*snow_thickness*vel*L
+    L = gridfile(xy)
+    snow_mass = snow_density * snow_thickness * vel * L
     return snow_mass
 
 def iceareaTransport(ice_fraction,vel,xy):
-    gridfile = ancillary_path+'cice_grid_20101208.nc' #file with grids specifications
-    f = cdms2.open(gridfile,'r')
-    if xy=='y':
-        #for y_vel use length dx
-        L = np.float32(f.variables['hun'][:]/100) #grid cell length in m (from cm)
-    elif xy=='x':
-        #for x_vel use length dy
-        L = np.float32(f.variables['hue'][:]/100) #grid cell length in m (from cm)
-    else: 
-        raise Exception('need to supply value either \'x\' or \'y\' for ice Transports')
-    f.close()
-    ice_area = ice_fraction*vel*L
+    L = gridfile(xy)
+    ice_area = ice_fraction * vel * L
     return ice_area
 
 #
@@ -666,33 +662,18 @@ def calcHeights(zgrid):
 # Concentration is mass mixing ratio* density
 # Density = P*rd/temp
 def calcConcentration(theta,pressure,var):
-    rd = 287.0
-    cp = 1003.5
-    p_0 = 100000.0
     fac1 = pressure/rd
     #convert theta (potential temp) to absolute temp
     fac2 = (1.0/theta)*((p_0/pressure)**(rd/cp)) 
     con = var*fac1*fac2
     return con
-    
 
 #Calculate gas/aerosol concentration from mixing ratio
 # Concentration is mass mixing ratio* density
 # Density = pressure*rd/temp
 def calcConcentration_temp(temp,pressure,var):
-    rd = 287.0
     con_t = var*pressure/rd/temp
     return con_t
-
-#idea use to reduce memory usage (doesn't seem to make a difference)
-# SG: This doesn't seem to be used or correct.
-def calcBurdens(variables):
-    theta = variables[0]
-    pressure = variables[1]
-    burden = calcBurden(theta,pressure,variables[2])
-    for i in range(3,len(variables)):
-        burden += calcBurden(theta,pressure,variables[i])
-    return burden
 
 #returns a and b coefficients of the hybrid height levels
 #zgrid is either theta or rho, specifying which levels to use
@@ -852,29 +833,26 @@ def getHybridLevels(zgrid,mod_levs):
 
 #gets the ACCESS model orography from a file and returns it
 def getOrog():
-    orog_fName = ancillary_path+'cm2_orog.nc'
-    orog_file = cdms2.open(orog_fName, 'r')
-    orog_vals = np.float32(orog_file.variables['fld_s00i033'][0,:,:])
+    orog_file = xr.open_dataset(f'{ancillary_path}cm2_orog.nc')
+    orog_vals = np.float32(orog_file.fld_s00i033[0,:,:])
     orog_file.close()
     return orog_vals
 
 def areacella(nlat):
     if nlat == 145:
-        fName = ancillary_path+'esm_areacella.nc'
+        f = xr.open_dataset(f'{ancillary_path}esm_areacella.nc')
     elif nlat == 144:
-        fName = ancillary_path+'cm2_areacella.nc'
-    f = cdms2.open(fName, 'r')
-    vals = np.float32(f.variables['areacella'][:,:])
+        f = xr.open_dataset(f'{ancillary_path}cm2_areacella.nc')
+    vals = np.float32(f.areacella[:,:])
     f.close()
     return vals
 
 def landFrac(nlat):
     if nlat == 145:
-        fName = ancillary_path+'esm_landfrac.nc'
+        f = xr.open_dataset(f'{ancillary_path}esm_landfrac.nc')
     if nlat == 144:
-        fName = ancillary_path+'cm2_landfrac.nc'
-    f = cdms2.open(fName, 'r')
-    vals = np.float32(f.variables['fld_s03i395'][0,:,:]).filled(0)
+        f = xr.open_dataset(f'{ancillary_path}cm2_landfrac.nc')
+    vals = np.float32(f.fld_s03i395[0,:,:]).filled(0)
     f.close()
     return vals
 
@@ -970,14 +948,17 @@ def calc_global_ave_ocean(var,rho_dzt,area_t):
         vnew = np.average(var,axis=(1,2),weights=mass[:,0,:,:])
     return vnew
 
-def calc_global_ave_ocean_om2(var,rho_dzt,deg):
+# SG: New function to open a file based on a deg value, 5 functions are using this.
+def deg_open(deg):
     if deg == 1:
-        fname = ancillary_path+'om2_grid.nc' #file with grids specifications
+        f = xr.open_dataset(f'{ancillary_path}om2_grid.nc') #file with grids specifications
     elif deg == 025:
-        fname = ancillary_path+'om2-025_grid.nc' #file with grids specifications
-    f = cdms2.open(fname,'r')
-    area_t = np.float32(f.variables['area_t'][:])
-    mass = rho_dzt*area_t
+        f = xr.open_dataset(f'{ancillary_path}om2-025_grid.nc') #file with grids specifications
+    return f
+
+def calc_global_ave_ocean_om2(var,rho_dzt,deg):
+    area_t = np.float32(deg_open(deg).area_t[:])
+    mass = rho_dzt * area_t
     print(np.shape(var))
     try: 
         vnew = np.average(var,axis=(1,2,3),weights=mass)
@@ -1044,9 +1025,8 @@ def tileAve(var,tileFrac,lfrac=1):
     return vout
 
 def tileFraci317():
-    fName = ancillary_path+'cm2_tilefrac.nc' # surface tile fractions from CM2 piControl
-    f = cdms2.open(fName, 'r')
-    vals = np.float32(f.variables['fld_s03i317'][0,:,:,:]) #.filled(0)
+    f = xr.open_dataset(f'{ancillary_path}cm2_tilefrac.nc')
+    vals = np.float32(f.fld_s03i317[0,:,:,:]) #.filled(0)
     f.close()
     return vals
 
@@ -1297,25 +1277,23 @@ def ocndepthint_025(var,rho,dz):
     return vout
 
 def oceanFrac():
-    fname = ancillary_path+'grid_spec.auscom.20110618.nc' #file with grids specifications
-    f = cdms2.open(fname,'r')
-    ofrac = np.float32(f.variables['wet'][:,:])
+    f = xr.open_dataset(f'{ancillary_path}grid_spec.auscom.20110618.nc')
+    ofrac = np.float32(f.wet[:,:])
     return ofrac
 
 def oceanFrac_025():
-    fname = ancillary_path+'om2-025_ocean_mask.nc' #file with grids specifications
-    f = cdms2.open(fname,'r')
+    f = xr.open_dataset(f'{ancillary_path}om2-025_ocean_mask.nc')
     ofrac = np.float32(f.variables['mask'][:,:])
     return ofrac
 
 def getBasinMask():
-    mask_file = ancillary_path+'lsmask_ACCESS-OM2_1deg_20110618.nc'
-    mask_ttcell = cdms2.open(mask_file,'r').variables['mask_ttcell'][0,:,:]
+    f = xr.open_dataset(f'{ancillary_path}lsmask_ACCESS-OM2_1deg_20110618.nc')
+    mask_ttcell = f.mask_ttcell[0,:,:]
     return mask_ttcell
 
 def getBasinMask_025():
-    mask_file=ancillary_path+'lsmask_ACCESS-OM2_025deg_20201130.nc'
-    mask_ttcell = cdms2.open(mask_file,'r').variables['mask_ttcell'][0,:,:]
+    f = xr.open_dataset(f'{ancillary_path}lsmask_ACCESS-OM2_025deg_20201130.nc')
+    mask_ttcell = f.variablesmask_ttcell[0,:,:]
     return mask_ttcell
 
 def calc_rsds(sw_heat,swflx):
@@ -1347,13 +1325,11 @@ def get_vertices(name):
     except:
         raise Exception('app_funcs.get_vertices: ocean grid specification unknown, '+name)
     try: #ocean grid
-        fname = ancillary_path+'grid_spec.auscom.20110618.nc'
-        f = cdms2.open(fname,'r')
-        vert = np.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))
+        f = xr.open_dataset(f'{ancillary_path}grid_spec.auscom.20110618.nc')
+        vert = np.array(f[vertexname[:]],dtype='float32').transpose((1,2,0))
     except: #cice grid (convert from rad to degrees)
-        fname = ancillary_path+'cice_grid_20101208.nc'
-        f = cdms2.open(fname,'r')
-        vert = np.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))*57.2957795
+        f = xr.open_dataset(f'{ancillary_path}cice_grid_20101208.nc')
+        vert = np.array(f[vertexname[:]],dtype='float32').transpose((1,2,0))*57.2957795
     #restrict longditudes to the range0-360
     return vert[:]
 
@@ -1366,13 +1342,11 @@ def get_vertices_025(name):
     except:
         raise Exception('app_funcs.get_vertices: ocean grid specification unknown, '+name)
     try: #ocean grid
-        fname = ancillary_path+'grid_spec.auscom.20150514.nc'
-        f = cdms2.open(fname,'r')
-        vert = np.ma.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))
+        f = xr.open_dataset(f'{ancillary_path}grid_spec.auscom.20150514.nc')
+        vert = np.ma.array(f[vertexname[:]],dtype='float32').transpose((1,2,0))
     except: #cice grid (convert from rad to degrees)
-        fname = ancillary_path+'cice_grid_20150514.nc'
-        f = cdms2.open(fname,'r')
-        vert = np.ma.array(f.variables[vertexname][:],dtype='float32').transpose((1,2,0))*57.2957795
+        f = xr.open_dataset(f'{ancillary_path}cice_grid_20150514.nc')
+        vert = np.ma.array(f[vertexname[:]],dtype='float32').transpose((1,2,0))*57.2957795
     #restrict longditudes to the range0-360
     return vert[:]
 
@@ -1391,33 +1365,18 @@ def calc_areacello(area,mask_v):
     return area.filled(0)
 
 def calc_areacello_om2(deg):
-    if deg == 1:
-        fname = ancillary_path+'om2_grid.nc' #file with grids specifications
-    elif deg == 025:
-        fname = ancillary_path+'om2-025_grid.nc' #file with grids specifications
-    f = cdms2.open(fname,'r')
-    area = np.float32(f.variables['area_t'][:])
-    mask_v = np.float32(f.variables['ht'][:])
+    area = np.float32(deg_open(deg).area_t[:])
+    mask_v = np.float32(deg_open(deg).ht[:])
     area.mask = mask_v.mask
     return area.filled(0)
 
 def calc_volcello_om2(dht,deg):
-    if deg == 1:
-        fname = ancillary_path+'om2_grid.nc' #file with grids specifications
-    elif deg == 025:
-        fname = ancillary_path+'om2-025_grid.nc' #file with grids specifications
-    f = cdms2.open(fname,'r')
-    area = np.float32(f.variables['area_t'][:])
-    vout = area*dht
+    area = np.float32(deg_open(deg).area_t[:])
+    vout = area * dht
     return vout
     
 def getdeptho(deg):
-    if deg == 1:
-        fname = ancillary_path+'om2_grid.nc' #file with grids specifications
-    elif deg == 025:
-        fname = ancillary_path+'om2-025_grid.nc' #file with grids specifications
-    f = cdms2.open(fname,'r')
-    deptho = np.float32(f.variables['ht'][:])
+    deptho = np.float32(deg_open(deg).ht[:])
     return deptho
     
 def plevinterp(var,pmod,heavy,lat,lat_v):
@@ -1493,13 +1452,8 @@ def calc_zostoga(var,depth,lat):
 def calc_zostoga_om2(var,depth,lat,deg):
     #extract variables
     [T,dz] = var
-    if deg == 1:
-        fname = ancillary_path+'om2_grid.nc' #file with grids specifications
-    elif deg == 025:
-        fname = ancillary_path+'om2-025_grid.nc' #file with grids specifications
-    f = cdms2.open(fname,'r')
-    areacello = np.float32(f.variables['area_t'][:])
-    lat = f.variables['area_t'].getLatitude()
+    areacello = np.float32(deg_open(deg).area_t[:])
+    lat = deg_open(deg).area_t.getLatitude()
     print(F'lat: {lat}')
     [nt,nz,ny,nx] = T.shape #dimension lengths
     zostoga = np.zeros([nt],dtype=np.float32)
@@ -1654,20 +1608,6 @@ def mc_gravity(var):
     for k in range(z):
         mc[:,k,:,:] = var[:,k,:,:] / grav_h[k]
     return mc
-
-
-#calculates an average over southern or northern hemisphere
-#assumes 4D (3D+ time) variable
-#def hemi_ga(var,vol,southern):
-#    dims=var.shape
-#    mid=150
-#    if southern:
-#        total_vol=vol[:,:mid,:],.sum()
-#        v_ga=v[:,:mid,:]*vol[:,:mid,:]).sum()/total_vol
-#    else:
-#        total_vol=vol[:,mid:,:],.sum()
-#        v_ga=v[:,mid:,:]*vol[:,mid:,:]).sum()/total_vol
-#    return v_ga
         
 def det_landtype(mod):
     if mod == 'typebare':
@@ -1774,3 +1714,26 @@ def getSource(model):
     else: return model +': unknown source'
 
 
+#idea use to reduce memory usage (doesn't seem to make a difference)
+# SG: These are unused functions:
+
+#def calcBurdens(variables):
+#    theta = variables[0]
+#    pressure = variables[1]
+#    burden = calcBurden(theta,pressure,variables[2])
+#    for i in range(3,len(variables)):
+#        burden += calcBurden(theta,pressure,variables[i])
+#    return burden
+
+#calculates an average over southern or northern hemisphere
+#assumes 4D (3D+ time) variable
+#def hemi_ga(var,vol,southern):
+#    dims=var.shape
+#    mid=150
+#    if southern:
+#        total_vol=vol[:,:mid,:],.sum()
+#        v_ga=v[:,:mid,:]*vol[:,:mid,:]).sum()/total_vol
+#    else:
+#        total_vol=vol[:,mid:,:],.sum()
+#        v_ga=v[:,mid:,:]*vol[:,mid:,:]).sum()/total_vol
+#    return v_ga
