@@ -537,7 +537,8 @@ def find_matches(table, master_map, cmorname, realm, freq, cfname,
                 try:
                     dimension = determine_dimension(freq, dimensions,
                                 timeshot, realm, table, skip)
-                except: raise Exception('E: realm not identified')
+                except:
+                    raise Exception('E: realm not identified')
                 priority_ret = priority_check(cmipvar, table)
                 if priority_ret == 0:
                     skip = True

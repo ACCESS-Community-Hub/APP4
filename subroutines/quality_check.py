@@ -110,7 +110,7 @@ try:
             raise Exception("E: check experiment and experiments table")
         else:
             raise Exception("E: no experiments table found at {experimentstable}")
-except Exception, e:
+except Exception as e:
     sys.exit(f"E: failed to read in required files: {e}")
 
 
@@ -125,7 +125,7 @@ def compliance_check(success):
         try:
             outputp = sp.check_output(['PrePARE', '--table-path', cmiptables,
                                        cmorfile], stderr=sp.STDOUT)
-        except Exception, e:
+        except Exception as e:
             outputp=e.output
         if table == 'Oclim':
             pass #Oclim files all fail PrePARE
@@ -141,7 +141,7 @@ def compliance_check(success):
                 return [cmorfile, 0]
         else: 
             return [cmorfile, 1, e]
-    except Exception, e:
+    except Exception as e:
         return [cmorfile, 2, e]
 
 def saveonlineplot(online_plot_dir, exptoprocess, table,plotout):
@@ -416,7 +416,7 @@ def create_timeseries(cmordir):
         except:
             pass
         return [cmordir, 0]
-    except Exception, e: 
+    except Exception as e: 
         return [cmordir, 1, e]
 
 

@@ -134,7 +134,7 @@ try:
                 raise Exception(f"E: no experiments table found at {experimentstable}")
     elif mode == 'custom':
         outpath_root=os.environ.get('OUTPUT_LOC')
-except Exception, e:
+except Exception as e:
     sys.exit(f"E: failed to read in required files: {e}")
 
 print("\n#### CHECKING VARIABLE MAPS AGAINST SUCCESS/FAIL LISTS")
@@ -171,5 +171,5 @@ try:
     print(vfailsuc)
     print("F: ({len(vfails)}) variables failed post-processing (check job_output file for details):")
     print(vfails)
-except Exception, e:
+except Exception as e:
     print("E: failed to compare variable maps to success/fail lists: {e}")

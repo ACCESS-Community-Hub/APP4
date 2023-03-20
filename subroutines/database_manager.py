@@ -70,7 +70,7 @@ def master_setup(conn):
             reference_date integer,
             version text,
             primary key(local_exp_id,experiment_id,vcmip,cmip_table,realization_idx,initialization_idx,physics_idx,forcing_idx,tstart))''')
-    except Exception,e:
+    except Exception as e:
         print("Unable to create the APP file_master table.")
         print(e)
         raise e
@@ -96,7 +96,7 @@ def grids_setup(conn,grid_file):
             if len(line) != 0:
                 if line[0][0] != '#':
                     cursor.execute('insert into grids values (?,?,?,?,?,?)', line[0:6])
-    except Exception ,e:
+    except Exception as e:
         print( e, "\n unable to perform operations on grids table")
     conn.commit()
 
@@ -134,7 +134,7 @@ def experiments_setup(conn,exps_file):
                 if (len(line) != 0) and (line[0][0] != '#'):
                     #print(line)
                     cursor.execute('insert or replace into experiments values (?,?,?,?,?,?,?,?,?)', line)
-    except Exception,e:
+    except Exception as e:
         print(e, "\n unable to setup experiments table")
     conn.commit()
 
@@ -179,10 +179,10 @@ def champions_setup(champions_dir,conn):
                         try:
                             cursor.execute('insert into champions values (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ',
                                     row[0:14])
-                        except Exception , e:
+                        except Exception as e:
                             print(f"error inserting line into champions file: {e}\n{row}"
                 conn.commit()
-            except Exception ,e: 
+            except Exception as e: 
                 print(e, table)
                 raise
     conn.commit()
