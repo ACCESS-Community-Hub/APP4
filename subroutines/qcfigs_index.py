@@ -2,6 +2,8 @@
 # File names like
 # zos_Omon_ACCESS-CM2_historical_r1i1p1f1_gn_185001.png
 
+# porting to python3: paola.petrelli@utas.edu.au
+
 # var_table_
 
 import glob
@@ -9,25 +11,27 @@ import collections
 import os
 import sys
 
-try: corepath=os.environ.get('ONLINE_PLOT_DIR')
-except: sys.exit('no corepath defined')
-exp=os.environ.get('EXP_TO_PROCESS')
+try:
+    corepath = os.environ.get('ONLINE_PLOT_DIR')
+except:
+    sys.exit('no corepath defined')
+exp = os.environ.get('EXP_TO_PROCESS')
 
-path=corepath+'/'+exp
+path = corepath+'/'+exp
 
 if not os.path.exists(path):
     sys.exit()
 
-for tablepath in glob.glob('{}/*'.format(path)):
+for tablepath in glob.glob(f"{path}/*"):
     #if os.isdir(tablepath):
     figs = collections.defaultdict(list)
-    for f in glob.glob('{}/*.png'.format(tablepath)):
+    for f in glob.glob(f"{tablepath}/*.png"):
         f = os.path.basename(f)
         s = f.split('_')
         var, table, model, expt  = s[:4]
         figs[var].append(f)
     # Now create a html file
-    g = open('{}/index.html'.format(tablepath), 'w')
+    g = open(f"{tablepath}/index.html", 'w')
     g.write("""
 <!DOCTYPE html>
 <html>
@@ -66,9 +70,8 @@ rif; margin: 0px}
 
     # Create links for each variable index
     for var in sorted(figs):
-        link = "%s_index.html" % var
-        g.write('<p><h4><a href="%s">Variable %s</a></h4>\n'
-                            % (link, var))
+        link = f"{var}_index.html"
+        g.write(f"<p><h4><a href="{link}">Variable {var}</a></h4>\n")
     g.write("""
 </var>
 </div>
@@ -79,7 +82,7 @@ rif; margin: 0px}
 
     for var in sorted(figs):
         # Now create a html file
-        g = open('{}/{}_index.html'.format(tablepath,var), 'w')
+        g = open(f"{tablepath}/{var}_index.html", 'w')
         g.write("""
 <!DOCTYPE html>
 <html>
@@ -110,16 +113,17 @@ rif; margin: 0px}
 
 <body class="Body">
 """)
-        g.write('<div id="titlebar"><b>%s %s simulation QC: Table %s, Variable %s</b></div>' % (model, expt, table, var))
+        g.write(f"<div id="titlebar"><b>{model} {expt} simulation QC: Table {table}, Variable {var}</b></div>"
         g.write("""
 <div id="image-grid">
 <table width="100%">
 """)
         for k, f in enumerate(sorted(figs[var])):
-            if k%2==0:
+            if k%2 == 0:
                 g.write("<tr>\n")
+            # PP why the format? f isn't referenced anywhere 
             g.write('<td width="50%"><a href="{0}"><img src="{0}" style="display:block" width="100%"></a></td>\n'.format(f))
-            if k%2==1:
+            if k%2 == 1:
                 g.write("</tr>\n")
     
                 

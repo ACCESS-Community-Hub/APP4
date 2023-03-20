@@ -2,6 +2,7 @@
 #   input_files/custom_mode_cmor-tables/Tables/CMIP6_CV.json
 #   input_files/json/default_[version].json
 # This allows CMOR to be generalised for non-CMIP6 experiment-level vocabulary.
+# porting to python3: paola.petrelli@utas.edu.au
 
 import json, os
 from collections import OrderedDict

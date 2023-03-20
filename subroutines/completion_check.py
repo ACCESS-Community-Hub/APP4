@@ -1,3 +1,5 @@
+# porting to python3: paola.petrelli@utas.edu.au
+
 import numpy as np
 import csv
 import glob

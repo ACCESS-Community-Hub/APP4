@@ -4,6 +4,7 @@
 #
 # Adapted for CMIP6 by Chloe Mackallah
 # March 2019
+## porting to python3: paola.petrelli@utas.edu.au
 #
 import sqlite3
 from optparse import OptionParser
@@ -326,7 +327,7 @@ def sumFileSizes(conn):
 
 #define the frequency of variable from the cmip table (and variable name (pfull and phalf only))
 def tableToFreq(table):
-    # save it as ocnfig file and read it!!!
+    # PP save it as config file and read it!!!
     dictionary={'3hr': '3hr',
                 '6hrLev': '6hr',
                 '6hrPlevPt': '6hr',
@@ -442,22 +443,22 @@ def populateRows(rows,opts,cursor):
 #populate the database for variables that are requested for all times for all experiments
 def populate_unlimited(cursor,opts):
     #monthly, daily unlimited except cable or moses specific diagnostics
-    cursor.execute('''select * from champions where definable==\'yes\'''')
+    cursor.execute('''select * from champions where definable==\'yes\' ''')
     populateRows(cursor.fetchall(),opts,cursor)
 
 #choose grid file to determine chunking, based on access_version
 def grid_file_choose(conn):
-    cursor=conn.cursor()
-    cursor.execute('select * from experiments where local_exp_id==?',[exptoprocess])
+    cursor = conn.cursor()
+    cursor.execute(f"select * from experiments where local_exp_id=={exptoprocess}")
     for exp in cursor.fetchall():
-        access_version=exp[7]
+        access_version = exp[7]
     if access_version.find('OM2') != -1:
         if access_version.find('025') != -1:
-            grid_file=sys.path[0]+'/../input_files/grids_om2-025.csv'
+            grid_file = f"{sys.path[0]}/../input_files/grids_om2-025.csv"
         else: 
-            grid_file=sys.path[0]+'/../input_files/grids_om2.csv'
+            grid_file = f"{sys.path[0]}/../input_files/grids_om2.csv"
     else:
-        grid_file=sys.path[0]+'/../input_files/grids.csv'
+        grid_file = f"{sys.path[0]}/../input_files/grids.csv"
     return grid_file
 
 #
@@ -465,49 +466,52 @@ def grid_file_choose(conn):
 #main script to populate the file_master table
 #
 def populate(conn):
-    cursor=conn.cursor()
+    cursor = conn.cursor()
     #defaults
-    opts=dict()
-    opts['status']='unprocessed'
+    opts = dict()
+    opts['status'] = 'unprocessed'
     #get experiment information
-    cursor.execute('select * from experiments where local_exp_id==?',[exptoprocess])
+    cursor.execute(f"select * from experiments where local_exp_id=={exptoprocess}")
     #loop over different experiments
     for exp in cursor.fetchall():
-        opts['json_file_path']=exp[2]
-        json_dict=read_json_file(opts['json_file_path'])
+        opts['json_file_path'] = exp[2]
+        json_dict = read_json_file(opts['json_file_path'])
         #Experiment Details:
-        opts['outpath']=json_dict['outpath']
-        opts['experiment_id']=json_dict['experiment_id']
-        opts['realization_idx']=json_dict['realization_index']
-        opts['initialization_idx']=json_dict['initialization_index']
-        opts['physics_idx']=json_dict['physics_index']
-        opts['forcing_idx']=json_dict['forcing_index']
-        opts['activity_id']=json_dict['activity_id']
-        opts['institution_id']=json_dict['institution_id']
-        opts['source_id']=json_dict['source_id']
-        opts['grid_label']=json_dict['grid_label']
-        try: opts['version']=json_dict['version']
-        except: opts['version']=datetime.today().strftime('%Y%m%d')
-        opts['local_exp_id']=exp[0]
-        opts['local_exp_dir']=exp[1]
-        opts['reference_date']=exp[4]
-        opts['exp_start']=exp[5]
-        opts['exp_end']=exp[6]
-        opts['access_version']=exp[7]
-        opts['cmip_exp_id']=exp[8]
-        print("found local experiment: {}'.format(opts['local_exp_id'])
+        opts['outpath'] = json_dict['outpath']
+        opts['experiment_id'] = json_dict['experiment_id']
+        opts['realization_idx'] = json_dict['realization_index']
+        opts['initialization_idx'] = json_dict['initialization_index']
+        opts['physics_idx'] = json_dict['physics_index']
+        opts['forcing_idx'] = json_dict['forcing_index']
+        opts['activity_id'] = json_dict['activity_id']
+        opts['institution_id'] = json_dict['institution_id']
+        opts['source_id'] = json_dict['source_id']
+        opts['grid_label'] = json_dict['grid_label']
+        opts['version'] = json_dictget('version', datetime.today().strftime('%Y%m%d'))
+        opts['local_exp_id'] = exp[0]
+        opts['local_exp_dir'] = exp[1]
+        opts['reference_date'] = exp[4]
+        opts['exp_start'] = exp[5]
+        opts['exp_end'] = exp[6]
+        opts['access_version'] = exp[7]
+        opts['cmip_exp_id'] = exp[8]
+        print(f"found local experiment: {opts['local_exp_id']}")
         populate_unlimited(cursor,opts)
         conn.commit()
 
-#read the cmip json file (containing experiment information) into a python dictionary
+
 def read_json_file(path):
+    """Read the cmip json file (containing experiment information) 
+    into a python dictionary
+    """
     with open(path,'r') as f:
         json_dict=json.load(f)
     f.close()
     return json_dict
 
+
 def create_database_updater():
-    database_updater='{}/database_updater.py'.format(out_dir)
+    database_updater = f"{out_dir}/database_updater.py"
     with open(database_updater,'w+') as dbu:
         dbu.write('import os\n'\
             'import sqlite3\n'\
@@ -524,49 +528,53 @@ def create_database_updater():
             'print "updating database..."\n')
     dbu.close()
 
+
 def count_rows(conn):
     cursor=conn.cursor()
-    cursor.execute('select * from file_master where status==\'unprocessed\' and local_exp_id==?',[exptoprocess])
-    rows=cursor.fetchall()
-    print("number of rows: ',len(rows)
+    cursor.execute(f"select * from file_master where status=='unprocessed' and local_exp_id == {exptoprocess}")
+    rows = cursor.fetchall()
+    print(f"Number of rows: {len(rows)}")
     #for row in rows:
     #    print(row)
-    database_count='{}/database_count.txt'.format(out_dir)
+    database_count=f"{out_dir}/database_count.txt"
     with open(database_count,'w') as dbc:
         dbc.write(str(len(rows)))
     dbc.close()
 
+
 def main():
-    print("\nstarting database_manager...'
+    print("\nstarting database_manager..."
     #Global variable:
     #set champions tables directory from environment variable
-    champions_dir=os.environ.get('VARIABLE_MAPS')
-    if not champions_dir: sys.exit('missing variable maps')
-    print("champions directory: {}'.format(champions_dir)
+    champions_dir = os.environ.get('VARIABLE_MAPS')
+    if not champions_dir:
+        sys.exit('missing variable maps')
+    print(f"champions directory: {champions_dir}")
     #set Experiments table from environment variable
-    exp_table=os.environ.get('EXPERIMENTS_TABLE')
+    exp_table = os.environ.get('EXPERIMENTS_TABLE')
     #Set default experiments table
     if not exp_table:
-        print("no experiments table specified, using default'
-        exp_table=sys.path[0]+'/../input_files/experiments.csv'
-    print("experiments table: {}'.format(exp_table)
+        print("no experiments table specified, using default")
+        exp_table = f"{sys.path[0]}/../input_files/experiments.csv"
+    print(f"experiments table: {exp_table}")
     #Create a connection to the database.    
     #get database from environment var
-    database=os.environ.get('DATABASE')
-    if not database: sys.exit('missing database')
-    print("creating & using database: {}'.format(database)
-    conn=sqlite3.connect(database)
-    conn.text_factory=str
+    database = os.environ.get('DATABASE')
+    if not database:
+        sys.exit('missing database')
+    print(f"creating & using database: {database}")
+    conn = sqlite3.connect(database)
+    conn.text_factory = str
     #setup database tables
     master_setup(conn)
     experiments_setup(conn,exp_table)
-    grid_file=grid_file_choose(conn)
+    grid_file = grid_file_choose(conn)
     grids_setup(conn,grid_file)
     champions_setup(champions_dir,conn)
     populate(conn)
     create_database_updater()
     count_rows(conn)
-    print("max total file size is: {sumFileSizes(conn)/1024} GB")
+    print(f"max total file size is: {sumFileSizes(conn)/1024} GB")
 
 if __name__ == "__main__":
     main()

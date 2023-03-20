@@ -1,3 +1,5 @@
+# porting to python3: paola.petrelli@utas.edu.au
+
 from app import app
 #from app_functions import plotVar
 import sqlite3
