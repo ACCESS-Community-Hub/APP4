@@ -8,6 +8,9 @@ SG- Added spacesa and formatted script to read better.
 17/03/23:
 SG - Changed cdms2 to Xarray.
 SG - Refactored a several functions to make them cleaner.
+
+17/03/23:
+SG - Removed some missed cdms2 lines.
 '''
 
 
@@ -118,22 +121,22 @@ def calcRefDate(time):
 def calculateVals(access_file,varNames,calculation):
     #Set array for coordinates if used by calculation
     if calculation.find('times')!=-1:
-        times = access_file[0].variables[varNames[0]].getTime()
+        times = access_file[0][varNames[0]].getTime()
     if calculation.find('depth')!=-1:
-        depth = access_file[0].variables[varNames[0]].getAxis(1)
+        depth = access_file[0][varNames[0]].getAxis(1)
     if calculation.find('lat')!=-1:
-        lat = access_file[0].variables[varNames[0]].getLatitude()
+        lat = access_file[0][varNames[0]].getLatitude()
     if calculation.find('lon')!=-1:
-        lon = access_file[0].variables[varNames[0]].getLatitude()
+        lon = access_file[0][varNames[0]].getLatitude()
     var = []
     for v in varNames:
         print(f'variable[{varNames.index(v)}] = {v}')
         try: 
             #extract variable out of file
-            var.append(access_file[0].variables[v][:])
+            var.append(access_file[0][v][:])
         except: 
             #try to find variable in axes
-            var.append(access_file[0].axes[v][:])
+            var.append(access_file[0][v][:])
     try:
         return eval(calculation)
     except Exception as e:

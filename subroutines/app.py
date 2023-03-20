@@ -12,7 +12,12 @@ Changes to script
 17/03/23:
 SG - Updated print statements and exceptions to work with python3.
 SG- Added spaces and formatted script to read better.
+
+20/03/23:
+SG - Changed cdms2 to Xarray.
 '''
+
+
 
 from optparse import OptionParser
 import netCDF4
@@ -24,6 +29,7 @@ import re
 from app_functions import *
 import os,sys
 import cdms2
+import xarray as xr
 import cdtime
 #import cmorx as cmor
 import cmor
@@ -146,7 +152,7 @@ def app(option_dictionary):
             raise Exception(f"Error! Variable missing from files: {opts['vin'][0]}")
         try:
             #see if the variable is in the file
-            var = temp_file.variables[opts['vin'][0]]
+            var = temp_file[opts['vin'][0]]
             break
         except:
             #try next file
@@ -166,7 +172,7 @@ def app(option_dictionary):
         if  (opts['axes_modifier'].find('dropT') == -1) and (opts['cmip_table'].find('fx') == -1):
             #try to find and set the correct time axis:
             for var_dim in var.dimensions:
-                if var_dim.find('time') != -1 or temp_file.variables[var_dim].axis == 'T':
+                if var_dim.find('time') != -1 or temp_file[var_dim].axis == 'T':
                     time_dimension = var_dim
     except:
         #use the default time dimension 'time'
@@ -192,7 +198,7 @@ def app(option_dictionary):
             #We cannot handle negative reference dates (ie. BC dates); maybe we will encounter these
             #in some climate runs?
             #
-            time = temp_file.variables[time_dimension]
+            time = temp_file[time_dimension]
             refString = time.units
         except:
             refString = "days since 0001-01-01"
@@ -228,7 +234,7 @@ def app(option_dictionary):
                 #
                 #Read the time information.
                 #
-                tvals = access_file.variables[time_dimension]
+                tvals = access_file[time_dimension]
                 #print opts['tend']
                 #print float(tvals[0])
                 #test each file to see if it contains time values within the time range from tstart to tend
@@ -241,7 +247,7 @@ def app(option_dictionary):
                         inrange_access_times.append(tvals[0])
                         exit = True
                     else:
-                        irefString = access_file.variables[time_dimension].units
+                        irefString = access_file[time_dimension].units
                         if irefString != refString: 
                             #print 'WRONG refString ', irefString, refString
                             tvals = np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
@@ -262,10 +268,10 @@ def app(option_dictionary):
             for i, input_file in enumerate(all_access_files):
                 try:
                     access_file = netCDF4.Dataset(input_file,'r')
-                    tvals = access_file.variables[time_dimension]
+                    tvals = access_file[time_dimension]
                     #print opts['tend']
                     #print float(tvals[0])
-                    irefString = access_file.variables[time_dimension].units
+                    irefString = access_file[time_dimension].units
                     if irefString != refString: 
                         #print 'WRONG refString ', irefString, refString
                         tvals = np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
@@ -292,7 +298,7 @@ def app(option_dictionary):
         #Determine which axes are X and Y, and what the values of the latitudes and longitudes are.
         #
         try:
-            data_vals=access_file.variables[opts['vin'][0]]
+            data_vals=access_file[opts['vin'][0]]
             print("shape of data: {np.shape(data_vals)}")
         except Exception as e:
             print("E: Unable to read {opts['vin'][0]} from ACCESS file")
@@ -313,7 +319,7 @@ def app(option_dictionary):
                 print(coord)
                 lon_name = coord
                 try:
-                    lon_vals = access_file.variables[coord]
+                    lon_vals = access_file[coord]
                 except:
                     if os.path.basename(inrange_access_files[0]).startswith('ocean'):
                         if opts['access_version'] == 'OM2-025':
@@ -335,7 +341,7 @@ def app(option_dictionary):
                 print(coord)
                 lat_name = coord
                 try:
-                    lat_vals = access_file.variables[coord]
+                    lat_vals = access_file[coord]
                     print('lat from file')
                 except:
                     print('lat from ancil')
@@ -373,7 +379,7 @@ def app(option_dictionary):
         for dim in dim_list:
             print(axis_ids)
             try:
-                dim_vals = access_file.variables[dim]
+                dim_vals = access_file[dim]
                 dim_values = dim_vals[:]
             except:
                 #
@@ -410,11 +416,11 @@ def app(option_dictionary):
                 #Try and get the dimension bounds. The bounds attribute might also be called "edges"
                 #If we cannot find any dimension bounds, create default bounds in a sensible way.
                 #
-                dim_val_bounds=access_file.variables[dim_vals.bounds]
+                dim_val_bounds=access_file[dim_vals.bounds]
                 print("using dimension bounds")
             except:
                 try:
-                    dim_val_bounds=access_file.variables[dim_vals.edges]
+                    dim_val_bounds=access_file[dim_vals.edges]
                     print("using dimension edges as bounds")
                 except:
                     #
@@ -1037,15 +1043,15 @@ def app(option_dictionary):
             run = np.float32(0.0)
         for input_file in inrange_access_files:
             #If the data is a climatology, store the values in a running sum
-            access_file = cdms2.open(input_file,'r')
-            var = access_file.variables[opts['vin'][0]]
+            access_file = xr.open_dataset(f'{input_file}')
+            var = access_file[opts['vin'][0]]
             t = var.getTime()
             tbox = daysInMonth(t)
             varout = np.float32(var[:,0]*tbox[:]*24).cumsum(0) + run
             run = varout[-1]
             #if we have a second variable, just add this to the output (not included in the integration)
             if len(opts['vin']) == 2:
-                varout += access_file.variables[opts['vin'][1]][:]
+                varout += access_file[opts['vin'][1]][:]
             access_file.close()
             cmor.write(variable_id,(varout),ntimes_passed = np.shape(varout)[0])
     #
@@ -1053,16 +1059,16 @@ def app(option_dictionary):
     #
     elif opts['timeshot'].find('clim') != -1:
         for input_file in inrange_access_files:
-            access_file = cdms2.open(input_file,'r')
-            t = access_file.variables[opts['vin'][0]].getTime()
+            access_file = xr.open_dataset(f'{input_file}')
+            t = access_file[opts['vin'][0]].getTime()
             #Set var to be sum of variables in 'vin' (can modify to use calculation if needed)
             var = None
             for v in opts['vin']:
                 try:        
-                    var += (access_file.variables[v][:])
+                    var += (access_file[v][:])
                     print("added extra variable")
                 except:        
-                    var = access_file.variables[v][:]
+                    var = access_file[v][:]
             try: 
                 vals_wsum,clim_days = monthClim(var,t,vals_wsum,clim_days)
             except:
@@ -1085,10 +1091,10 @@ def app(option_dictionary):
     #Annual means - Oyr / Eyr tables
     #
     elif (opts['axes_modifier'].find('mon2yr') != -1):
-        access_file0 = cdms2.open(inrange_access_files[0],'r')
+        access_file0 = xr.open_dataset(f'{inrange_access_files[0]}')
         #access_file0=netCDF4.Dataset(inrange_access_files[0])
         if opts['calculation'] == '':
-            data_val0 = access_file0.variables[opts['vin'][0]][:]
+            data_val0 = access_file0[opts['vin'][0]][:]
         else:
             data_val0 = calculateVals((access_file0,),opts['vin'],opts['calculation'])
         vshape = np.shape(data_val0)
@@ -1107,15 +1113,15 @@ def app(option_dictionary):
                             yearstamp = int(os.path.basename(input_file).split('.')[1][2:6])
                         elif opts['access_version'].find('ESM') != -1:
                             yearstamp = int(os.path.basename(input_file).split('.')[1][3:7])
-                    access_file = cdms2.open(input_file,'r')
-                    t = access_file.variables[opts['vin'][0]].getTime()
+                    access_file = xr.open_dataset(f'{input_file}')
+                    t = access_file[opts['vin'][0]].getTime()
                     datelist = t.asComponentTime()
                     if yearstamp == year: yearinside=True
                     else: yearinside = False
                 else:
                     print('reading date info from time dimension')
-                    access_file = cdms2.open(input_file,'r')
-                    t = access_file.variables[opts['vin'][0]].getTime()
+                    access_file = xr.open_dataset(f'{input_file}')
+                    t = access_file[opts['vin'][0]].getTime()
                     datelist = t.asComponentTime()
                     yearinside = False
                     for date in datelist:
@@ -1127,7 +1133,7 @@ def app(option_dictionary):
                     for index, d in enumerate(datelist[:]):
                         if (d.year == year) or (opts['axes_modifier'].find('tMonOverride') != -1):
                             if opts['calculation'] == '':
-                                data_vals = access_file.variables[opts['vin'][0]][:]
+                                data_vals = access_file[opts['vin'][0]][:]
                             else:
                                 data_vals = calculateVals((access_file,),opts['vin'],opts['calculation'])
                             try: 
@@ -1167,8 +1173,8 @@ def app(option_dictionary):
                         yearstamp = int(os.path.basename(input_file).split('.')[1][3:7])
                         monstamp = int(os.path.basename(input_file).split('.')[1][7:9])
                 if not monstamp == 12 or not yearstamp == year: continue
-                access_file = cdms2.open(input_file,'r')
-                t = access_file.variables[opts['vin'][0]].getTime()
+                access_file = xr.open_dataset(f'{input_file}')
+                t = access_file[opts['vin'][0]].getTime()
                 datelist = t.asComponentTime()
                 yearcurrent = datelist[0].year
                 if yearcurrent == year:
@@ -1176,7 +1182,7 @@ def app(option_dictionary):
                     for index, d in enumerate(datelist[:]):
                         if d.month == 12:
                             if opts['calculation'] == '':
-                                data_vals = access_file.variables[opts['vin'][0]][:]
+                                data_vals = access_file[opts['vin'][0]][:]
                             else:
                                 data_vals = calculateVals((access_file,),opts['vin'],opts['calculation'])
                             try: data_vals = data_vals.filled(in_missing)
@@ -1197,8 +1203,8 @@ def app(option_dictionary):
     elif opts['cmip_table'].find('A10dayPt') != -1:
         for i, input_file in enumerate(inrange_access_files):
             print(f"processing file: {input_file}")
-            access_file = cdms2.open(input_file,'r')
-            t = access_file.variables[opts['vin'][0]].getTime()
+            access_file = xr.open_dataset(f'{input_file}')
+            t = access_file[opts['vin'][0]].getTime()
             datelist = t.asdatetime()
             print('ONLY 1st, 11th, 21st days to be used')
             a10_idxlist = []
@@ -1213,7 +1219,7 @@ def app(option_dictionary):
                         return -1
                     else: 
                         for a10 in a10_idxlist:
-                            a10_datavals.append(access_file.variables[opts['vin'][0]][a10])
+                            a10_datavals.append(access_file[opts['vin'][0]][a10])
                         access_file.close()
                 else: 
                     print("calculating...")
@@ -1245,8 +1251,8 @@ def app(option_dictionary):
     elif opts['axes_modifier'].find('monsecs') != -1:
         for i, input_file in enumerate(inrange_access_files):
             print(f"processing file: {input_file}")
-            access_file = cdms2.open(input_file,'r')
-            t = access_file.variables[opts['vin'][0]].getTime()
+            access_file = xr.open_dataset(f'{input_file}')
+            t = access_file[opts['vin'][0]].getTime()
             datelist = t.asdatetime()
             #print(calendar.monthrange(datelist[0].year,datelist[0].month)[1])
             monsecs = calendar.monthrange(datelist[0].year,datelist[0].month)[1] * 86400
@@ -1256,7 +1262,7 @@ def app(option_dictionary):
                         print("error: multiple input variables are given without a description of the calculation")
                         return -1
                     else: 
-                        data_vals = access_file.variables[opts['vin'][0]][:]
+                        data_vals = access_file[opts['vin'][0]][:]
                         data_vals = data_vals / monsecs
                         #print data_vals
                         access_file.close()
@@ -1293,7 +1299,7 @@ def app(option_dictionary):
             #
             #Load the ACCESS NetCDF data.
             #
-            access_file = cdms2.open(input_file,'r')
+            access_file = xr.open_dataset(f'{input_file}')
             #access_file=netCDF4.Dataset(input_file)
             print(f"processing file: {input_file}")
             try:
@@ -1302,7 +1308,7 @@ def app(option_dictionary):
                         print("error: multiple input variables are given without a description of the calculation")
                         return -1
                     else: 
-                        data_vals = access_file.variables[opts['vin'][0]][:]
+                        data_vals = access_file[opts['vin'][0]][:]
                         #print data_vals
                         access_file.close()
                 else:
