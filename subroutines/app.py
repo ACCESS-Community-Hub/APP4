@@ -32,7 +32,7 @@ import datetime
 import re
 from app_functions import *
 import os,sys
-import cdms2
+#import cdms2
 import xarray as xr
 from cftime import num2date, date2num
 #import cdtime
