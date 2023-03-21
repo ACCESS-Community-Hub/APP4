@@ -65,9 +65,9 @@ try:
         raise Exception(f"E: failed to read file {fsuccesslist}")
     fails=[]
     try:
-        if os.path.exists(ffail)
-            with open(ffail)
-                reader=csv.reader(f, delimiter=',')
+        if os.path.exists(ffail):
+            with open(ffail) as f:
+                reader = csv.reader(f, delimiter=',')
                 for row in reader:
                     try:
                         row[0]

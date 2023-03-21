@@ -69,7 +69,7 @@ def edit_exp_json():
     json_exp_dict['branch_time_in_parent'] = branch_time_in_parent
     json_exp_dict['parent_variant_label'] = parent_variant_label
     
-    with open('{}/{}.json'.format(outdir,exptoprocess),'w') as f:
+    with open(f"{outdir}/{exptoprocess}.json", 'w') as f:
         json.dump(json_exp_dict, f, indent=4, separators=(',', ': '))
     f.close
     return
@@ -78,16 +78,16 @@ def edit_exp_json():
 # Edit 'custom' CMOR tables with experiment details
 #
 def edit_cv_json():
-    with open(json_cv,'r') as f:
+    with open(json_cv, 'r') as f:
         json_cv_dict=json.load(f, object_pairs_hook=OrderedDict)
     f.close()
     
     if not activity_id in json_cv_dict['CV']['activity_id']: 
-        print("activity_id '{activity_id}' not in CV, adding")
+        print(f"activity_id '{activity_id}' not in CV, adding")
         json_cv_dict['CV']['activity_id'][activity_id] = activity_id
     
     if not experiment_id in json_cv_dict['CV']['experiment_id']: 
-        print("experiment_id '{experiment_id}' not in CV, adding")
+        print(f"experiment_id '{experiment_id}' not in CV, adding")
         json_cv_dict['CV']['experiment_id'][experiment_id] = OrderedDict({
         'activity_id': [activity_id],
         'additional_allowed_model_components': ['AER','CHEM','BGC'],
@@ -99,7 +99,7 @@ def edit_cv_json():
         'sub_experiment_id': ['none']
         })
     else:
-        print("experiment_id '{experiment_id}' found, updating")
+        print(f"experiment_id '{experiment_id}' found, updating")
         json_cv_dict['CV']['experiment_id'][experiment_id] = OrderedDict({
         'activity_id': [activity_id],
         'additional_allowed_model_components': ['AER','CHEM','BGC'],
@@ -118,10 +118,10 @@ def edit_cv_json():
 
 def main():
     print("\nstarting custom_json_editor...")
-    print("using experiment json template: {json_exp}")
+    print(f"using experiment json template: {json_exp}")
     edit_exp_json()
-    print("created experiment file: {outdir}/{exptoprocess}")
-    print("editing CV json file: {json_cv}")
+    print(f"created experiment file: {outdir}/{exptoprocess}")
+    print(f"editing CV json file: {json_cv}")
     edit_cv_json()
     print("custom_json_editor complete, metadata prepared for use in CMOR")
 

@@ -24,9 +24,9 @@ import matplotlib.pyplot as plt
 import calendar
 import xarray as xr
 import warnings
-import cdtime
+#import cdtime
 import math
-cdtime.DefaultCalendar=cdtime.GregorianCalendar
+#cdtime.DefaultCalendar=cdtime.GregorianCalendar
 from operator import and_
 from scipy.interpolate import interp1d 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -167,7 +167,7 @@ def meridionalOverturning(transList,typ,om2=1):
     #grab land mask out of ty_trans file (assuming the only masked values are land)
     landMask = np.array(ty_trans.mask[0,:,:,:],dtype=bool)
     #Get basin masks
-    if om2 == 025:
+    if om2 == "025":
         mask = getBasinMask_025()
     else:
         mask = getBasinMask()
@@ -953,9 +953,9 @@ def calc_global_ave_ocean(var,rho_dzt,area_t):
 
 # SG: New function to open a file based on a deg value, 5 functions are using this.
 def deg_open(deg):
-    if deg == 1:
+    if deg == "1":
         f = xr.open_dataset(f'{ancillary_path}om2_grid.nc') #file with grids specifications
-    elif deg == 025:
+    elif deg == "025":
         f = xr.open_dataset(f'{ancillary_path}om2-025_grid.nc') #file with grids specifications
     return f
 
@@ -1131,7 +1131,7 @@ def hfbasin(transList,om2=1):
     #grab land mask from first var (assuming the only masked values are land)
     landMask = np.array(transList[0].mask[0,:,:],dtype=bool)
     #Get basin masks
-    if om2 == 025:
+    if om2 == "025":
         print('025deg')
         basin = getBasinMask_025()
     else:
