@@ -28,7 +28,9 @@ import netCDF4
 import numpy as np
 import string
 import glob
-from datetime import datetime
+# for some reason this still imports all the datetime module???
+#from datetime import datetime
+import datetime
 import re
 from app_functions import *
 import os,sys
@@ -206,7 +208,6 @@ def app(option_dictionary):
         inrange_access_files = all_access_files
     else:
         try:
-            print('should be here')
             #
             #refdate is the "reference date" used as an arbitray 0 point for dates. Common values for
             #refdate are 1 (0001-01-01) and 719 163 (1970-01-01), but other values are possible.
@@ -215,9 +216,6 @@ def app(option_dictionary):
             #
             time = temp_file[time_dimension]
             refString = time.units
-            print(f"time var is: {time}")
-            print(type(time))
-            print(refString)
         except:
             refString = "days since 0001-01-01"
             print("W: Unable to extract a reference date: assuming it is 0001")
@@ -228,7 +226,7 @@ def app(option_dictionary):
             #PP ingoring time assuming is 0
             dateref =  date1.split(" ")[0]
             print(dateref)
-            dateref = datetime.strptime(dateref, "%Y-%m-%d")
+            dateref = datetime.datetime.strptime(dateref, "%Y-%m-%d")
             #set to very end of the year
             startyear = int(opts['tstart'])
             endyear = int(opts['tend'])
@@ -236,21 +234,21 @@ def app(option_dictionary):
             # this will produce first a year,month etc time and then convert it to a relative time
             # 
             #opts['tstart'] = cdtime.comptime(opts['tstart']).torel(refString,cdtime.DefaultCalendar).value
-            opts['tstart'] = (datetime(startyear, 1, 1) - dateref).days
+            opts['tstart'] = (datetime.datetime(startyear, 1, 1) - dateref).days
             #opts['tstart'] = date2num(startyear, units=refString, calendar=default_cal)
             print('start after datetime', opts['tstart'])
             if os.path.basename(all_access_files[0]).startswith('ice'):
                 #opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value
-                opts['tend'] = (datetime(endyear+1, 1, 1) - dateref).days
+                opts['tend'] = (datetime.datetime(endyear+1, 1, 1) - dateref).days
                 #opts['tend'] = date2num(endyear, units=refString, calendar=default_cal)
             elif (time_dimension.find('time1') != -1 or time_dimension.find('time_0') != -1) \
                 and (opts['frequency'].find('mon') != -1) and (opts['timeshot'].find('mean') != -1):
                 #opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value
-                opts['tend'] = (datetime(endyear+1, 1, 1) - dateref).days
+                opts['tend'] = (datetime.datetime(endyear+1, 1, 1) - dateref).days
                 #opts['tend'] = date2num(endyear + 1, units=refString, calendar=default_cal)
             else:
                 #opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value - 0.01 
-                opts['tend'] = (datetime(endyear+1, 1, 1) - dateref).days - 0.01
+                opts['tend'] = (datetime.datetime(endyear+1, 1, 1) - dateref).days - 0.01
                 #opts['tend'] = date2num(endyear + 1, units=refString, calendar=default_cal) - 0.01
             print(f"time start: {opts['tstart']}")
             print(f"time end: {opts['tend']}")
@@ -290,7 +288,7 @@ def app(option_dictionary):
                         if irefString != refString: 
                             #print 'WRONG refString ', irefString, refString
                             #tvals = np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
-                            tvals = np.array(tvals) + (datetime(irefString[:-10]) - dateref).days 
+                            tvals = np.array(tvals) + (datetime.datetime(irefString[:-10]) - dateref).days 
                         inrange_access_times.extend(tvals[:])
                 #
                 #Close the file.
@@ -315,7 +313,7 @@ def app(option_dictionary):
                     if irefString != refString: 
                         #print 'WRONG refString ', irefString, refString
                         #tvals = np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
-                        tvals = np.array(tvals) + (datetime(irefString[:-10]) - dateref).days 
+                        tvals = np.array(tvals) + (datetime.datetime(irefString[:-10]) - dateref).days 
                     inrange_access_times.extend(tvals[:])
                     access_file.close()
                 except Exception as e:
@@ -528,20 +526,20 @@ def app(option_dictionary):
                             print("yearly")
                             for year in range(opts['tstart'],opts['tend']+1):
                                 #tvals.append(cdtime.comptime(year, 7, 2, 12).torel(refString,cdtime.DefaultCalendar).value)
-                                tvals.append((datetime(year, 7, 2, 12) - dateref).days)
+                                tvals.append((datetime.datetime(year, 7, 2, 12) - dateref).days)
                         elif opts['frequency'] == 'mon':
                             print("monthly")
                             for year in range(opts['tstart'],opts['tend']+1):
                                 for mon in range(1,13):
                                     #tvals.append(cdtime.comptime(year, mon, 15).torel(refString,cdtime.DefaultCalendar).value)
-                                    tvals.append((datetime(year, mon, 15) - dateref).days)
+                                    tvals.append((datetime.datetime(year, mon, 15) - dateref).days)
                         elif opts['frequency'] == 'day':
                             print("daily")
                             #newstarttime = cdtime.comptime(opts['tstart'], 1, 1, 12).torel(refString,cdtime.DefaultCalendar).value
                             newstarttime = (datime(opts['tstart'], 1,  1, 12) - dateref).days
                             difftime = inrange_access_times[0] - newstarttime
                             #newendtimeyear = cdtime.comptime(opts['tend'], 12, 31, 12).torel(refString,cdtime.DefaultCalendar).value
-                            newendtimeyear = (datetime(opts['tend'], 12, 31, 12) - dateref).days
+                            newendtimeyear = (datetime.datetime(opts['tend'], 12, 31, 12) - dateref).days
                             numdays_cal = int(newendtimeyear - newstarttime + 1)
                             numdays_tvals = len(inrange_access_times)
                             #diff_days=numdays_cal - numdays_tvals
@@ -591,12 +589,12 @@ def app(option_dictionary):
                                 #min bound is first day of month
                                 model_date.day = 1
                                 #min_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
-                                min_tvals.append((datetime(model_date) - dateref).days)
+                                min_tvals.append((datetime.datetime(model_date) - dateref).days)
                                 #max_bound is first day of next month
                                 model_date.year = model_date.year+model_date.month/12
                                 model_date.month = model_date.month%12+1                                
                                 #max_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
-                                max_tvals.append((datetime(model_date) - dateref).days)
+                                max_tvals.append((datetime.datetime(model_date) - dateref).days)
                                 #if opts['axes_modifier'].find('tMonOverride') != -1:
                                 if os.path.basename(all_access_files[0]).startswith('ice') or (dim.find('time1') != -1):
                                     #correct date to middle of month
@@ -636,12 +634,12 @@ def app(option_dictionary):
                                     #min bound is first day of month
                                     model_date.day = 1
                                     #min_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
-                                    min_tvals.append((datetime(model_date) - dateref).days)
+                                    min_tvals.append((datetime.datetime(model_date) - dateref).days)
                                     #max_bound is first day of next month
                                     model_date.year = model_date.year+model_date.month/12
                                     model_date.month = model_date.month%12+1                                
                                     #max_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
-                                    max_tvals.append((datetime(model_date) - dateref).days)
+                                    max_tvals.append((datetime.datetime(model_date) - dateref).days)
                                     #if opts['axes_modifier'].find('tMonOverride') != -1:
                                     if os.path.basename(all_access_files[0]).startswith('ice'):
                                         #correct date to middle of month
@@ -676,14 +674,14 @@ def app(option_dictionary):
                             tstart.day = 1
                             tstart.month = n + 1
                             #tstart = tstart.torel(refString,cdtime.DefaultCalendar).value
-                            tstart = (datetime(tstart) - dateref).days 
+                            tstart = (datetime.datetime(tstart) - dateref).days 
                             tstarts.append(tstart)
                             tend = cdtime.reltime(tend,refString).tocomp(cdtime.DefaultCalendar)
                             tend.month = n + 1
                             tend = tend.add(1,cdtime.Month)
                             tend = tend.add(-1,cdtime.Day)
                             #tend = tend.torel(refString,cdtime.DefaultCalendar).value
-                            tend = (datetime(tend) - dateref).days 
+                            tend = (datetime.datetime(tend) - dateref).days 
                             tends.append(tend)
                             tmid = tstart + (tend - tstart) / 2
                             tmids.append(tmid)
@@ -1093,7 +1091,6 @@ def app(option_dictionary):
                     units=in_units,
                     axis_ids=axis_ids,
                     # docs are using both type an data_type for the same argument
-                    #type='f',
                     data_type='f',
                     missing_value=in_missing,
                     positive=data_vals.positive)
@@ -1106,7 +1103,6 @@ def app(option_dictionary):
                         units=in_units, 
                         axis_ids=axis_ids,
                         # docs are using both type an data_type for the same argument
-                        #type='f',
                         data_type='f',
                         missing_value=in_missing,
                         positive='up')
@@ -1116,7 +1112,7 @@ def app(option_dictionary):
                 variable_id = cmor.variable(table_entry=opts['vcmip'],
                         units=in_units,
                         axis_ids=axis_ids,
-                        type='f',
+                        data_type='f',
                         missing_value=in_missing,
                         positive='down')
                 print("positive: down")
@@ -1125,7 +1121,7 @@ def app(option_dictionary):
                 variable_id = cmor.variable(table_entry=opts['vcmip'],
                         units=in_units,
                         axis_ids=axis_ids,
-                        type='f',
+                        data_type='f',
                         missing_value=in_missing)
                 print("positive: None")
     except Exception as e:
