@@ -146,12 +146,13 @@ def compliance_check(success):
 
 def saveonlineplot(online_plot_dir, exptoprocess, table,plotout):
     pathtable = f"{online_plot_dir}/{exptoprocess}/{table}"
-    pathlib2.Path.mkdir(pathlib2.Path(pathtable)),parents=True,exist_ok=True)
-    os.chmod(pathtable,0755)
+    p = pathlib2.Path(pathtable)
+    p.mkdir(parents=True,exist_ok=True)
+    os.chmod(pathtable, 0o755)
     if os.path.exists(f"{pathtable}/{plotout}"):
         os.remove(f"{pathtable}/{plotout}")
     plt.savefig(f"{pathtable}/{plotout}")
-    os.chmod(f"{pathtable}/{plotout}", 0755)
+    os.chmod(f"{pathtable}/{plotout}", 0o755)
 
 
 def create_timeseries(cmordir):

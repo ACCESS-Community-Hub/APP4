@@ -112,8 +112,8 @@ def process_row(row):
         exp_description = f"Exp: {experiment_id}"
     if dreq_years:
         try:
-            msg_return = "years requested for variable are outside " +
-                         "specified period: {table}, {vcmip}, {tstart}, {tend}"
+            msg_return = ("years requested for variable are outside " +
+                         f"specified period: {table}, {vcmip}, {tstart}, {tend}")
             int(years[0])
             if tstart >= years[0]:
                 pass
@@ -133,44 +133,44 @@ def process_row(row):
         pass
     #
     print("\n#---------------#---------------#---------------#---------------#\nprocessing row with details:\n")
-    print(f"{cmip_table},{vcmip}"
-    print(f"vcmip = {vcmip}")
-    print(f"vin = {vin}")
-    print(f"cfname = {cfname}")
-    print(f"cmip_table = {cmip_table}")
-    print(f"calculation = {calculation}")
-    print(f"in_units = {in_units}")
-    print(f"axes_modifier = {axes_modifier}")
-    print(f"positive = {positive}")
-    print(f"timeshot = {timeshot}")
-    print(f"frequency = {frequency}")
+    print(f"{cmip_table},{vcmip}")
+    print(f"vcmip= {vcmip}")
+    print(f"vin= {vin}")
+    print(f"cfname= {cfname}")
+    print(f"cmip_table= {cmip_table}")
+    print(f"calculation= {calculation}")
+    print(f"in_units= {in_units}")
+    print(f"axes_modifier= {axes_modifier}")
+    print(f"positive= {positive}")
+    print(f"timeshot= {timeshot}")
+    print(f"frequency= {frequency}")
     try:
         int(years[0])
-        print(f"years = {years[0]}-{years[-1]}")
+        print(f"years= {years[0]}-{years[-1]}")
     except:
-        print(f"years = {years}")
-    print(f"var_notes = {var_notes}")
-    print(f"local_exp_id = {local_exp_id}")
-    print(f"reference_date = {reference_date}")
-    print(f"tstart = {tstart}")
-    print(f"tend = {tend}")
-    print(f"access_version = {access_version}")
-    print(f"infile = {infile}")
-    print(f"outpath = {outpath}")
-    print(f"activity_id = {activity_id}")
-    print(f"institution_id = {institution_id}")
-    print(f"source_id = {source_id}")
-    print(f"experiment_id = {experiment_id}")
-    print(f"grid_label = {grid_label}")
-    print(f"version = {version}")
-    print(f"realization_idx = {realization_idx}")
-    print(f"initialization_idx = {initialization_idx}")
-    print(f"physics_idx = {physics_idx}")
-    print(f"forcing_idx = {forcing_idx}")
-    print(f"json_file_path = {json_file_path}")
-    print(f"exp_description = {exp_description}")
-    print(f"expected file name = {file_name}")
-    print(f"status = {status}")
+        print(f"years= {years}")
+    print(f"var_notes= {var_notes}")
+    print(f"local_exp_id= {local_exp_id}")
+    print(f"reference_date= {reference_date}")
+    print(f"tstart= {tstart}")
+    print(f"tend= {tend}")
+    print(f"access_version= {access_version}")
+    print(f"infile= {infile}")
+    print(f"outpath= {outpath}")
+    print(f"activity_id= {activity_id}")
+    print(f"institution_id= {institution_id}")
+    print(f"source_id= {source_id}")
+    print(f"experiment_id= {experiment_id}")
+    print(f"grid_label= {grid_label}")
+    print(f"version= {version}")
+    print(f"realization_idx= {realization_idx}")
+    print(f"initialization_idx= {initialization_idx}")
+    print(f"physics_idx= {physics_idx}")
+    print(f"forcing_idx= {forcing_idx}")
+    print(f"json_file_path= {json_file_path}")
+    print(f"exp_description= {exp_description}")
+    print(f"expected file name= {file_name}")
+    print(f"status= {status}")
     #
     try:
         #Do the processing:
@@ -205,7 +205,7 @@ def process_row(row):
             #process the file,
             ret = app(dictionary)
             try:
-                os.chmod(ret,0644)
+                os.chmod(ret,0o644)
             except:
                 pass
             print("\nreturning to app_wrapper...")
@@ -247,7 +247,7 @@ def process_row(row):
                     print(f"expected and cmor file paths match")
                     msg = f"\nsuccessfully processed variable: {table},{vcmip},{tstart},{tend}\n"
                     #modify file permissions to globally readable
-                    #os.chmod(ret,493)
+                    #os.chmod(ret, 0o493)
                     with open(database_updater,'a+') as dbu:
                         dbu.write(f"setStatus('processed',{rowid})\n")
                     dbu.close()
@@ -323,15 +323,15 @@ def pool_handler(rows):
 #
 #
 def main():
-"""Main method to select and process variables
-"""
-    print("\nstarting app_wrapper..."
+    """Main method to select and process variables
+    """
+    print("\nstarting app_wrapper...")
     print(f"local experiment being processed: {exp}")
     print(f"cmip6 table being processed: {table}")
     print(f"cmip6 variable being processed: {var}")
     #process only one file per mp process
-    cursor.execute('select *,ROWID  from file_master where status==\'unprocessed\'\
-                    and local_exp_id==?',[exp])
+    cursor.execute("select *,ROWID  from file_master where " +
+        f"status=='unprocessed' and local_exp_id=='{exp}'")
     #fetch rows
     try:
        rows = cursor.fetchall()

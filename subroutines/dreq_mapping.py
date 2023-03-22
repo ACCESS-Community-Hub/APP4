@@ -161,7 +161,7 @@ try:
     p.close()
 except:
     if priorityonly:
-        print(f"no priority list for local experiment 'exptoprocess', processing all variables")
+        print(f"no priority list for local experiment '{exptoprocess}', processing all variables")
 
 
 def check_table():
@@ -196,7 +196,7 @@ def check_path(path):
 
 def check_file(fname):
     if os.path.exists(fname):
-        print("found file '{fname}'")
+        print(f"found file '{fname}'")
     else:
         sys.exit(f"file '{fname}' does not exist!")
 
@@ -648,7 +648,11 @@ def find_matches(table, master_map, cmorname, realm, freq, cfname,
                         file_structure = atm_file_struc + '*_chem.nc'
                 #
                 if file_structure != None:
-                    matches.append(f"{cmipvar}, {definable}, {access_vars}, {file_structure}, {calculation}, {units}, {axes_modifier}, {positive}, {timeshot}, {years}, {varnotes}, {cfname}, {dimension}")
+                    matches.append(f"{cmipvar},{definable}," + 
+                         f"{access_vars},{file_structure},{calculation}," +
+                         f"{units},{axes_modifier},{positive}," +
+                         f"{timeshot},{years},{varnotes},{cfname}," +
+                         f"{dimension}")
                     if not cmorname in matchlist:
                         matchlist.append(cmipvar)
                 elif (file_structure == None) and (not skip):
@@ -665,22 +669,28 @@ def find_matches(table, master_map, cmorname, realm, freq, cfname,
     g.close()
     return matches,nomatches
 
-def write_variable_map(outpath,table,matches):
-    with open(f"{outpath}/{table}.csv", 'w') as h:
-        h.write(f"#cmip table: {table},,,,,,,,,,,,\n")
-        h.write('#cmipvar,definable,access_vars,file_structure,calculation,units,axes_modifier,positive,timeshot,years,varnotes,cfname,dimension\n')
+
+def write_variable_map(outpath, table, matches):
+    with open(f"{outpath}/{table}.csv", 'w') as fcsv:
+        fwriter = csv.writer(fcsv, delimiter=',')
+        fwriter.writerow(f"#cmip table: {table},,,,,,,,,,,,".split(","))
+        header2 = ("#cmipvar,definable,access_vars,file_structure," +
+                   "calculation,units,axes_modifier,positive," +
+                   "timeshot,years,varnotes,cfname,dimension")
+        fwriter.writerow(header2.split(","))
         for line in matches:
-            print(f"  {line}"
-            h.write(f"{line}\n")
-    h.close()
+            print(f"  {line}")
+            fwriter.writerow(f"{line}".split(","))
+    fcsv.close()
 
 
-def create_variable_map(dreq,master_map,outpath,table):
-    dreq_variables = read_dreq_vars(dreq,table)
+def create_variable_map(dreq, master_map, outpath, table):
+    dreq_variables = read_dreq_vars(dreq, table)
     matches = []
     nomatches = []
     for cmorname, realm, freq, cfname, years, dimensions in dreq_variables:
-        matches, nomatches = find_matches(table, master_map, cmorname,realm,freq,cfname,years,dimensions,matches,nomatches)
+        matches, nomatches = find_matches(table, master_map, cmorname, 
+                 realm,freq,cfname,years,dimensions,matches,nomatches)
     if matches == []:
         print(f"{table}:  no ACCESS variables found")
     else: 

@@ -168,19 +168,22 @@ def champions_setup(champions_dir,conn):
             continue
         if not table.startswith('.'): #hidden file, directory
             try:
-                f=csv.reader(open(f"{champions_dir}/{table}", 'r'))
-                for line in f:
+                #PP added delimiter "," as separator
+                #PP possibly if we should use csv instead of a basic file writer in dreq_mapping.py 
+                fcsv = open(f"{champions_dir}/{table}", 'r')
+                freader = csv.reader(fcsv, delimiter=',')
+                for line in freader:
                     if line[0][0] != '#':
                         row=['N/A']*15
                         for i, item in enumerate(line):
-                            row[i+1]=item
+                            row[i+1] = item
                         #cmip_table
                         row[0] = table[:-4]  #champions file with .csv removed        
                         try:
                             cursor.execute('insert into champions values (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ',
                                     row[0:14])
                         except Exception as e:
-                            print(f"error inserting line into champions file: {e}\n{row}"
+                            print(f"error inserting line into champions file: {e}\n{row}")
                 conn.commit()
             except Exception as e: 
                 print(e, table)
@@ -289,7 +292,7 @@ def computeFileSize(grid_points, frequency, length):
     length = float(length)
     # base size is for fixed data 
     #    return grid_points*4/1024/1024.0
-    size = grid_points*4/1024.0^2
+    size = grid_points*4.0/1024.0**2
     if frequency == 'yr':
         size = size*length/365
         #return ((length/365)*grid_points*4))/1024.0^2
@@ -304,10 +307,10 @@ def computeFileSize(grid_points, frequency, length):
         #return 12*grid_points*4/1024/1024.0
     elif frequency == '6hr':
         size = size * length * 4
-        return length*grid_points*4/1024/1024.0*4
+        #return length*grid_points*4/1024/1024.0*4
     elif frequency == '3hr':
         size = size * length * 8 
-        return length*grid_points*4/1024/1024.0*8
+        #return length*grid_points*4/1024/1024.0*8
     elif frequency == '1hr':
         size = size * length * 24 
     elif frequency == '10min':
@@ -334,8 +337,8 @@ def tableToFreq(table):
                 '6hrPlev': '6hr',
                 'AERday': 'day',
                 'AERmon': 'mon',
-    ,'AERmonZ':'mon'
-    ,'Amon':'mon'
+                'AERmonZ':'mon',
+                'Amon':'mon'
     ,'AmonZ':'mon'
     ,'CFday':'day'
     ,'CF3hr':'3hr'
@@ -378,7 +381,7 @@ def addRow(values,cursor):
             (:experiment_id,:realization_idx,:initialization_idx,:physics_idx,:forcing_idx,:infile,:outpath,:file_name,:vin,:vcmip,:cmip_table,
             :frequency,:tstart,:tend,:status,:file_size,:local_exp_id,:calculation,:axes_modifier,:in_units,:positive,
             :timeshot,:years,:var_notes,:cfname,:activity_id,:institution_id,:source_id,:grid_label,:access_version,:json_file_path,:reference_date,:version)''', values)
-    except sqlite3.IntegrityError , e:
+    except sqlite3.IntegrityError as e:
         print(f"Row already exists:\n{e}")
     return cursor.lastrowid
 
@@ -390,7 +393,7 @@ def addRow(values,cursor):
 #Then loops over times in experiment and add rows into file_master table
 #(chunks times according to max_file_years in grids table)
 #
-def populateRows(rows,opts,cursor):
+def populateRows(rows, opts, cursor):
     for champ in rows:
         #defaults    
         #from champions table:
@@ -402,8 +405,10 @@ def populateRows(rows,opts,cursor):
         try:
             [a,b] = champ[4].split()
             opts['infile'] = f"{opts['local_exp_dir']}/{a} {opts['local_exp_dir']}/{b}"
+            print("all good to here")
         except:    
             opts['infile'] = f"{opts['local_exp_dir']}/{champ[4]}"
+        print(opts['infile'])
         opts['calculation'] = champ[5]
         opts['in_units'] = champ[6]
         opts['axes_modifier'] = champ[7]
@@ -415,17 +420,17 @@ def populateRows(rows,opts,cursor):
         dimension = champ[13]
         time = opts['exp_start']
         finish = opts['exp_end']
-        cursor.execute('select max_file_years,gridpoints from grids where dimensions=? and frequency=?',[dimension,frequency])
+        cursor.execute(f"select max_file_years,gridpoints from grids where dimensions=='{dimension}' and frequency=='{frequency}'")
         #TODO add in check that there is only one value
         try:
             if opts['vcmip'] == 'co2':
                 stepyears = 10
                 gridpoints = 528960
             else:
-                stepyears,gridpoints=cursor.fetchone()
+                stepyears, gridpoints=cursor.fetchone()
         except:
             print("error: no grid specification for")
-            print("frequency: {frequency}"
+            print(f"frequency: {frequency}")
             print(dimension)
             print(opts['vcmip'])
             raise
@@ -437,19 +442,21 @@ def populateRows(rows,opts,cursor):
             opts['tend'] = newtime 
             opts['file_size'] = computeFileSize(gridpoints,frequency,stepDays)
             opts['file_name'] = buildFileName(opts)
-            rowid = addRow(opts,cursor)
+            rowid = addRow(opts, cursor)
             time = newtime+1
 
 #populate the database for variables that are requested for all times for all experiments
 def populate_unlimited(cursor,opts):
     #monthly, daily unlimited except cable or moses specific diagnostics
-    cursor.execute('''select * from champions where definable==\'yes\' ''')
-    populateRows(cursor.fetchall(),opts,cursor)
+    cursor.execute("select * from champions where definable=='yes'")
+    rows = cursor.fetchall()
+    #populateRows(cursor.fetchall(), opts, cursor)
+    populateRows(rows, opts, cursor)
 
 #choose grid file to determine chunking, based on access_version
 def grid_file_choose(conn):
     cursor = conn.cursor()
-    cursor.execute(f"select * from experiments where local_exp_id=={exptoprocess}")
+    cursor.execute(f"select * from experiments where local_exp_id=='{exptoprocess}'")
     for exp in cursor.fetchall():
         access_version = exp[7]
     if access_version.find('OM2') != -1:
@@ -471,7 +478,7 @@ def populate(conn):
     opts = dict()
     opts['status'] = 'unprocessed'
     #get experiment information
-    cursor.execute(f"select * from experiments where local_exp_id=={exptoprocess}")
+    cursor.execute(f"select * from experiments where local_exp_id=='{exptoprocess}'")
     #loop over different experiments
     for exp in cursor.fetchall():
         opts['json_file_path'] = exp[2]
@@ -487,7 +494,7 @@ def populate(conn):
         opts['institution_id'] = json_dict['institution_id']
         opts['source_id'] = json_dict['source_id']
         opts['grid_label'] = json_dict['grid_label']
-        opts['version'] = json_dictget('version', datetime.today().strftime('%Y%m%d'))
+        opts['version'] = json_dict.get('version', datetime.today().strftime('%Y%m%d'))
         opts['local_exp_id'] = exp[0]
         opts['local_exp_dir'] = exp[1]
         opts['reference_date'] = exp[4]
@@ -525,13 +532,14 @@ def create_database_updater():
             '    cursor.execute("update file_master set status=? where ROWID=?",[status,rowid])\n'\
             #'    print "set status: ",status\n'\
             '    conn.commit()\n'\
-            'print "updating database..."\n')
+            'print("updating database...")\n')
     dbu.close()
 
 
 def count_rows(conn):
     cursor=conn.cursor()
-    cursor.execute(f"select * from file_master where status=='unprocessed' and local_exp_id == {exptoprocess}")
+    #cursor.execute(f"select * from file_master where status=='unprocessed' and local_exp_id=='{exptoprocess}'")
+    cursor.execute(f"select * from file_master")
     rows = cursor.fetchall()
     print(f"Number of rows: {len(rows)}")
     #for row in rows:
@@ -543,7 +551,7 @@ def count_rows(conn):
 
 
 def main():
-    print("\nstarting database_manager..."
+    print("\nstarting database_manager...")
     #Global variable:
     #set champions tables directory from environment variable
     champions_dir = os.environ.get('VARIABLE_MAPS')
@@ -572,6 +580,7 @@ def main():
     grids_setup(conn,grid_file)
     champions_setup(champions_dir,conn)
     populate(conn)
+    print('past populate')
     create_database_updater()
     count_rows(conn)
     print(f"max total file size is: {sumFileSizes(conn)/1024} GB")

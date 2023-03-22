@@ -16,9 +16,11 @@ module load parallel
 #export LD_LIBRARY_PATH=/short/p66/ct5255/conda/envs/CMOR/lib:${LD_LIBRARY_PATH}
 
 # CMIP6-pub env
+#PP NB I changed this to relfect my own conda env with the latest CMOR version installed
 module load conda
-PATH=${PATH}:/g/data/hh5/public/apps/miniconda3/envs/cmip6-publication/bin:/g/data/hh5/public/apps/miniconda3/bin
-source activate cmip6-publication
+#PATH=${PATH}:/g/data/hh5/public/apps/miniconda3/envs/cmip6-publication/bin:/g/data/hh5/public/apps/miniconda3/bin
+PATH=${PATH}:/scratch/v45/pxp581/conda/envs/CMOR/bin:/g/data/hh5/public/apps/miniconda3/bin
+source activate CMOR 
 
 module list
 python -V

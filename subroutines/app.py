@@ -15,6 +15,10 @@ SG- Added spaces and formatted script to read better.
 
 20/03/23:
 SG - Changed cdms2 to Xarray.
+
+21/03/23:
+PP - Changed cdtime to datetime. NB this is likely a bad way of doing this, but I need to remove cdtime to do further testing
+PP - datetime assumes Gregorian calendar
 '''
 
 
@@ -24,13 +28,16 @@ import netCDF4
 import numpy as np
 import string
 import glob
+# for some reason this still imports all the datetime module???
+#from datetime import datetime
 import datetime
 import re
 from app_functions import *
 import os,sys
-import cdms2
+#import cdms2
 import xarray as xr
-import cdtime
+from cftime import num2date, date2num
+#import cdtime
 #import cmorx as cmor
 import cmor
 import warnings
@@ -57,14 +64,15 @@ def app(option_dictionary):
         #new parameters don't match old ones 
         raise ValueError('Error: {} input parameters don\'t match valid variable names'.format(str(len1-len0)))
     #
-    cdtime.DefaultCalendar = cdtime.GregorianCalendar
+    #cdtime.DefaultCalendar = cdtime.GregorianCalendar
+    default_cal = "gregorian"
     #
     cmor.setup(inpath=opts['cmip_table_path'],
         netcdf_file_action = cmor.CMOR_REPLACE_4,
         set_verbosity = cmor.CMOR_NORMAL,
         exit_control = cmor.CMOR_NORMAL,
         #exit_control=cmor.CMOR_EXIT_ON_MAJOR,
-        logfile = '{}/log'.format(cmorlogs),create_subdirectories=1)
+        logfile = f"{cmorlogs}/log", create_subdirectories=1)
     #
     #Define the dataset.
     #
@@ -73,26 +81,27 @@ def app(option_dictionary):
     #Write a global variable called version_number which is used for CSIRO purposes.
     #
     #try:
-    #    cmor.set_cur_dataset_attribute('version_number',opts['version_number'])
+    #    cmor.set_cur_dataset_attribute('version_number', opts['version_number'])
     #except:
-    #    print 'E: Unable to add a global attribute called version_number'
+    #    print("E: Unable to add a global attribute called version_number")
     #    raise Exception('E: Unable to add a global attribute called version_number')
     #
     #Write a global variable called notes which is used for CSIRO purposes.
     #
-    cmor.set_cur_dataset_attribute('notes',opts['notes'])
+    cmor.set_cur_dataset_attribute('notes', opts['notes'])
     #except:
     #    print 'E: Unable to add a global attribute called notes'
     #    raise Exception('E: Unable to add a global attribute called notes')
-    cmor.set_cur_dataset_attribute('exp_description',opts['exp_description'])
-    cmor.set_cur_dataset_attribute('contact',os.environ.get('CONTACT'))
+    cmor.set_cur_dataset_attribute('exp_description', opts['exp_description'])
+    cmor.set_cur_dataset_attribute('contact', os.environ.get('CONTACT'))
     #
     #Load the CMIP tables into memory.
     #
     tables = []
-    tables.append(cmor.load_table('{}/CMIP6_grids.json'.format(opts['cmip_table_path'])))
-    tables.append(cmor.load_table('{}/{}.json'.format(opts['cmip_table_path'],opts['cmip_table'])))
+    tables.append(cmor.load_table(f"{opts['cmip_table_path']}/CMIP6_grids.json"))
+    tables.append(cmor.load_table(f"{opts['cmip_table_path']}/{opts['cmip_table']}.json"))
     #
+    #PP SEPARATE FUNCTION
     #Find all the ACCESS file names which match the "glob" pattern.
     #Sort the filenames, assuming that the sorted filenames will
     #be in chronological order because there is usually some sort of date
@@ -106,7 +115,8 @@ def app(option_dictionary):
         extra_access_files = glob.glob(tmp[1])
         extra_access_files.sort()
         opts['infile'] = tmp[0]
-    else: extra_access_files=None
+    else:
+        extra_access_files = None
     #set normal set of files
     all_access_files = glob.glob(opts['infile'])
     all_access_files.sort()
@@ -137,16 +147,18 @@ def app(option_dictionary):
                 tmp.append(fn)
         extra_access_files = tmp
     del tmp
+    # PP FUNCTION END return all_access_files, extra_access_files
     print(f"access files from: {os.path.basename(all_access_files[0])} to {os.path.basename(all_access_files[-1])}")
-    print("first file: {all_access_files[0]}")
+    print(f"first file: {all_access_files[0]}")
     inrange_access_files = []
     inrange_access_times = []
     #
+    #PP FUNCTION check var in files
     #find file with first element of 'vin'
     i = 0
     while True:
         try:
-            temp_file = netCDF4.Dataset(all_access_files[i],'r')
+            temp_file = netCDF4.Dataset(all_access_files[i], 'r')
         except IndexError: 
             #gone through all files and haven't found variable
             raise Exception(f"Error! Variable missing from files: {opts['vin'][0]}")
@@ -161,10 +173,12 @@ def app(option_dictionary):
             continue
     print(f"using file: {all_access_files[i]}")
     try:
-        print("variable '{opts['vin'][0]}' has units in ACCESS file: {var.units}")
+        print(f"variable '{opts['vin'][0]}' has units in ACCESS file: {var.units}")
     except:
-        print("variable '{opts['vin'][0]}' has no units listed in ACCESS file")
+        print(f"variable '{opts['vin'][0]}' has no units listed in ACCESS file")
+    #PP end of function
     #
+    #PP start time_dimension function
     time_dimension = None
     #find time info: time axis, reference time and set tstart and tend
     #    
@@ -174,6 +188,8 @@ def app(option_dictionary):
             for var_dim in var.dimensions:
                 if var_dim.find('time') != -1 or temp_file[var_dim].axis == 'T':
                     time_dimension = var_dim
+                    #PP
+                    print(time_dimension)
     except:
         #use the default time dimension 'time'
         pass 
@@ -187,7 +203,7 @@ def app(option_dictionary):
         endyear = opts['tend']
     elif opts['cmip_table'].find('fx') != -1:
         print("fx variable, no time axis")
-        refString = "days since {r:04d}-01-01".format(r=opts['reference_date'])
+        refString = f"days since {opts['reference_date'][:4]}-01-01"
         time_dimension = None    
         inrange_access_files = all_access_files
     else:
@@ -205,17 +221,35 @@ def app(option_dictionary):
             print("W: Unable to extract a reference date: assuming it is 0001")
         temp_file.close()
         try:
+            # PP set reference time as datetime
+            date1 = refString.split('since ')[1]
+            #PP ingoring time assuming is 0
+            dateref =  date1.split(" ")[0]
+            print(dateref)
+            dateref = datetime.datetime.strptime(dateref, "%Y-%m-%d")
             #set to very end of the year
-            startyear = opts['tstart']
-            endyear = opts['tend']
-            opts['tstart'] = cdtime.comptime(opts['tstart']).torel(refString,cdtime.DefaultCalendar).value
+            startyear = int(opts['tstart'])
+            endyear = int(opts['tend'])
+            #PP shouldn't we check first that this is already what we want?
+            # this will produce first a year,month etc time and then convert it to a relative time
+            # 
+            #opts['tstart'] = cdtime.comptime(opts['tstart']).torel(refString,cdtime.DefaultCalendar).value
+            opts['tstart'] = (datetime.datetime(startyear, 1, 1) - dateref).days
+            #opts['tstart'] = date2num(startyear, units=refString, calendar=default_cal)
+            print('start after datetime', opts['tstart'])
             if os.path.basename(all_access_files[0]).startswith('ice'):
-                opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value
+                #opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value
+                opts['tend'] = (datetime.datetime(endyear+1, 1, 1) - dateref).days
+                #opts['tend'] = date2num(endyear, units=refString, calendar=default_cal)
             elif (time_dimension.find('time1') != -1 or time_dimension.find('time_0') != -1) \
                 and (opts['frequency'].find('mon') != -1) and (opts['timeshot'].find('mean') != -1):
-                opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value
+                #opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value
+                opts['tend'] = (datetime.datetime(endyear+1, 1, 1) - dateref).days
+                #opts['tend'] = date2num(endyear + 1, units=refString, calendar=default_cal)
             else:
-                opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value-.01 
+                #opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value - 0.01 
+                opts['tend'] = (datetime.datetime(endyear+1, 1, 1) - dateref).days - 0.01
+                #opts['tend'] = date2num(endyear + 1, units=refString, calendar=default_cal) - 0.01
             print(f"time start: {opts['tstart']}")
             print(f"time end: {opts['tend']}")
         except Exception as e:
@@ -223,10 +257,13 @@ def app(option_dictionary):
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
     #
+    #PP start function to retunr file in time range
     print("loading files...")
-    print("time dimension: {time_dimension}")
+    print(f"time dimension: {time_dimension}")
+    #????
     sys.stdout.flush()
     exit = False
+    # if a time dimension exists and tMonOverride is not part of axes_modifiers
     if (time_dimension != None) and (opts['axes_modifier'].find('tMonOverride') == -1):
         for i, input_file in enumerate(all_access_files):
             try:
@@ -250,7 +287,8 @@ def app(option_dictionary):
                         irefString = access_file[time_dimension].units
                         if irefString != refString: 
                             #print 'WRONG refString ', irefString, refString
-                            tvals = np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
+                            #tvals = np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
+                            tvals = np.array(tvals) + (datetime.datetime(irefString[:-10]) - dateref).days 
                         inrange_access_times.extend(tvals[:])
                 #
                 #Close the file.
@@ -274,7 +312,8 @@ def app(option_dictionary):
                     irefString = access_file[time_dimension].units
                     if irefString != refString: 
                         #print 'WRONG refString ', irefString, refString
-                        tvals = np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
+                        #tvals = np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
+                        tvals = np.array(tvals) + (datetime.datetime(irefString[:-10]) - dateref).days 
                     inrange_access_times.extend(tvals[:])
                     access_file.close()
                 except Exception as e:
@@ -286,6 +325,7 @@ def app(option_dictionary):
     if inrange_access_files == []:
         print("no data exists in the requested time range")
         return 0
+    #PP end function
     #
     #Load the first ACCESS NetCDF data file, and get the required information about the dimensions and so on.
     #
@@ -466,13 +506,15 @@ def app(option_dictionary):
                     max_tvals = []
                     if opts['axes_modifier'].find('tMonOverride') == -1:
                         #convert times to days since reference_date
-                        tvals = np.array(inrange_access_times) + cdtime.reltime(0,refString).torel('days since {r:04d}-01-01'.format(r=opts['reference_date']),cdtime.DefaultCalendar).value
+                        # PP temporarily comment as I'm not sure what this is for
+                        #tvals = np.array(inrange_access_times) + cdtime.reltime(0,refString).torel('days since {r:04d}-01-01'.format(r=opts['reference_date']),cdtime.DefaultCalendar).value
                         print(f"time values converted to days since 01,01,{opts['reference_date']:04d}: {tvals[0:5]}...{tvals[-5:-1]}")
                         if opts['cmip_table'].find('A10day') != -1:
                             print('Aday10: selecting 1st, 11th, 21st days')
                             a10_tvals = []
                             for a10 in tvals:
-                                a10_comp = cdtime.reltime(a10,'days since {r:04d}-01-01'.format(r=opts['reference_date'])).tocomp(cdtime.DefaultCalendar)
+                                #a10_comp = cdtime.reltime(a10,'days since {r:04d}-01-01'.format(r=opts['reference_date'])).tocomp(cdtime.DefaultCalendar)
+                                a10_comp = a10.date()
                                 #print(a10, a10_comp, a10_comp.day)
                                 if a10_comp.day in [1,11,21]:
                                     a10_tvals.append(a10)
@@ -483,17 +525,21 @@ def app(option_dictionary):
                         if opts['frequency'] == 'yr':
                             print("yearly")
                             for year in range(opts['tstart'],opts['tend']+1):
-                                tvals.append(cdtime.comptime(year,07,02,12).torel(refString,cdtime.DefaultCalendar).value)
+                                #tvals.append(cdtime.comptime(year, 7, 2, 12).torel(refString,cdtime.DefaultCalendar).value)
+                                tvals.append((datetime.datetime(year, 7, 2, 12) - dateref).days)
                         elif opts['frequency'] == 'mon':
                             print("monthly")
                             for year in range(opts['tstart'],opts['tend']+1):
                                 for mon in range(1,13):
-                                    tvals.append(cdtime.comptime(year,mon,15).torel(refString,cdtime.DefaultCalendar).value)
+                                    #tvals.append(cdtime.comptime(year, mon, 15).torel(refString,cdtime.DefaultCalendar).value)
+                                    tvals.append((datetime.datetime(year, mon, 15) - dateref).days)
                         elif opts['frequency'] == 'day':
                             print("daily")
-                            newstarttime = cdtime.comptime(opts['tstart'],1,1,12).torel(refString,cdtime.DefaultCalendar).value
+                            #newstarttime = cdtime.comptime(opts['tstart'], 1, 1, 12).torel(refString,cdtime.DefaultCalendar).value
+                            newstarttime = (datime(opts['tstart'], 1,  1, 12) - dateref).days
                             difftime = inrange_access_times[0] - newstarttime
-                            newendtimeyear = cdtime.comptime(opts['tend'],12,31,12).torel(refString,cdtime.DefaultCalendar).value
+                            #newendtimeyear = cdtime.comptime(opts['tend'], 12, 31, 12).torel(refString,cdtime.DefaultCalendar).value
+                            newendtimeyear = (datetime.datetime(opts['tend'], 12, 31, 12) - dateref).days
                             numdays_cal = int(newendtimeyear - newstarttime + 1)
                             numdays_tvals = len(inrange_access_times)
                             #diff_days=numdays_cal - numdays_tvals
@@ -542,11 +588,13 @@ def app(option_dictionary):
                                 model_date = cdtime.reltime(int(ordinaldate),refString).tocomp(cdtime.DefaultCalendar)
                                 #min bound is first day of month
                                 model_date.day = 1
-                                min_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
+                                #min_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
+                                min_tvals.append((datetime.datetime(model_date) - dateref).days)
                                 #max_bound is first day of next month
                                 model_date.year = model_date.year+model_date.month/12
                                 model_date.month = model_date.month%12+1                                
-                                max_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
+                                #max_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
+                                max_tvals.append((datetime.datetime(model_date) - dateref).days)
                                 #if opts['axes_modifier'].find('tMonOverride') != -1:
                                 if os.path.basename(all_access_files[0]).startswith('ice') or (dim.find('time1') != -1):
                                     #correct date to middle of month
@@ -567,8 +615,10 @@ def app(option_dictionary):
                         #set up time axis:
                         cmor.set_table(tables[1])
                         time_axis_id = cmor.axis(table_entry=cmor_tName,
-                            units=refString,length=len(tvals),
-                            coord_vals=tvals[:],cell_bounds=tval_bounds[:],
+                            units=refString,
+                            length=len(tvals),
+                            coord_vals=tvals[:], 
+                            cell_bounds=tval_bounds[:],
                             interval=None)
                         axis_ids.append(time_axis_id)
                         print("setup of time dimension complete")
@@ -583,11 +633,13 @@ def app(option_dictionary):
                                     model_date = cdtime.reltime(int(ordinaldate),refString).tocomp(cdtime.DefaultCalendar)
                                     #min bound is first day of month
                                     model_date.day = 1
-                                    min_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
+                                    #min_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
+                                    min_tvals.append((datetime.datetime(model_date) - dateref).days)
                                     #max_bound is first day of next month
                                     model_date.year = model_date.year+model_date.month/12
                                     model_date.month = model_date.month%12+1                                
-                                    max_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
+                                    #max_tvals.append(model_date.torel(refString,cdtime.DefaultCalendar).value)
+                                    max_tvals.append((datetime.datetime(model_date) - dateref).days)
                                     #if opts['axes_modifier'].find('tMonOverride') != -1:
                                     if os.path.basename(all_access_files[0]).startswith('ice'):
                                         #correct date to middle of month
@@ -604,7 +656,8 @@ def app(option_dictionary):
                             tvals,min_tvals,max_tvals = yrpoint(tvals,refString) 
                         cmor.set_table(tables[1])
                         time_axis_id = cmor.axis(table_entry=cmor_tName,
-                            units=refString,length=len(tvals),
+                            units=refString,
+                            length=len(tvals),
                             coord_vals=tvals[:],
                             interval=None)
                         axis_ids.append(time_axis_id)
@@ -620,13 +673,15 @@ def app(option_dictionary):
                             tstart= cdtime.reltime(tstart,refString).tocomp(cdtime.DefaultCalendar)
                             tstart.day = 1
                             tstart.month = n + 1
-                            tstart = tstart.torel(refString,cdtime.DefaultCalendar).value
+                            #tstart = tstart.torel(refString,cdtime.DefaultCalendar).value
+                            tstart = (datetime.datetime(tstart) - dateref).days 
                             tstarts.append(tstart)
                             tend = cdtime.reltime(tend,refString).tocomp(cdtime.DefaultCalendar)
                             tend.month = n + 1
                             tend = tend.add(1,cdtime.Month)
                             tend = tend.add(-1,cdtime.Day)
-                            tend = tend.torel(refString,cdtime.DefaultCalendar).value
+                            #tend = tend.torel(refString,cdtime.DefaultCalendar).value
+                            tend = (datetime.datetime(tend) - dateref).days 
                             tends.append(tend)
                             tmid = tstart + (tend - tstart) / 2
                             tmids.append(tmid)
@@ -634,18 +689,24 @@ def app(option_dictionary):
                         tvals = tmids
                         cmor.set_table(tables[1])
                         time_axis_id = cmor.axis(table_entry=cmor_tName,
-                            units=refString,length=len(tvals),
-                            coord_vals=tvals[:],cell_bounds=tval_bounds[:],
+                            units=refString,
+                            length=len(tvals),
+                            coord_vals=tvals[:],
+                            cell_bounds=tval_bounds[:],
                             interval=None)
                         axis_ids.append(time_axis_id)
                         print("setup of climatology time dimension complete")
-                    else: raise Exception(f"Dont know how to compute time bounds for time axis {cmor_tName}")
+                    else:
+                        raise Exception(f"Dont know how to compute time bounds for time axis {cmor_tName}")
                 elif (axis_name == 'Y')and opts['axes_modifier'].find('dropY') == -1:
-                    if (dim_vals == None) or (np.ndim(lat_vals) == 2 and opts['axes_modifier'].find('dropX') == -1):# and (opts['axes_modifier'].find('') != -1):
+                    if ((dim_vals == None) or (np.ndim(lat_vals) == 2 and
+                         opts['axes_modifier'].find('dropX') == -1)):
+                        # and (opts['axes_modifier'].find('') != -1):
                         #grid co-ordinates
                         cmor.set_table(tables[0])
-                        j_axis_id = cmor.axis(table_entry='j_index',units='1',
-                            coord_vals=np.arange(len(dim_values)))
+                        j_axis_id = cmor.axis(table_entry='j_index',
+                                units='1',
+                                coord_vals=np.arange(len(dim_values)))
                     else:
                         #lat values
                         #force the bounds back to the poles if necessary
@@ -658,7 +719,8 @@ def app(option_dictionary):
                         cmor.set_table(tables[1])
                         if opts['axes_modifier'].find('gridlat') != -1:
                             j_axis_id = cmor.axis(table_entry='gridlatitude',
-                                units=dim_vals.units,length=len(dim_values),
+                                units=dim_vals.units,
+                                length=len(dim_values),
                                 coord_vals=np.array(dim_values),
                                 cell_bounds=dim_val_bounds[:])
                         else:
@@ -666,7 +728,7 @@ def app(option_dictionary):
                                 units=dim_vals.units,length=len(dim_values),
                                 coord_vals=np.array(dim_values),
                                 cell_bounds=dim_val_bounds[:])
-                        n_grid_pts=n_grid_pts * len(dim_values)
+                        n_grid_pts = n_grid_pts * len(dim_values)
                         axis_ids.append(j_axis_id)
                         z_ids.append(j_axis_id)
                     print("setup of latitude dimension complete")
@@ -674,14 +736,16 @@ def app(option_dictionary):
                     if dim_vals == None or np.ndim(lon_vals) == 2:
                         #grid co-ordinates
                         cmor.set_table(tables[0])
-                        i_axis_id = cmor.axis(table_entry='i_index',units='1',
-                            coord_vals=np.arange(len(dim_values)))
+                        i_axis_id = cmor.axis(table_entry='i_index',
+                                units='1',
+                                coord_vals=np.arange(len(dim_values)))
                         n_grid_pts=len(dim_values)
                     else:
                         #lon values
                         cmor.set_table(tables[1])
                         i_axis_id = cmor.axis(table_entry='longitude',
-                            units=dim_vals.units,length=len(dim_values),
+                            units=dim_vals.units,
+                            length=len(dim_values),
                             coord_vals=np.mod(dim_values,360),
                             cell_bounds=dim_val_bounds[:])
                         n_grid_pts = n_grid_pts * len(dim_values)
@@ -829,7 +893,8 @@ def app(option_dictionary):
                     cmor.set_table(tables[1])
                     z_axis_id = cmor.axis(table_entry=lev_name,
                         units=units,length=z_len,
-                        coord_vals=dim_values[:],cell_bounds=dim_val_bounds[:])        
+                        coord_vals=dim_values[:],
+                        cell_bounds=dim_val_bounds[:])        
                     axis_ids.append(z_axis_id)
                     print("setup of height dimension complete")
                 else: 
@@ -849,22 +914,26 @@ def app(option_dictionary):
                         landtype = det_landtype(lev_name)
                         cmor.set_table(tables[1])
                         #tiles=cableTiles()
-                        axis_id = cmor.axis(table_entry=lev_name,units='',
-                            coord_vals=[landtype])
+                        axis_id = cmor.axis(table_entry=lev_name,
+                                units='',
+                                coord_vals=[landtype])
                         axis_ids.append(axis_id)
                     if dim.find('pseudo') != -1 and opts['axes_modifier'].find('landUse') != -1:
                         landUse = getlandUse()
                         z_len = len(landUse)
                         cmor.set_table(tables[1])
-                        axis_id = cmor.axis(table_entry='landUse',units='',
-                            length=z_len,coord_vals=landUse)
+                        axis_id = cmor.axis(table_entry='landUse',
+                                units='',
+                             length=z_len,coord_vals=landUse)
                         axis_ids.append(axis_id)
                     if dim.find('pseudo') != -1 and opts['axes_modifier'].find('vegtype') != -1:
                         cabletiles = cableTiles()
                         z_len = len(cabletiles)
                         cmor.set_table(tables[1])
-                        axis_id = cmor.axis(table_entry='vegtype',units='',
-                            length=z_len,coord_vals=cabletiles)
+                        axis_id = cmor.axis(table_entry='vegtype',
+                                units='',
+                                length=z_len,
+                                coord_vals=cabletiles)
                         axis_ids.append(axis_id)
                     else:
                         print(f"Unidentified cartesian axis: {axis_name}")
@@ -900,7 +969,9 @@ def app(option_dictionary):
                 #Set grid id and append to axis and z ids
                 cmor.set_table(tables[0])
                 grid_id = cmor.grid(axis_ids=np.array([j_axis_id,i_axis_id]),
-                    latitude=lat_vals[:],longitude=lon_vals_360[:],latitude_vertices=lat_vertices[:],
+                    latitude=lat_vals[:],
+                    longitude=lon_vals_360[:],
+                    latitude_vertices=lat_vertices[:],
                     longitude_vertices=lon_vertices[:])
                 #replace i,j axis ids with the grid_id
                 axis_ids.append(grid_id)
@@ -917,7 +988,8 @@ def app(option_dictionary):
         lines = getTransportLines()
         cmor.set_table(tables[1])
         oline_axis_id = cmor.axis(table_entry='oline',
-            units='',length=len(lines),
+            units='',
+            length=len(lines),
             coord_vals=lines)
         print("setup of oline axis complete")
         axis_ids.append(oline_axis_id)
@@ -927,7 +999,8 @@ def app(option_dictionary):
         lines = geticeTransportLines()
         cmor.set_table(tables[1])
         siline_axis_id = cmor.axis(table_entry='siline',
-            units='',length=len(lines),
+            units='',
+            length=len(lines),
             coord_vals=lines)
         print("setup of siline axis complete")
         axis_ids.append(siline_axis_id)
@@ -937,25 +1010,42 @@ def app(option_dictionary):
         cmor.set_table(tables[1])
         basins = np.array(['atlantic_arctic_ocean','indian_pacific_ocean','global_ocean'])
         oline_axis_id = cmor.axis(table_entry='basin',
-            units='',length=len(basins),
+            units='',
+            length=len(basins),
             coord_vals=basins)
         print("setup of basin axis complete")
         axis_ids.append(oline_axis_id)
     #set up additional hybrid coordinate information
     if lev_name == 'hybrid_height':
         orog_vals = getOrog()
-        zfactor_b_id = cmor.zfactor(zaxis_id=z_axis_id,zfactor_name='b',
-            axis_ids=z_axis_id,units='1',type='d',zfactor_values=b_vals,
+        zfactor_b_id = cmor.zfactor(zaxis_id=z_axis_id,
+            zfactor_name='b',
+            axis_ids=z_axis_id,
+            units='1',
+            type='d',
+            zfactor_values=b_vals,
             zfactor_bounds=b_bounds)
-        zfactor_orog_id = cmor.zfactor(zaxis_id=z_axis_id,zfactor_name='orog',
-            axis_ids=z_ids,units='m',type='f',zfactor_values=orog_vals)
+        zfactor_orog_id = cmor.zfactor(zaxis_id=z_axis_id,
+                zfactor_name='orog',
+                axis_ids=z_ids,
+                units='m',
+                type='f',
+                zfactor_values=orog_vals)
     elif lev_name == 'hybrid_height_half':
         orog_vals = getOrog()
-        zfactor_b_id = cmor.zfactor(zaxis_id=z_axis_id,zfactor_name='b_half',
-                axis_ids=z_axis_id,units='1',type='d',zfactor_values=b_vals,
+        zfactor_b_id = cmor.zfactor(zaxis_id=z_axis_id,
+                zfactor_name='b_half',
+                axis_ids=z_axis_id,
+                units='1',
+                type='d',
+                zfactor_values=b_vals,
                 zfactor_bounds=b_bounds)
-        zfactor_orog_id = cmor.zfactor(zaxis_id=z_axis_id,zfactor_name='orog',
-            axis_ids=z_ids,units='m',type='f',zfactor_values=orog_vals)
+        zfactor_orog_id = cmor.zfactor(zaxis_id=z_axis_id,
+                zfactor_name='orog',
+                axis_ids=z_ids,
+                units='m',
+                type='f',
+                zfactor_values=orog_vals)
     #
     #Define the CMOR variable.
     #
@@ -997,25 +1087,42 @@ def app(option_dictionary):
         print("defining cmor variable...")
         try:    
             #set positive value from input variable attribute
-            variable_id = cmor.variable(table_entry=opts['vcmip'],units=in_units, \
-            axis_ids=axis_ids,type='f',missing_value=in_missing,positive=data_vals.positive)
+            variable_id = cmor.variable(table_entry=opts['vcmip'],
+                    units=in_units,
+                    axis_ids=axis_ids,
+                    # docs are using both type an data_type for the same argument
+                    data_type='f',
+                    missing_value=in_missing,
+                    positive=data_vals.positive)
             print(f"positive: {data_vals.positive}")
         except:
             #search for positive attribute keyword in standard name / postive option
-            if (standard_name.find('up') != -1 or standard_name.find('outgoing') != -1 or \
-                standard_name.find('out_of') != -1 or opts['positive'] == 'up'):
-                variable_id = cmor.variable(table_entry=opts['vcmip'],units=in_units, \
-                axis_ids=axis_ids,type='f',missing_value=in_missing,positive='up')
+            if ((standard_name.find('up') != -1 or standard_name.find('outgoing') != -1 or 
+                standard_name.find('out_of') != -1 or opts['positive'] == 'up')):
+                variable_id = cmor.variable(table_entry=opts['vcmip'],
+                        units=in_units, 
+                        axis_ids=axis_ids,
+                        # docs are using both type an data_type for the same argument
+                        data_type='f',
+                        missing_value=in_missing,
+                        positive='up')
                 print("positive: up")
             elif (standard_name.find('down') != -1 or standard_name.find('incoming') != -1 or \
                 standard_name.find('into') != -1 or opts['positive'] == 'down'):
-                variable_id = cmor.variable(table_entry=opts['vcmip'],units=in_units, \
-                axis_ids=axis_ids,type='f',missing_value=in_missing,positive='down')
+                variable_id = cmor.variable(table_entry=opts['vcmip'],
+                        units=in_units,
+                        axis_ids=axis_ids,
+                        data_type='f',
+                        missing_value=in_missing,
+                        positive='down')
                 print("positive: down")
             else:
                 #don't assign positive attribute
-                variable_id = cmor.variable(table_entry=opts['vcmip'],units=in_units, \
-                axis_ids=axis_ids,type='f',missing_value=in_missing)
+                variable_id = cmor.variable(table_entry=opts['vcmip'],
+                        units=in_units,
+                        axis_ids=axis_ids,
+                        data_type='f',
+                        missing_value=in_missing)
                 print("positive: None")
     except Exception as e:
         print(f"E: Unable to define the CMOR variable {e}")
@@ -1053,7 +1160,7 @@ def app(option_dictionary):
             if len(opts['vin']) == 2:
                 varout += access_file[opts['vin'][1]][:]
             access_file.close()
-            cmor.write(variable_id,(varout),ntimes_passed = np.shape(varout)[0])
+            cmor.write(variable_id, (varout), ntimes_passed=np.shape(varout)[0])
     #
     #Monthly Climatology case
     #
@@ -1086,7 +1193,7 @@ def app(option_dictionary):
             print(f"month: {j+1}, sum of days: {clim_days[j]}")
             #average vals_wsum using the total number of days summed for each month
             vals_wsum[j,:] = vals_wsum[j,:] / clim_days[j]
-        cmor.write(variable_id,(vals_wsum),ntimes_passed=12)
+        cmor.write(variable_id, (vals_wsum), ntimes_passed=12)
     #
     #Annual means - Oyr / Eyr tables
     #
@@ -1099,7 +1206,7 @@ def app(option_dictionary):
             data_val0 = calculateVals((access_file0,),opts['vin'],opts['calculation'])
         vshape = np.shape(data_val0)
         print(vshape)
-        for year in range(startyear,endyear+1):
+        for year in range(startyear, endyear+1):
             print(f"processing year {year}")
             count = 0
             vsum = np.ma.zeros(vshape[1:],dtype=np.float32)
@@ -1152,7 +1259,7 @@ def app(option_dictionary):
             if count == 12:
                 vyr = vsum / 12
                 print("writing with cmor...")
-                cmor.write(variable_id,vyr,ntimes_passed=1)
+                cmor.write(variable_id, vyr, ntimes_passed=1)
             else:
                 print(count)
                 raise Exception(f'WARNING: annual data contains {count} months of data')    
@@ -1196,7 +1303,7 @@ def app(option_dictionary):
                 access_file.close()
             print("writing with cmor...")
             print(np.shape(data_vals))
-            cmor.write(variable_id,data_vals[0,:,:,:],ntimes_passed=1)
+            cmor.write(variable_id, data_vals[0,:,:,:], ntimes_passed=1)
     #
     #Aday10Pt processing for CCMI2022
     #
@@ -1239,9 +1346,10 @@ def app(option_dictionary):
                 if time_dimension != None:
                     #assuming time is the first dimension
                     print(np.shape(a10_datavals))
-                    cmor.write(variable_id,a10_datavals,ntimes_passed=np.shape(a10_datavals)[0])
+                    cmor.write(variable_id, a10_datavals,
+                        ntimes_passed=np.shape(a10_datavals)[0])
                 else:
-                    cmor.write(variable_id,a10_datavals,ntimes_passed=0)
+                    cmor.write(variable_id, a10_datavals, ntimes_passed=0)
             except Exception as e:
                 print(f"E: Unable to write the CMOR variable to file {e}")
                 raise
@@ -1285,9 +1393,10 @@ def app(option_dictionary):
                 if time_dimension != None:
                     #assuming time is the first dimension
                     print(np.shape(data_vals))
-                    cmor.write(variable_id,data_vals,ntimes_passed=np.shape(data_vals)[0])
+                    cmor.write(variable_id, data_vals,
+                        ntimes_passed=np.shape(data_vals)[0])
                 else:
-                    cmor.write(variable_id,data_vals,ntimes_passed=0)
+                    cmor.write(variable_id, data_vals, ntimes_passed=0)
             except Exception as e:
                 print(f"E: Unable to write the CMOR variable to file {e}")
                 raise
@@ -1336,9 +1445,10 @@ def app(option_dictionary):
                     if time_dimension != None:
                         #assuming time is the first dimension
                         prin(np.shape(data_vals))
-                        cmor.write(variable_id,data_vals,ntimes_passed=np.shape(data_vals)[0])
+                        cmor.write(variable_id, data_vals,
+                            ntimes_passed=np.shape(data_vals)[0])
                     else:
-                        cmor.write(variable_id,data_vals,ntimes_passed=0)
+                        cmor.write(variable_id, data_vals, ntimes_passed=0)
                     print(f"finished writing @ {timetime.time()-start_time}")
                 except Exception as e:
                     print(f"E: Unable to write the CMOR variable to file {e}")
@@ -1347,7 +1457,7 @@ def app(option_dictionary):
     #Close the CMOR file.
     #
     try:
-        path=cmor.close(variable_id,file_name=True)
+        path = cmor.close(variable_id, file_name=True)
     except:
         print("E: We should not be here!")
         raise
@@ -1403,18 +1513,18 @@ parser.add_option('--exp_description',dest='exp_description',default='cmip6 stan
 (options, args)=parser.parse_args()
 opts=dict()
 #produce a dictionary out of the options object
-opts['tstart']=options.tstart
-opts['tend']=options.tend
-opts['cmip_table']=options.cmip_table
+opts['tstart'] = options.tstart
+opts['tend'] = options.tend
+opts['cmip_table'] = options.cmip_table
 #opts['version_number']=options.version_number
-opts['infile']=options.infile
-opts['in_units']=options.in_units
-opts['vin']=options.vin
-opts['vcmip']=options.vcmip
-opts['cmip_table_path']=options.cmip_table_path
-opts['calculation']=options.calculation
-opts['axes_modifier']=options.axes_modifier
-opts['positive']=options.positive
+opts['infile'] = options.infile
+opts['in_units'] = options.in_units
+opts['vin'] = options.vin
+opts['vcmip'] = options.vcmip
+opts['cmip_table_path'] = options.cmip_table_path
+opts['calculation'] = options.calculation
+opts['axes_modifier'] = options.axes_modifier
+opts['positive'] = options.positive
 opts['notes']=options.notes
 opts['json_file_path']=options.json_file_path
 opts['timeshot']=options.timeshot

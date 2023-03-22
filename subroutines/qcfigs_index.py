@@ -71,7 +71,7 @@ rif; margin: 0px}
     # Create links for each variable index
     for var in sorted(figs):
         link = f"{var}_index.html"
-        g.write(f"<p><h4><a href="{link}">Variable {var}</a></h4>\n")
+        g.write(f'<p><h4><a href="{link}">Variable {var}</a></h4>\n')
     g.write("""
 </var>
 </div>
@@ -113,7 +113,7 @@ rif; margin: 0px}
 
 <body class="Body">
 """)
-        g.write(f"<div id="titlebar"><b>{model} {expt} simulation QC: Table {table}, Variable {var}</b></div>"
+        g.write(f'<div id="titlebar"><b>{model} {expt} simulation QC: Table {table}, Variable {var}</b></div>')
         g.write("""
 <div id="image-grid">
 <table width="100%">

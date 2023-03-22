@@ -8970,13 +8970,13 @@
                     "CHEM",
                     "BGC"
                 ],
-                "experiment": "pre-industrial control",
+                "experiment": "piControl",
                 "experiment_id": "piControl",
                 "parent_activity_id": [
-                    "CMIP"
+                    "no parent"
                 ],
                 "parent_experiment_id": [
-                    "piControl-spinup"
+                    "no parent"
                 ],
                 "required_model_components": [
                     "AOGCM"
