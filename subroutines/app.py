@@ -1444,7 +1444,7 @@ def app(option_dictionary):
                     print(f"started writing @ {timetime.time()-start_time}")
                     if time_dimension != None:
                         #assuming time is the first dimension
-                        prin(np.shape(data_vals))
+                        print(np.shape(data_vals))
                         cmor.write(variable_id, data_vals,
                             ntimes_passed=np.shape(data_vals)[0])
                     else:
