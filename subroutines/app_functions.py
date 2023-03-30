@@ -34,7 +34,7 @@ np.set_printoptions(threshold=sys.maxsize)
 
 # Global Variables
 #-----------------------------------
-ancillary_path = os.environ.get('ANCILLARY_FILES')+'/'
+ancillary_path = os.environ.get('ANCILLARY_FILES', '')+'/'
 
 ice_density = 900 #kg/m3
 snow_density = 300 #kg/m3

@@ -8963,7 +8963,7 @@
             },
             "piControl": {
                 "activity_id": [
-                    "CMIP"
+                    "PacemakerMIP"
                 ],
                 "additional_allowed_model_components": [
                     "AER",
