@@ -92,7 +92,8 @@ def config_log(debug):
     return logger
 
 
-def find_files(opts, app_log):
+click.pass_context
+def find_files(app_log):
     """Find all the ACCESS file names which match the "glob" pattern.
     Sort the filenames, assuming that the sorted filenames will
     be in chronological order because there is usually some sort of date
@@ -100,17 +101,17 @@ def find_files(opts, app_log):
     """
     
     app_log.info(f"input file structure: {opts['infile']}")
-    app_log.info(opts['cmip_table'])
-    tmp = opts['infile'].split()
+    app_log.info(ctx.obj['cmip_table'])
+    tmp = ctx.obj['infile'].split()
     #if there are two different files used make a list of extra access files
     if len(tmp)>1:
         extra_files = glob.glob(tmp[1])
         extra_files.sort()
-        opts['infile'] = tmp[0]
+        file_touse = tmp[0]
     else:
         extra_files = None
     #set normal set of files
-    all_files = glob.glob(opts['infile'])
+    all_files = glob.glob(file_touse)
     all_files.sort()
     #hack to remove files not in time range
     tmp = []
@@ -122,23 +123,23 @@ def find_files(opts, app_log):
             #tstamp=int(os.path.basename(fn).split('.')[1][3:6])
             tstamp = int(re.search("\d{4}",os.path.basename(fn)).group())
         else:
-            if opts['access_version'].find('CM2') != -1:
+            if ctx.obj['access_version'].find('CM2') != -1:
                 tstamp = int(os.path.basename(fn).split('.')[1][2:6])
-            elif opts['access_version'].find('ESM') != -1:
+            elif ctx.obj['access_version'].find('ESM') != -1:
                 tstamp = int(os.path.basename(fn).split('.')[1][3:7])
             else:
                 raise Exception('E: ACCESS_version not identified')
-        if opts['tstart'] <= tstamp and tstamp <= opts['tend']:
+        if ctx.obj['tstart'] <= tstamp and tstamp <= ctx.obj['tend']:
             tmp.append(fn)
     all_files = tmp
     if extra_files != None:
         tmp = []
         for fn in extra_files:
             tstamp = int(re.search("\d{4}",fn).group())
-            if opts['tstart'] <= tstamp and tstamp <= opts['tend']:
+            if ctx.obj['tstart'] <= tstamp and tstamp <= ctx.obj['tend']:
                 tmp.append(fn)
         extra_files = tmp
-    return all_files, extra_files, opts
+    return all_files, extra_files
 
 
 def check_var_in_file(all_files, varname, app_log):
@@ -169,13 +170,14 @@ def check_var_in_file(all_files, varname, app_log):
     return temp_file 
 
 
-def get_time_axis(temp_file, opts, app_log):
+@click.pass_context
+def get_time_axis(temp_file, app_log):
     """Find time info: time axis, reference time and set tstart and tend
     """
     time_dimension = None
     #    
     try:
-        if  ('dropT' in opts['axes_modifier']) and (opts['cmip_table'].find('fx') == -1):
+        if  ('dropT' in ctx.obj['axes_modifier']) and (ctx.obj['cmip_table'].find('fx') == -1):
             #try to find and set the correct time axis:
             for var_dim in var.dimensions:
                 if var_dim.find('time') != -1 or temp_file[var_dim].axis == 'T':
@@ -185,17 +187,17 @@ def get_time_axis(temp_file, opts, app_log):
     except:
         #use the default time dimension 'time'
         pass 
-    if opts['axes_modifier'].find('tMonOverride') != -1:
+    if ctx.obj['axes_modifier'].find('tMonOverride') != -1:
         #if we want to override dodgey units in the input files
         print("overriding time axis...")
-        refString = "days since {r:04d}-01-01".format(r=opts['reference_date'])
+        refString = "days since {r:04d}-01-01".format(r=ctx.obj['reference_date'])
         #time_dimension=None    
         inrange_files = all_files
-        startyear = opts['tstart']
-        endyear = opts['tend']
-    elif opts['cmip_table'].find('fx') != -1:
+        startyear = ctx.obj['tstart']
+        endyear = ctx.obj['tend']
+    elif ctx.obj['cmip_table'].find('fx') != -1:
         print("fx variable, no time axis")
-        refString = f"days since {opts['reference_date'][:4]}-01-01"
+        refString = f"days since {ctx.obj['reference_date'][:4]}-01-01"
         time_dimension = None    
         inrange_files = all_files
     else:
@@ -219,14 +221,14 @@ def get_time_axis(temp_file, opts, app_log):
             # PP set reference time as datetime
             dateref = datetime.datetime(refString[-10:])
             #set to very end of the year
-            startyear = opts['tstart']
-            endyear = opts['tend']
+            startyear = ctx.obj['tstart']
+            endyear = ctx.obj['tend']
             #PP shouldn't we check first that this is already what we want?
             # this will produce forst a year,month etc time and then convert it to a relative time
             # 
             #opts['tstart'] = cdtime.comptime(opts['tstart']).torel(refString,cdtime.DefaultCalendar).value
             #opts['tstart'] = (datetime.datetime(opts['tstart']) - dateref).days
-            opts['tstart'] = date2num(startyear, units=refString, calendar=default_cal)
+            ctx.obj['tstart'] = date2num(startyear, units=refString, calendar=default_cal)
             print('start after date2num', opts['tstart'])
             if os.path.basename(all_files[0]).startswith('ice'):
                 #opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value
@@ -248,7 +250,9 @@ def get_time_axis(temp_file, opts, app_log):
     return time_dimension, opts
 
 
-def check_in_range(all_files, tdim, opts, app_log):
+
+@click.pass_context
+def check_in_range(all_files, tdim, app_log):
     """
     """
     inrange_files = []
@@ -257,7 +261,7 @@ def check_in_range(all_files, tdim, opts, app_log):
     app_log.info("time dimension: {tdim}")
     sys.stdout.flush()
     exit = False
-    if (tdim != None) and ('tMonOverride' in opts['axes_modifier']):
+    if (tdim != None) and ('tMonOverride' in ctx.obj['axes_modifier']):
         for i, input_file in enumerate(all_files):
             try:
                 fobj = netCDF4.Dataset(input_file,'r')
@@ -269,9 +273,9 @@ def check_in_range(all_files, tdim, opts, app_log):
                 #print float(tvals[0])
                 #test each file to see if it contains time values within the time range from tstart to tend
                 #if (opts['tend'] == None or float(tvals[0]) < float(opts['tend'])) and (opts['tstart'] == None or float(tvals[-1]) > float(opts['tstart'])):
-                if (opts['tend'] == None or float(tvals[0]) <= float(opts['tend'])) and (opts['tstart'] == None or float(tvals[-1]) >= float(opts['tstart'])):
+                if (ctx.obj['tend'] == None or float(tvals[0]) <= float(ctx.obj['tend'])) and (ctx.obj['tstart'] == None or float(tvals[-1]) >= float(ctx.obj['tstart'])):
                     inrange_files.append(input_file)
-                    if 'firsttime' in opts['axes_modifier']:
+                    if 'firsttime' in ctx.obj['axes_modifier']:
                         #only take first time
                         app_log.info("first time stamp used only")
                         inrange_times.append(tvals[0])
@@ -293,14 +297,14 @@ def check_in_range(all_files, tdim, opts, app_log):
                 break
     else:
         #if we are using a time invariant parameter, just use a file with vin
-        if opts['cmip_table'].find('fx') != -1:
+        if ctx.obj['cmip_table'].find('fx') != -1:
             inrange_files = [all_files[0]]
         else:
             for i, input_file in enumerate(all_files):
                 try:
                     fobj = netCDF4.Dataset(input_file,'r')
                     tvals = fobj[tdim]
-                    app_log.debug(f"tend from opts: {opts['tend']}")
+                    app_log.debug(f"tend from opts: {ctx.obj['tend']}")
                     app_log.debug(f"first time value: {float(tvals[0])}")
                     irefString = fobj[tdim].units
                     if irefString != refString: 
@@ -316,15 +320,15 @@ def check_in_range(all_files, tdim, opts, app_log):
     app_log.info(f"number of files in time range: {inrange_files}")
     return inrange_files, inrange_times
 
-
-def check_axis(fobj, inrange_files, ancil_path, opts, app_log):
+ 
+def check_axis(fobj, inrange_files, ancil_path, app_log):
     """
     """
     try:
-        data_vals = fobj[opts['vin'][0]]
+        data_vals = fobj[ctx.obj['vin'][0]]
         print("shape of data: {np.shape(data_vals)}")
     except Exception as e:
-        print("E: Unable to read {opts['vin'][0]} from ACCESS file")
+        print("E: Unable to read {ctx.obj['vin'][0]} from ACCESS file")
         raise
     try:
         coord_vals = string.split(data_vals.coordinates)
@@ -345,7 +349,7 @@ def check_axis(fobj, inrange_files, ancil_path, opts, app_log):
                 lon_vals = fobj[coord]
             except:
                 if os.path.basename(inrange_files[0]).startswith('ocean'):
-                    if opts['access_version'] == 'OM2-025':
+                    if ctx.obj['access_version'] == 'OM2-025':
                         acnfile = ancil_path+'grid_spec.auscom.20150514.nc'
                         acndata = netCDF4.Dataset(acnfile,'r')
                         lon_vals = acndata.variables['geolon_t']
@@ -354,7 +358,7 @@ def check_axis(fobj, inrange_files, ancil_path, opts, app_log):
                         acndata = netCDF4.Dataset(acnfile,'r')
                         lon_vals = acndata.variables['x_T']
                 if os.path.basename(inrange_files[0]).startswith('ice'):
-                    if opts['access_version'] == 'OM2-025':
+                    if ctx.obj['access_version'] == 'OM2-025':
                         acnfile = ancil_path+'cice_grid_20150514.nc'
                     else:
                         acnfile = ancil_path+'cice_grid_20101208.nc'
@@ -369,7 +373,7 @@ def check_axis(fobj, inrange_files, ancil_path, opts, app_log):
             except:
                 app_log.info('lat from ancil')
                 if os.path.basename(inrange_files[0]).startswith('ocean'):
-                    if opts['access_version'] == 'OM2-025':
+                    if ctx.obj['access_version'] == 'OM2-025':
                         acnfile = ancil_path+'grid_spec.auscom.20150514.nc'
                         acndata = netCDF4.Dataset(acnfile,'r')
                         lat_vals = acndata.variables['geolat_t']
@@ -378,7 +382,7 @@ def check_axis(fobj, inrange_files, ancil_path, opts, app_log):
                         acndata = netCDF4.Dataset(acnfile,'r')
                         lat_vals = acndata.variables['y_T']
                 if os.path.basename(inrange_files[0]).startswith('ice'):
-                    if opts['access_version'] == 'OM2-025':
+                    if ctx.obj['access_version'] == 'OM2-025':
                         acnfile = ancil_path+'cice_grid_20150514.nc'
                     else:
                         acnfile = ancil_path+'cice_grid_20101208.nc'
@@ -387,7 +391,8 @@ def check_axis(fobj, inrange_files, ancil_path, opts, app_log):
     return data_vals, lon_name, lat_name, lon_vals, lat_vals
 
 
-def axis_dim(fobj, data_vals, opts, app_log):
+@click.pass_context
+def axis_dim(fobj, data_vals, app_log):
     """
     """
     #create a list of dimensions
@@ -472,8 +477,8 @@ def axis_dim(fobj, data_vals, opts, app_log):
                     dim_val_bounds = np.column_stack((min_vals,max_vals))
         app_log.info("handling different axes types")
         try:
-            if ((axis_name == 'T') and ('dropT' in opts['axes_modifier']) 
-                    and (opts['cmip_table'].find('fx') == -1)):
+            if ((axis_name == 'T') and ('dropT' in ctx.obj['axes_modifier']) 
+                    and (ctx.obj['cmip_table'].find('fx') == -1)):
                 #
                 #Set cmor time variable name: 
                 #For mean values this is just 'time'
@@ -482,11 +487,11 @@ def axis_dim(fobj, data_vals, opts, app_log):
                 #
                 #PP I think matching with dictioanries it's a safer option
                 app_log.info(f"dimension: {dim}")
-                if opts['timeshot'].find('mean') != -1:
+                if ctx.obj['timeshot'].find('mean') != -1:
                     cmor_tName = 'time'
-                elif opts['timeshot'].find('inst') != -1:
+                elif ctx.obj['timeshot'].find('inst') != -1:
                     cmor_tName = 'time1'
-                elif opts['timeshot'].find('clim') != -1:
+                elif ctx.obj['timeshot'].find('clim') != -1:
                     cmor_tName = 'time2'
                 else:
                     #assume timeshot is mean
@@ -495,12 +500,12 @@ def axis_dim(fobj, data_vals, opts, app_log):
                 #initialise stuff:
                 min_tvals = []
                 max_tvals = []
-                if 'tMonOverride' in opts['axes_modifier']:
+                if 'tMonOverride' in ctx.obj['axes_modifier']:
                     #convert times to days since reference_date
                     # PP temporarily comment as I'm not sure what this is for
                     #tvals = np.array(inrange_times) + cdtime.reltime(0,refString).torel('days since {r:04d}-01-01'.format(r=opts['reference_date']),cdtime.DefaultCalendar).value
-                    app_log.info(f"time values converted to days since 01,01,{opts['reference_date']:04d}: {tvals[0:5]}...{tvals[-5:-1]}")
-                    if opts['cmip_table'].find('A10day') != -1:
+                    app_log.info(f"time values converted to days since 01,01,{ctx.obj['reference_date']:04d}: {tvals[0:5]}...{tvals[-5:-1]}")
+                    if ctx.obj['cmip_table'].find('A10day') != -1:
                         app_log.info('Aday10: selecting 1st, 11th, 21st days')
                         a10_tvals = []
                         for a10 in tvals:
@@ -513,24 +518,24 @@ def axis_dim(fobj, data_vals, opts, app_log):
                 else:
                     app_log.info("manually create time axis")
                     tvals = []
-                    if opts['frequency'] == 'yr':
+                    if ctx.obj['frequency'] == 'yr':
                         app_log.info("yearly")
-                        for year in range(opts['tstart'], opts['tend']+1):
+                        for year in range(ctx.obj['tstart'], ctx.obj['tend']+1):
                             #tvals.append(cdtime.comptime(year, 7, 2, 12).torel(refString,cdtime.DefaultCalendar).value)
                             tvals.append((datetime.datetime(year, 7, 2, 12) - dateref).days)
-                    elif opts['frequency'] == 'mon':
+                    elif ctx.obj['frequency'] == 'mon':
                         app_log.info("monthly")
-                        for year in range(opts['tstart'], opts['tend']+1):
+                        for year in range(ctx.obj['tstart'], ctx.obj['tend']+1):
                             for mon in range(1,13):
                                 #tvals.append(cdtime.comptime(year, mon, 15).torel(refString,cdtime.DefaultCalendar).value)
                                 tvals.append((datetime.datetime(year, mon, 15) - dateref).days)
-                    elif opts['frequency'] == 'day':
+                    elif ctx.obj['frequency'] == 'day':
                         app_log.info("daily")
                         #newstarttime = cdtime.comptime(opts['tstart'], 1, 1, 12).torel(refString,cdtime.DefaultCalendar).value
-                        newstarttime = (datime.datetime(opts['tstart'], 1,  1, 12) - dateref).days
+                        newstarttime = (datime.datetime(ctx.obj['tstart'], 1,  1, 12) - dateref).days
                         difftime = inrange_times[0] - newstarttime
                         #newendtimeyear = cdtime.comptime(opts['tend'], 12, 31, 12).torel(refString,cdtime.DefaultCalendar).value
-                        newendtimeyear = (datetime.datetime(opts['tend'], 12, 31, 12) - dateref).days
+                        newendtimeyear = (datetime.datetime(ctx.obj['tend'], 12, 31, 12) - dateref).days
                         numdays_cal = int(newendtimeyear - newstarttime + 1)
                         numdays_tvals = len(inrange_times)
                         #diff_days=numdays_cal - numdays_tvals
@@ -540,10 +545,10 @@ def axis_dim(fobj, data_vals, opts, app_log):
                         else: difftime = inrange_times[0] - newstarttime
                         tvals = np.array(inrange_times) - difftime
                     else: 
-                        app_log.info("cannot manually create axis for this frequency, {opts['frequency']}")
+                        app_log.info("cannot manually create axis for this frequency, {ctx.obj['frequency']}")
                 #print tvals                    
                 #set refString to new value
-                refString = 'days since {r:04d}-01-01'.format(r=opts['reference_date'])
+                refString = 'days since {r:04d}-01-01'.format(r=ctx.obj['reference_date'])
                 #
                 #Handle different types of time axis
                 #(mean, snapshot, climatology)
@@ -556,10 +561,10 @@ def axis_dim(fobj, data_vals, opts, app_log):
                     #required for our purposes.
                     #
                     print("total time steps: {len(tvals)}")
-                    if 'day2mon' in opts['axes_modifier']:
+                    if 'day2mon' in ctx.obj['axes_modifier']:
                         print("converting timevals from daily to monthly")
-                        tvals,min_tvals,max_tvals = day2mon(tvals,opts['reference_date'])
-                    elif 'mon2yr' in opts['axes_modifier']:
+                        tvals,min_tvals,max_tvals = day2mon(tvals, ctx.obj['reference_date'])
+                    elif 'mon2yr' in ctx.obj['axes_modifier']:
                         print("converting timevals from monthly to annual")
                         tvals,min_tvals,max_tvals=mon2yr(tvals,refString)
                     elif len(tvals) == 1:
@@ -638,11 +643,11 @@ def axis_dim(fobj, data_vals, opts, app_log):
                                     tvals[i] = min_tvals[i] + mid
                         else:    
                             tvals = tvals - 0.5
-                    elif opts['mode'] == 'ccmi' and tvals[0].is_integer():
-                        if opts['cmip_table'].find('A10day') == -1:
+                    elif ctx.obj['mode'] == 'ccmi' and tvals[0].is_integer():
+                        if ctx.obj['cmip_table'].find('A10day') == -1:
                             tvals = tvals - 0.5
                             print('inst time shifted back half a day for CMOR')
-                    elif 'yrpoint' in opts['axes_modifier']:
+                    elif 'yrpoint' in ctx.obj['axes_modifier']:
                         print("converting timevals from monthly to end of year")
                         tvals,min_tvals,max_tvals = yrpoint(tvals,refString) 
                     cmor.set_table(tables[1])
@@ -689,9 +694,9 @@ def axis_dim(fobj, data_vals, opts, app_log):
                     print("setup of climatology time dimension complete")
                 else:
                     raise Exception(f"Dont know how to compute time bounds for time axis {cmor_tName}")
-            elif (axis_name == 'Y')and 'dropY' in opts['axes_modifier']:
+            elif (axis_name == 'Y')and 'dropY' in ctx.obj['axes_modifier']:
                 if ((dim_vals == None) or (np.ndim(lat_vals) == 2 and
-                     'dropX' in opts['axes_modifier'])):
+                     'dropX' in ctx.obj['axes_modifier'])):
                     # and (opts['axes_modifier'].find('') != -1):
                     #grid co-ordinates
                     cmor.set_table(tables[0])
@@ -708,7 +713,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                         dim_val_bounds[-1,-1]=90.0
                         print("setting maximum latitude bound to 90")
                     cmor.set_table(tables[1])
-                    if 'gridlat' in opts['axes_modifier']:
+                    if 'gridlat' in ctx.obj['axes_modifier']:
                         j_axis_id = cmor.axis(table_entry='gridlatitude',
                             units=dim_vals.units,
                             length=len(dim_values),
@@ -723,7 +728,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                     axis_ids.append(j_axis_id)
                     z_ids.append(j_axis_id)
                 print("setup of latitude dimension complete")
-            elif (axis_name == 'X') and 'dropX' in opts['axes_modifier']:
+            elif (axis_name == 'X') and 'dropX' in ctx.obj['axes_modifier']:
                 if dim_vals == None or np.ndim(lon_vals) == 2:
                     #grid co-ordinates
                     cmor.set_table(tables[0])
@@ -743,17 +748,17 @@ def axis_dim(fobj, data_vals, opts, app_log):
                     axis_ids.append(i_axis_id)
                     z_ids.append(i_axis_id)
                 print("setup of longitude dimension complete")    
-            elif (axis_name == 'Z') and 'dropZ' in opts['axes_modifier']:
+            elif (axis_name == 'Z') and 'dropZ' in ctx.obj['axes_modifier']:
                 z_len = len(dim_values)
                 units = dim_vals.units
                 #test different z axis names:
-                if 'mod2plev19' in opts['axes_modifier']:
+                if 'mod2plev19' in ctx.obj['axes_modifier']:
                     lev_name = 'plev19'
                     z_len = 19
                     units = 'Pa'
                     dim_values,dim_val_bounds = plev19()
                 elif (dim == 'st_ocean') or (dim == 'sw_ocean'):
-                    if 'depth100' in opts['axes_modifier']:
+                    if 'depth100' in ctx.obj['axes_modifier']:
                         lev_name = 'depth100m'
                         dim_values = np.array([100])
                         dim_val_bounds = np.array([95,105])
@@ -761,7 +766,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                     #ocean depth
                     else:
                         lev_name = 'depth_coord'
-                    if opts['access_version'].find('OM2')!=-1 and dim == 'sw_ocean':
+                    if ctx.obj['access_version'].find('OM2')!=-1 and dim == 'sw_ocean':
                         dim_val_bounds = dim_val_bounds[:]
                         dim_val_bounds[-1] = dim_values[-1]
                 elif dim == 'potrho':
@@ -781,10 +786,10 @@ def axis_dim(fobj, data_vals, opts, app_log):
                             print("85 atmosphere hybrid height theta (full) levels")
                             #theta levels
                             lev_name = 'hybrid_height'
-                            if 'switchlevs' in opts['axes_modifier']:
+                            if 'switchlevs' in ctx.obj['axes_modifier']:
                                 lev_name = 'hybrid_height_half'
                             a_vals,b_vals,dim_val_bounds,b_bounds = getHybridLevels('theta',85)
-                            if 'surfaceLevel' in opts['axes_modifier']:
+                            if 'surfaceLevel' in ctx.obj['axes_modifier']:
                                 print("surface level only")
                                 #take only the first level    
                                 a_vals = a_vals[0:1]
@@ -797,7 +802,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                             print("85 atmosphere hybrid height rho (half) levels")
                             #rho levels
                             lev_name = 'hybrid_height_half'
-                            if 'switchlevs' in opts['axes_modifier']:
+                            if 'switchlevs' in ctx.obj['axes_modifier']:
                                 lev_name = 'hybrid_height'
                             a_vals,b_vals,dim_val_bounds,b_bounds = getHybridLevels('rho',85)
                             if dim_values[0] == 1:
@@ -808,10 +813,10 @@ def axis_dim(fobj, data_vals, opts, app_log):
                             print("38 atmosphere hybrid height theta (full) levels")
                             #theta levels
                             lev_name = 'hybrid_height'
-                            if 'switchlevs' in opts['axes_modifier']:
+                            if 'switchlevs' in ctx.obj['axes_modifier']:
                                 lev_name = 'hybrid_height_half'
                             a_vals,b_vals,dim_val_bounds,b_bounds = getHybridLevels('theta',38)
-                            if 'surfaceLevel' in opts['axes_modifier']:
+                            if 'surfaceLevel' in ctx.obj['axes_modifier']:
                                 print("surface level only")
                                 #take only the first level    
                                 a_vals = a_vals[0:1]
@@ -824,7 +829,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                             print("38 atmosphere hybrid height rho (half) levels")
                             #rho levels
                             lev_name = 'hybrid_height_half'
-                            if 'switchlevs' in opts['axes_modifier']:
+                            if 'switchlevs' in ctx.obj['axes_modifier']:
                                 lev_name='hybrid_height'
                             a_vals,b_vals,dim_val_bounds,b_bounds=getHybridLevels('rho',38)
                             if dim_values[0] == 1:
@@ -832,7 +837,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                     else:
                         raise Exception(f"Unknown model levels starting at {dim_values[0]}")
                 elif (dim == 'lev' or dim.find('_p_level') != -1):
-                    print(opts['cmip_table'])
+                    print(ctx.obj['cmip_table'])
                     print(f"dim = {dim}")
                     #atmospheric pressure levels:
                     if z_len == 8:
@@ -846,7 +851,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                     else: 
                         raise Exception(f"Z levels do not match known levels {dim}")
                 elif dim.find('pressure') != -1:
-                    print(opts['cmip_table'])
+                    print(ctx.obj['cmip_table'])
                     print(f"dim = {dim}")
                     #atmospheric pressure levels:
                     if z_len == 8:
@@ -867,7 +872,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                         dim_values,dim_val_bounds = cableSoilLevels()
                     else:
                         raise Exception(f"Z levels do not match known levels {dim}")
-                    if 'topsoil' in opts['axes_modifier']:
+                    if 'topsoil' in ctx.obj['axes_modifier']:
                         #top layer of soil only
                         lev_name = 'sdepth1'
                         dim_values = dim_values[0:1]
@@ -879,7 +884,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                         lev_name = 'sdepth'
                 else:
                     raise Exception(f"Unknown z axis {dim}")
-                if opts['cmip_table'] == 'CMIP6_6hrLev' and lev_name.find('hybrid_height') == -1:
+                if ctx.obj['cmip_table'] == 'CMIP6_6hrLev' and lev_name.find('hybrid_height') == -1:
                     raise Exception('Variable on pressure levels instead of model levels. Exiting')
                 print(f"lev_name = {lev_name}")
                 cmor.set_table(tables[1])
@@ -891,11 +896,11 @@ def axis_dim(fobj, data_vals, opts, app_log):
                 print("setup of height dimension complete")
             else: 
                 #coordinates with axis_identifier other than X,Y,Z,T
-                if dim.find('pseudo') != -1 and 'dropLev' in opts['axes_modifier']:
+                if dim.find('pseudo') != -1 and 'dropLev' in ctx.obj['axes_modifier']:
                     print("variable on tiles, setting pseudo levels...")
                     #z_len=len(dim_values)
                     #PP this might be wrong with new definition of axes_modifier!!!
-                    lev_name = opts['axes_modifier'].split()
+                    lev_name = ctx.obj['axes_modifier'].split()
                     try:
                         for i in lev_name:
                             if i.find('type') != -1:
@@ -913,7 +918,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                             units='',
                             coord_vals=[landtype])
                     axis_ids.append(axis_id)
-                if dim.find('pseudo') != -1 and 'landUse' in opts['axes_modifier']:
+                if dim.find('pseudo') != -1 and 'landUse' in ctx.obj['axes_modifier']:
                     landUse = getlandUse()
                     z_len = len(landUse)
                     cmor.set_table(tables[1])
@@ -921,7 +926,7 @@ def axis_dim(fobj, data_vals, opts, app_log):
                             units='',
                          length=z_len,coord_vals=landUse)
                     axis_ids.append(axis_id)
-                if dim.find('pseudo') != -1 and 'vegtype' in opts['axes_modifier']:
+                if dim.find('pseudo') != -1 and 'vegtype' in ctx.obj['axes_modifier']:
                     cabletiles = cableTiles()
                     z_len = len(cabletiles)
                     cmor.set_table(tables[1])
@@ -980,7 +985,8 @@ def hybrid_axis(lev, app_log):
     return zfactor_b_id, zfactor_orog_id
 
 
-def define_grid(opts, i_axis_id, i_axis, j_axis_id, j_axis,
+@click.pass_context
+def define_grid(i_axis_id, i_axis, j_axis_id, j_axis,
                 tables, app_log):
     """If we are on a non-cartesian grid, Define the spatial grid
     """
@@ -989,7 +995,7 @@ def define_grid(opts, i_axis_id, i_axis, j_axis_id, j_axis,
     if i_axis_id != None and i_axis.ndim == 2:
         app_log.info("setting grid vertices...")
         #ensure longitudes are in the 0-360 range.
-        if opts['access_version'] == 'OM2-025':
+        if ctx.obj['access_version'] == 'OM2-025':
             app_log.info('1/4 degree grid')
             lon_vals_360 = np.mod(i_axis.values,360)
             lon_vertices = np.ma.asarray(np.mod(get_vertices_025(i_axis.name),360)).filled()
@@ -1023,10 +1029,11 @@ def define_grid(opts, i_axis_id, i_axis, j_axis_id, j_axis,
     return grid_id, axis_ids, z_ids
 
 
-def cmor_var(opts, app_log, positive=None):
+@click.pass_context
+def cmor_var(app_log, positive=None):
     """
     """
-    variable_id = cmor.variable(table_entry=opts['vcmip'],
+    variable_id = cmor.variable(table_entry=ctx.obj['vcmip'],
                     units=in_units,
                     axis_ids=axis_ids,
                     data_type='f',
@@ -1036,7 +1043,8 @@ def cmor_var(opts, app_log, positive=None):
     return variable_id
 
 
-def new_axis_dim(invar, opts, app_log):
+@click.pass_context
+def new_axis_dim(invar, app_log):
     """
     """
 
@@ -1104,11 +1112,12 @@ def new_axis_dim(invar, opts, app_log):
                 lev_name, z_len, dim_values, dim_vals, dim_val_bounds) 
 
 
-def get_attrs(invar, opts, app_log):
+@click.pass_context
+def get_attrs(invar, app_log):
     """
     """
     var_attrs = invar.attrs 
-    in_units = opts['in_units']
+    in_units = ctx.obj['in_units']
     if in_units in [None, '']:
         in_units = var_attrs.get('units', 1)
     in_missing = var_attrs.get('_FillValue', 9.96921e+36)
@@ -1121,8 +1130,8 @@ def get_attrs(invar, opts, app_log):
     #(for example radiation variables).
     #search for positive attribute keyword in standard name / postive option
     positive = None
-    if opts['positive'] in ['up', 'down']:
-        positive = opts['positive']
+    if ctx.obj['positive'] in ['up', 'down']:
+        positive = ctx.obj['positive']
     else:
         standard_name = var_attrs.get('standard_name', 'None')
         # .lower shouldn't be necessary as standard_names are always lower_case
@@ -1133,13 +1142,14 @@ def get_attrs(invar, opts, app_log):
     return in_units, in_missing, positive
 
 
-def axm_t_integral(invar, dsin, opts, variable_id, app_log):
+@click.pass_context
+def axm_t_integral(invar, dsin, variable_id, app_log):
     """I couldn't find anywhere in mappings where this is used
     so I'm keeping it exactly as it is it's not worth it to adapt it
     still some cdms2 options and we're now passing all files at one time but this code assumes more than one file
     """
     try:
-        run = np.float32(opts['calculation'])
+        run = np.float32(ctx.obj['calculation'])
     except:
         run = np.float32(0.0)
     #for input_file in inrange_files:
@@ -1151,18 +1161,19 @@ def axm_t_integral(invar, dsin, opts, variable_id, app_log):
     varout = np.float32(var[:,0]*tbox[:]*24).cumsum(0) + run
     run = varout[-1]
     #if we have a second variable, just add this to the output (not included in the integration)
-    if len(opts['vin']) == 2:
-        varout += dsin[opts['vin'][1]][:]
+    if len(ctx.obj['vin']) == 2:
+        varout += dsin[ctx.obj['vin'][1]][:]
     cmor.write(variable_id, (varout), ntimes_passed=np.shape(varout)[0])
     return
 
 
-def axm_timeshot(dsin, opts, variable_id, app_log):
+@click.pass_context
+def axm_timeshot(dsin, variable_id, app_log):
     """
         #Set var to be sum of variables in 'vin' (can modify to use calculation if needed)
     """
     var = None
-    for v in opts['vin']:
+    for v in ctx.obj['vin']:
         try:        
             var += (dsin[v])
             app_log.info("added extra variable")
@@ -1188,14 +1199,15 @@ def axm_timeshot(dsin, opts, variable_id, app_log):
     cmor.write(variable_id, (vals_wsum), ntimes_passed=12)
 
 
-def axm_mon2yr(invar, dsin, opts, variable_id, app_log):
+@click.pass_context
+def axm_mon2yr(invar, dsin, variable_id, app_log):
     """A lot of the original code was tryiong to get the year from eiother the input filename 
        or from the timestap. With xarray we can just calculate this with resample and datetime accessor
     """
-    if opts['calculation'] != '':
+    if ctx.obj['calculation'] != '':
             #PP I really do not udnerstand what calculateVals does aside from extracting variable
             # the axis needed by calculation and executing calculation 
-        data = calculateVals(dsin, opts['vin'], opts['calculation'])
+        data = calculateVals(dsin, ctx.obj['vin'], ctx.obj['calculation'])
     vshape = np.shape(data)
     app_log.debug(vshape)
         #PP don't need this block
@@ -1262,24 +1274,21 @@ def axm_mon2yr(invar, dsin, opts, variable_id, app_log):
     return
 
 
-def calc_a10daypt(dsin, time_dimension, variable_id, opts, app_log):
+@click.pass_context
+def calc_a10daypt(dsin, time_dimension, variable_id, app_log):
     """
     """
     app_log.info('ONLY 1st, 11th, 21st days to be used')
     dsinsel = dsin.where(dsin[time_dimension].dt.day.isin([1, 11, 21]), drop=True)
-    if opts['calculation'] != '':
-        #PP this makes sense but why is it the first time we're checking this? Also shouldn;t we check this before doing anything else?
-        if len(opts['vin'])>1:
-            app_log.error("error: multiple input variables are given without a description of the calculation")
-            return -1
-        else: 
-            app_log.info("calculating...")
-            data_vals = calculateVals(dsinsel, opts['vin'], opts['calculation'])
-            try:
-                a10_datavals = datavals.filled(in_missing)
-            except:
-                #if values aren't in a masked array
-                pass 
+    a10_datavals = dsinsel[ctx.obj['vin']]
+    if ctx.obj['calculation'] != '':
+        app_log.info("calculating...")
+        a10_datavals = calculateVals(dsinsel, ctx.obj['vin'], ctx.obj['calculation'])
+        try:
+            a10_datavals = a10_datavals.filled(in_missing)
+        except:
+            #if values aren't in a masked array
+            pass 
     app_log.info("writing with cmor...")
     try:
         if time_dimension != None:
@@ -1295,22 +1304,18 @@ def calc_a10daypt(dsin, time_dimension, variable_id, opts, app_log):
     return
 
 
-def calc_monsecs(dsin, tdim, variable_id, opts, app_log):
+@click.pass_context
+def calc_monsecs(dsin, tdim, variable_id, app_log):
     """
     """
     monsecs = calendar.monthrange(dsin[tdim].dt.year,dsin[tdim].dt.month)[1] * 86400
-    if opts['calculation'] == '':
-        #PP as above this should be checked at the start of the code!!
-        if len(opts['vin'])>1:
-            app_log.error("error: multiple input variables are given without a description of the calculation")
-            return -1
-        else: 
-            data = dsin[opts['vin'][0]]
-            data_vals = data_vals / monsecs
-            #print data_vals
+    if ctx.obj['calculation'] == '':
+        data = dsin[ctx.obj['vin'][0]]
+        data_vals = data_vals / monsecs
+        #print(data_vals)
     else:
         app_log.info("calculating...")
-        data = calculateVals(dsin, opts['vin'], opts['calculation'])
+        data = calculateVals(dsin, ctx.obj['vin'], ctx.obj['calculation'])
         data = data / monsecs
         #convert mask to missing values
         try: 
@@ -1333,27 +1338,24 @@ def calc_monsecs(dsin, tdim, variable_id, opts, app_log):
     return
 
 
-def normal_case(dsin, tdim, variable_id, opts, app_log):
+@click.pass_context
+def normal_case(dsin, tdim, variable_id, app_log):
     """
     """
     try:
-        if opts['calculation'] == '':
-            if len(opts['vin'])>1:
-                print("error: multiple input variables are given without a description of the calculation")
-                return -1
-            else: 
-                data = fobj[opts['vin'][0]][:]
-                app_log.debug(data)
+        if ctx.obj['calculation'] == '':
+            data = fobj[ctx.obj['vin'][0]][:]
+            app_log.debug(data)
         else:
             print("calculating...")
-            data = calculateVals((fobj,),opts['vin'],opts['calculation'])
+            data = calculateVals((fobj,), ctx.obj['vin'], ctx.obj['calculation'])
             #convert mask to missing values
             try:
                 data_vals = data.values().filled(in_missing)
             except:
                 #if values aren't in a masked array
                 pass 
-        if 'depth100' in opts['axes_modifier']:
+        if 'depth100' in ctx.obj['axes_modifier']:
             data_vals = depth100(data_vals[:,9,:,:], data_vals[:,10,:,:])
     except Exception as e:
         app_log.error(f"E: Unable to process data {e}")
@@ -1373,238 +1375,6 @@ def normal_case(dsin, tdim, variable_id, opts, app_log):
         except:
             pass
     return
-
-
-@click.group(context_settings=dict(help_option_names=['-h', '--help']))
-
-@click.option('--request', 'flow', is_flag=True, default=False, flag_value='request',
-               help="send NCI request to download missing files matching ESGF search")
-@click.option('--debug', is_flag=True, default=False,
-               help="Show debug info")
-@click.app_args
-@click.pass_context
-def app(ctx, flow, debug):
-    ctx.obj={}
-    # set up a default value for flow if none selected for logging
-    if flow is None: flow = 'default'
-    ctx.obj['flow'] = flow
-    ctx.obj['log'] = config_log(debug)
-
-
-def app(option_dictionary):
-    start_time = timetime.time()
-    print("starting main app function...")
-    #check the options passed to the function:    
-    len0 = len(opts)
-    opts.update(option_dictionary) 
-    #overwrite default parameters with new parameters
-    len1 = len(opts)
-    if(len0 != len1): 
-        #new parameters don't match old ones 
-        raise ValueError('Error: {} input parameters don\'t match valid variable names'.format(str(len1-len0)))
-    #
-    #cdtime.DefaultCalendar = cdtime.GregorianCalendar
-    default_cal = "gregorian"
-    #
-    cmor.setup(inpath=opts['cmip_table_path'],
-        netcdf_file_action = cmor.CMOR_REPLACE_4,
-        set_verbosity = cmor.CMOR_NORMAL,
-        exit_control = cmor.CMOR_NORMAL,
-        #exit_control=cmor.CMOR_EXIT_ON_MAJOR,
-        logfile = f"{cmorlogs}/log", create_subdirectories=1)
-    #
-    #Define the dataset.
-    #
-    cmor.dataset_json(opts['json_file_path'])
-    #
-    #Write a global variable called version_number which is used for CSIRO purposes.
-    #
-    #try:
-    #    cmor.set_cur_dataset_attribute('version_number', opts['version_number'])
-    #except:
-    #    print("E: Unable to add a global attribute called version_number")
-    #    raise Exception('E: Unable to add a global attribute called version_number')
-    #
-    #Write a global variable called notes which is used for CSIRO purposes.
-    #
-    cmor.set_cur_dataset_attribute('notes', opts['notes'])
-    #except:
-    #    print 'E: Unable to add a global attribute called notes'
-    #    raise Exception('E: Unable to add a global attribute called notes')
-    cmor.set_cur_dataset_attribute('exp_description', opts['exp_description'])
-    cmor.set_cur_dataset_attribute('contact', os.environ.get('CONTACT'))
-    #
-    #Load the CMIP tables into memory.
-    #
-    tables = []
-    tables.append(cmor.load_table(f"{opts['cmip_table_path']}/CMIP6_grids.json"))
-    tables.append(cmor.load_table(f"{opts['cmip_table_path']}/{opts['cmip_table']}.json"))
-    #
-    #PP SEPARATE FUNCTION
-    all_files, extra_files, opts = find_files(opts, app_log)
-
-    # PP FUNCTION END return all_files, extra_files
-    app_log.info(f"access files from: {os.path.basename(all_files[0])}" +
-                 f"to {os.path.basename(all_files[-1])}")
-    app_log.info(f"first file: {all_files[0]}")
-    #
-    #PP FUNCTION check var in files
-    #find file with first element of inpiut variable (vin) 
-    temp_file = check_var_in_file(all_files, varname, app_log)
-    #
-    #PP create time_axis function
-    # PP in my opinion this can be fully skipped, but as a start I will move it to a function
-    #time_dimension, opts = get_time_axis(temp_file, opts, app_log)
-    #
-    #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
-    #PP start function
-    # this could be potentially simplified??
-    inrange_files = check_in_range(all_files, time_dimension, opts, app_log) 
-    #check if the requested range is covered
-    if inrange_files == []:
-        app_log.warning("no data exists in the requested time range")
-        return 0
-    #
-    #
-    #Load the first ACCESS NetCDF data file, and get the required information about the dimensions and so on.
-    #
-    #access_file = netCDF4.Dataset(inrange_files[0], 'r')
-    dsin = xr.open_mfdataset(inrange_files, 'r', parallel=True, use_cftime=True)
-    invar = dsin[opts['vin'][0]]
-    (axis_ids, z_ids, i_axis_id, j_axis_id, time_axis_id, n_grid_pts,
-        lev_name, z_len, dim_values, dim_vals, dim_val_bounds) = new_axis_dim(invar, opts, app_log)
-
-
-    #app_log.info("opened input netCDF file: {inrange_files[0]}")
-    #PP load all files with xarray and grab time axis lat lon from it
-    #app_log.info("checking axes...")
-    sys.stdout.flush()
-    try:
-        #
-        #Determine which axes are X and Y, and what the values of the latitudes and longitudes are.
-        #PP possibly redundant but moving to function
-        #data_vals, lon_name, lat_name, lon_vals, lat_vals = check_axis(access_file, inrange_files, opts, app_log)
-        #
-        #PP again might be redundant but moving it to function
-        #Work out which dimension(s) are associated with each coordinate variable.
-        #PP not yet sure what to return here!
-        # j_axis_id, i_axis_id etc are returned by cmor.axis
-        (axis_ids, z_ids, i_axis_id, j_axis_id, time_axis_id, n_grid_pts, 
-                lev_name, z_len, dim_values, dim_vals, dim_val_bounds) = axis_dim(data_vals, opts, app_log)
-        #
-        #PP move to function
-        #If we are on a non-cartesian grid, Define the spatial grid
-        #
-        grid_id, axis_ids, z_ids = create_grid(opts, i_axis_id, i_axis,
-                                 j_axis_id, j_axis, tables[0], app_log)
-    except Exception as e:
-        app_log.error(f"E: We should not be here! {e}")
-    #
-    #create oline, siline, basin axis
-    for axm in ['oline', 'siline', 'basin']:
-        if axm in opts['axes_modifier']:
-            axis_id = create_axis(axm, tables[1], app_log)
-            axis_ids.append(axis_id)
-
-    #set up additional hybrid coordinate information
-    if lev_name in ['hybrid_height', 'hybrid_height_half']:
-        zfactor_b_id, zfactor_orog_id = hybrid_axis(lev_name, app_log)
-    #
-    #Define the CMOR variable.
-    #
-    cmor.set_table(tables[1])
-    #
-    #First try and get the units of the variable.
-    #
-    in_units, in_missing, positive = get_attrs(invar, opts, app_log) 
-    app_log.info(f"cmor axis variables: {axis_ids}")
-    #
-    #Define the CMOR variable, taking account of possible direction information.
-    #
-    app_log.info("defining cmor variable...")
-    try:    
-        #set positive value from input variable attribute
-        variable_id = cmor_var(opts, app_log, positive=positive)
-    except Exception as e:
-        app_log.error(f"E: Unable to define the CMOR variable {e}")
-        raise
-    #
-    #Close the ACCESS file.
-    #
-    #access_file.close()
-    #app_log.info("closed input netCDF file")    
-    #Loop over all the in time range ACCESS files, and process those which we need to.
-    #
-    app_log.info("writing data, and calculating if needed...")
-    app_log.info(f"calculation: {opts['calculation']}")
-    sys.stdout.flush()
-    #
-    #PP this is were some of the calculation starts I think we shpuld reverse the order, calculate first and then define axis based on results
-    #calculate time integral of the first variable (possibly adding a second variable to each time)
-    #
-    if 'time_integral' in opts['axes_modifier']:
-        axm_t_integral(invar, dsin, opts, variable_id, app_log)
-    #
-    #Monthly Climatology case
-    #
-    elif opts['timeshot'].find('clim') != -1:
-        axm_timeshot(dsin, opts, variable_id, app_log)
-    #
-    #Annual means - Oyr / Eyr tables
-    #
-    elif 'mon2yr' in opts['axes_modifier']:
-        axm_mon2yr(dsin, opts, variable_id, app_log)
-    #
-    #Annual point values - landUse variables
-    #
-    elif 'yrpoint' in opts['axes_modifier']:
-        #PP we should be able to just write them as they are, I believe the assumption here is that
-        # the frequency in the file is already yearly, just slecting time between start and end date
-        dsinsel = dsin.sel(time_dimension=slice(startyear, endyear)).sel(time_dimension.dt.month==12)
-        #PP then it seems to select only Dec?? Does this means actually orignal frequnecy is monthly?
-        if opts['calculation'] != '':
-            var = calculateVals(dsinsel, opts['vin'], opts['calculation'])
-            try:
-                data_vals = var.values()
-                data_vals = data_vals.filled(in_missing)
-            except:
-                #if values aren't in a masked array
-                pass 
-                app_log(f"shape: {np.shape(data_vals)}")
-                app_log(f"time index: {index}, date: {d}")
-        app_log.info("writing with cmor...")
-        app_log.info(np.shape(data_vals))
-        cmor.write(variable_id, data_vals[0,:,:,:], ntimes_passed=1)
-    #
-    #Aday10Pt processing for CCMI2022
-    #
-    elif opts['cmip_table'].find('A10dayPt') != -1:
-        calc_a10daypt(dsin, time_dimension, variable_id, opts, app_log)
-
-    #
-    #Convert monthly integral to rate (e.g. K to K s-1, as in tntrl)
-    #
-    elif 'monsecs' in opts['axes_modifier']:
-        calc_monsecs(dsin, time_dimension, variable_id, opts, app_log)
-    #
-    #normal case
-    #
-    else:
-        try:
-            normal_case(dsin, time_dimension, variable_id, opts, app_log)
-            app_log.info(f"finished writing @ {timetime.time()-start_time}")
-        except Exception as e:
-            app_log.error(f"E: Unable to write the CMOR variable to file {e}")
-            raise
-    #
-    #Close the CMOR file.
-    #
-    try:
-        path = cmor.close(variable_id, file_name=True)
-    except:
-        app_log.error("E: We should not be here!")
-        raise
-    return path
 
 
 def app_args(f):
@@ -1628,7 +1398,7 @@ def app_args(f):
                     help='Input file to process', show_default=True),
         click.option('--tstart', type=int,
             help='Start time for data to process (units: years)'),
-        click.option('--tend', type="int",
+        click.option('--tend', type=int,
             help='End time for data to process (units: years)'),
         click.option('--vin', multiple=True,
             help='Name of the input variable to process'),
@@ -1648,7 +1418,7 @@ def app_args(f):
         click.option('--calculation', default='',
             help='Calculation deriving the data values for the cmip '+
                  'variable from the input variables', show_default=True),
-        click.option('--axes_modifier', default='', multiple=True,
+        click.option('--axes_modifier', default=[''], multiple=True,
             type=click.Choice(vocab['axes_mod']),
             help='string defining commands to modify axes: possible values: \
     dropX ,dropY, dropZ, dropTiles (remove axis),\
@@ -1675,29 +1445,257 @@ def app_args(f):
         f = c(f)
     return f
 
-opts=dict()
-#produce a dictionary out of the options object
-opts['tstart'] = options.tstart
-opts['tend'] = options.tend
-opts['cmip_table'] = options.cmip_table
-#opts['version_number']=options.version_number
-opts['infile'] = options.infile
-opts['in_units'] = options.in_units
-opts['vin'] = options.vin
-opts['vcmip'] = options.vcmip
-opts['cmip_table_path'] = options.cmip_table_path
-opts['calculation'] = options.calculation
-opts['axes_modifier'] = options.axes_modifier
-opts['positive'] = options.positive
-opts['notes']=options.notes
-opts['json_file_path']=options.json_file_path
-opts['timeshot']=options.timeshot
-opts['access_version']=options.access_version
-opts['reference_date']=options.reference_date
-opts['frequency']=options.frequency
-opts['mode']=options.mode
-opts['exp_description']=options.exp_description
+
+@click.group(context_settings=dict(help_option_names=['-h', '--help']))
+@click.option('--debug', is_flag=True, default=False,
+               help="Show debug info")
+@app_args
+@click.pass_context
+def app(ctx, debug, mode, infile, tstart, tend, vin, vcmip, cmip_table_path, frequency,
+        cmip_table, in_units, calculation, axes_modifier, positive, notes,
+        json_file_path, timeshot, access_version, reference_date, exp_description):
+    # To go to config yaml file: cmip_table_path, exp_description, json_file_path,
+    # and possibly: access_version
+
+    ctx.obj={}
+    # set up a default value for flow if none selected for logging
+    if flow is None: flow = 'default'
+    ctx.obj['log'] = config_log(debug)
+    # check that calculation is defined if more than one variable is passed as input
+    if len(vin)>1 and calculation == '':
+        app_log.error("error: multiple input variables are given without a description of the calculation")
+        return -1
+    # PP set up options dictionary in context (this is temporary)
+    # eventually we want to create a class for each variable, hence file paths and exp info etc should be hold elsewhere
+    for x in ['mode', 'infile', 'tstart', 'tend', 'vin', 'vcmip', 'cmip_table_path', 'frequency',
+        'cmip_table', 'in_units', 'calculation', 'axes_modifier', 'positive', 'notes',
+        'json_file_path', 'timeshot', 'access_version', 'reference_date', 'exp_description']:
+        ctx.obj[x] = locals(x)
+
+    app_bulk()
+
+
+@click.pass_context
+def app_bulk():
+    start_time = timetime.time()
+    print("starting main app function...")
+    #PP all this first part doesn't make sense to me, in the original
+    # it first calls the arg parser and set a opts dictionary then call the app() function with opts as input
+    # here opts and option_dictionary would be the same??
+    # otherwise where's opts coming from?
+    #check the options passed to the function:    
+    #len0 = len(opts)
+    #opts.update(option_dictionary) 
+    #overwrite default parameters with new parameters
+    #len1 = len(opts)
+    #if(len0 != len1): 
+        #new parameters don't match old ones 
+    #    raise ValueError('Error: {} input parameters don\'t match valid variable names'.format(str(len1-len0)))
+    #
+    #cdtime.DefaultCalendar = cdtime.GregorianCalendar
+    default_cal = "gregorian"
+    #
+    cmor.setup(inpath=ctx.obj['cmip_table_path'],
+        netcdf_file_action = cmor.CMOR_REPLACE_4,
+        set_verbosity = cmor.CMOR_NORMAL,
+        exit_control = cmor.CMOR_NORMAL,
+        #exit_control=cmor.CMOR_EXIT_ON_MAJOR,
+        logfile = f"{cmorlogs}/log", create_subdirectories=1)
+    #
+    #Define the dataset.
+    #
+    cmor.dataset_json(ctx.obj['json_file_path'])
+    #
+    #Write a global variable called version_number which is used for CSIRO purposes.
+    #
+    #try:
+    #    cmor.set_cur_dataset_attribute('version_number', ctx.obj['version_number'])
+    #except:
+    #    print("E: Unable to add a global attribute called version_number")
+    #    raise Exception('E: Unable to add a global attribute called version_number')
+    #
+    #Write a global variable called notes which is used for CSIRO purposes.
+    #
+    cmor.set_cur_dataset_attribute('notes', ctx.obj['notes'])
+    #except:
+    #    print 'E: Unable to add a global attribute called notes'
+    #    raise Exception('E: Unable to add a global attribute called notes')
+    cmor.set_cur_dataset_attribute('exp_description', ctx.obj['exp_description'])
+    cmor.set_cur_dataset_attribute('contact', os.environ.get('CONTACT'))
+    #
+    #Load the CMIP tables into memory.
+    #
+    tables = []
+    tables.append(cmor.load_table(f"{ctx.obj['cmip_table_path']}/CMIP6_grids.json"))
+    tables.append(cmor.load_table(f"{ctx.obj['cmip_table_path']}/{ctx.obj['cmip_table']}.json"))
+    #
+    #PP SEPARATE FUNCTION
+    all_files, extra_files = find_files(ctx, app_log)
+
+    # PP FUNCTION END return all_files, extra_files
+    app_log.info(f"access files from: {os.path.basename(all_files[0])}" +
+                 f"to {os.path.basename(all_files[-1])}")
+    app_log.info(f"first file: {all_files[0]}")
+    #
+    #PP FUNCTION check var in files
+    #find file with first element of inpiut variable (vin) 
+    temp_file = check_var_in_file(all_files, varname, app_log)
+    #
+    #PP create time_axis function
+    # PP in my opinion this can be fully skipped, but as a start I will move it to a function
+    #time_dimension, opts = get_time_axis(temp_file, opts, app_log)
+    #
+    #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
+    #PP start function
+    # this could be potentially simplified??
+    inrange_files = check_in_range(all_files, time_dimension, ctx, app_log) 
+    #check if the requested range is covered
+    if inrange_files == []:
+        app_log.warning("no data exists in the requested time range")
+        return 0
+    #
+    #
+    #Load the first ACCESS NetCDF data file, and get the required information about the dimensions and so on.
+    #
+    #access_file = netCDF4.Dataset(inrange_files[0], 'r')
+    dsin = xr.open_mfdataset(inrange_files, 'r', parallel=True, use_cftime=True)
+    invar = dsin[ctx.obj['vin'][0]]
+    (axis_ids, z_ids, i_axis_id, j_axis_id, time_axis_id, n_grid_pts,
+        lev_name, z_len, dim_values, dim_vals, dim_val_bounds) = new_axis_dim(invar, app_log)
+
+
+    #app_log.info("opened input netCDF file: {inrange_files[0]}")
+    #PP load all files with xarray and grab time axis lat lon from it
+    #app_log.info("checking axes...")
+    sys.stdout.flush()
+    try:
+        #
+        #Determine which axes are X and Y, and what the values of the latitudes and longitudes are.
+        #PP possibly redundant but moving to function
+        #data_vals, lon_name, lat_name, lon_vals, lat_vals = check_axis(access_file, inrange_files, app_log)
+        #
+        #PP again might be redundant but moving it to function
+        #Work out which dimension(s) are associated with each coordinate variable.
+        #PP not yet sure what to return here!
+        # j_axis_id, i_axis_id etc are returned by cmor.axis
+        (axis_ids, z_ids, i_axis_id, j_axis_id, time_axis_id, n_grid_pts, 
+                lev_name, z_len, dim_values, dim_vals, dim_val_bounds) = axis_dim(data_vals, app_log)
+        #
+        #PP move to function
+        #If we are on a non-cartesian grid, Define the spatial grid
+        #
+        grid_id, axis_ids, z_ids = create_grid(i_axis_id, i_axis,
+                                 j_axis_id, j_axis, tables[0], app_log)
+    except Exception as e:
+        app_log.error(f"E: We should not be here! {e}")
+    #
+    #create oline, siline, basin axis
+    for axm in ['oline', 'siline', 'basin']:
+        if axm in ctx.obj['axes_modifier']:
+            axis_id = create_axis(axm, tables[1], app_log)
+            axis_ids.append(axis_id)
+
+    #set up additional hybrid coordinate information
+    if lev_name in ['hybrid_height', 'hybrid_height_half']:
+        zfactor_b_id, zfactor_orog_id = hybrid_axis(lev_name, app_log)
+    #
+    #Define the CMOR variable.
+    #
+    cmor.set_table(tables[1])
+    #
+    #First try and get the units of the variable.
+    #
+    in_units, in_missing, positive = get_attrs(invar, app_log) 
+    app_log.info(f"cmor axis variables: {axis_ids}")
+    #
+    #Define the CMOR variable, taking account of possible direction information.
+    #
+    app_log.info("defining cmor variable...")
+    try:    
+        #set positive value from input variable attribute
+        variable_id = cmor_var(app_log, positive=positive)
+    except Exception as e:
+        app_log.error(f"E: Unable to define the CMOR variable {e}")
+        raise
+    #
+    #Close the ACCESS file.
+    #
+    #access_file.close()
+    #app_log.info("closed input netCDF file")    
+    #Loop over all the in time range ACCESS files, and process those which we need to.
+    #
+    app_log.info("writing data, and calculating if needed...")
+    app_log.info(f"calculation: {ctx.obj['calculation']}")
+    sys.stdout.flush()
+    #
+    #PP this is were some of the calculation starts I think we shpuld reverse the order, calculate first and then define axis based on results
+    #calculate time integral of the first variable (possibly adding a second variable to each time)
+    #
+    if 'time_integral' in ctx.obj['axes_modifier']:
+        axm_t_integral(invar, dsin, variable_id, app_log)
+    #
+    #Monthly Climatology case
+    #
+    elif ctx.obj['timeshot'].find('clim') != -1:
+        axm_timeshot(dsin, variable_id, app_log)
+    #
+    #Annual means - Oyr / Eyr tables
+    #
+    elif 'mon2yr' in ctx.obj['axes_modifier']:
+        axm_mon2yr(dsin, variable_id, app_log)
+    #
+    #Annual point values - landUse variables
+    #
+    elif 'yrpoint' in ctx.obj['axes_modifier']:
+        #PP we should be able to just write them as they are, I believe the assumption here is that
+        # the frequency in the file is already yearly, just slecting time between start and end date
+        dsinsel = dsin.sel(time_dimension=slice(startyear, endyear)).sel(time_dimension.dt.month==12)
+        #PP then it seems to select only Dec?? Does this means actually orignal frequnecy is monthly?
+        if ctx.obj['calculation'] != '':
+            var = calculateVals(dsinsel, ctx.obj['vin'], ctx.obj['calculation'])
+            try:
+                data_vals = var.values()
+                data_vals = data_vals.filled(in_missing)
+            except:
+                #if values aren't in a masked array
+                pass 
+                app_log(f"shape: {np.shape(data_vals)}")
+                app_log(f"time index: {index}, date: {d}")
+        app_log.info("writing with cmor...")
+        app_log.info(np.shape(data_vals))
+        cmor.write(variable_id, data_vals[0,:,:,:], ntimes_passed=1)
+    #
+    #Aday10Pt processing for CCMI2022
+    #
+    elif ctx.obj['cmip_table'].find('A10dayPt') != -1:
+        calc_a10daypt(dsin, time_dimension, variable_id, app_log)
+
+    #
+    #Convert monthly integral to rate (e.g. K to K s-1, as in tntrl)
+    #
+    elif 'monsecs' in ctx.obj['axes_modifier']:
+        calc_monsecs(dsin, time_dimension, variable_id, app_log)
+    #
+    #normal case
+    #
+    else:
+        try:
+            normal_case(dsin, time_dimension, variable_id, app_log)
+            app_log.info(f"finished writing @ {timetime.time()-start_time}")
+        except Exception as e:
+            app_log.error(f"E: Unable to write the CMOR variable to file {e}")
+            raise
+    #
+    #Close the CMOR file.
+    #
+    try:
+        path = cmor.close(variable_id, file_name=True)
+    except:
+        app_log.error("E: We should not be here!")
+        raise
+    return path
+
 
 if __name__ == "__main__":
-    app(opts)
+    app()
 
