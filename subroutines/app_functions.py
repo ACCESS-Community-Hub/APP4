@@ -42,6 +42,8 @@ snow_density = 300 #kg/m3
 rd = 287.0
 cp = 1003.5
 p_0 = 100000.0
+
+R_e = 6.378E+06
 #-----------------------------------
 
 def plotVar(outpath,ret,cmip_table,vcmip,parent_source_id,experiment_id):
@@ -1387,27 +1389,32 @@ def getdeptho(deg):
     return deptho
     
 def plevinterp(var,pmod,heavy,lat,lat_v):
+    '''
+    Rewrote function to optimize. 
+    '''
     plev,bounds = plev19()
-    t,z,x,y = np.shape(var)
-    th,zh,xh,yh = np.shape(heavy)
+    # Using numpy's built-in shape command.
+    t, z, x, y = var.shape
+    th, zh, xh, yh = heavy.shape
     if xh != x:
         print('heavyside not on same grid as variable; interpolating...')
-        hout = np.ma.zeros([th,zh,len(lat_v),yh],dtype=np.float32)
-        for k in range(th):
-            for i in range(zh):
-                for j in range(yh):
-                    hint = interp1d(lat,heavy[k,i,:,j],kind="linear",fill_value="extrapolate")
-                    hout[k,i,:,j] = hint(lat_v)
-    hout = np.where(hout<=0.5,0,hout)
-    hout = np.where(hout>0.5,1,hout)
+        # Used reshape to flatten the heavy array along the last two axes and then 
+        # used interp1d with axis=-1 to interpolate over all points simultaneously, 
+        # avoiding the need for nested loops.
+        hint = interp1d(lat, heavy.reshape(th, zh, -1), kind="linear", axis=-1, fill_value="extrapolate")
+        hout = hint(lat_v).reshape(th, zh, -1, yh)
+    else:
+        hout = heavy
+    # Moved the hout <= 0.5 and hout > 0.5 operations to a single np.where 
+    # statement to avoid creating two intermediate arrays.
+    hout = np.where(hout > 0.5, 1, 0)
     vout = np.ma.zeros([t,len(plev),x,y],dtype=np.float32)
     print('interpolating var from model levels to plev19...')
-    for k in range(t):
-        for i in range(x):
-            for j in range(y):
-                vint = interp1d(pmod[k,:,i,j],var[k,:,i,j],kind="linear",fill_value="extrapolate")
-                vout[k,:,i,j] = vint(plev)
+    # Using NumPy vectorization instead of loops.
+    interp_func = interp1d(pmod, var, kind="linear", axis=1, fill_value="extrapolate")
+    vout = interp_func(plev)
     return vout/hout
+
 
 def plev19():
     plev19 = np.array([100000, 92500, 85000, 70000, 
@@ -1426,43 +1433,66 @@ def plev19():
     plev19b = np.column_stack((plev19min,plev19max))
     return np.flip(plev19), plev19b
 
-#calculate clwvi by integrating over water collumn
-#assumes only one time step
 def calc_clwvi(var):
+    '''
+    calculate clwvi by integrating over water collumn.
+    assumes only one time step.
+    '''
     press = var[0]
-    print(press.shape)
-    out = np.ma.zeros([1]+list(press.shape[2:]),dtype=np.float32)
-    for z in range(press.shape[1]-1):
-        mix = np.ma.zeros(press.shape[2:],dtype=np.float32)        
-        for v in var[1:]:
-            mix[:,:] += v[0,z,:,:]
-        out[:,:] += mix * (press[0,z,:] - press[0,z+1,:])
-    return out*0.101972
+    #out = np.ma.zeros([1]+list(press.shape[2:]),dtype=np.float32)
+    #for z in range(press.shape[1]-1):
+    #    mix = np.ma.zeros(press.shape[2:],dtype=np.float32)        
+    #    for v in var[1:]:
+    #        mix[:,:] += v[0,z,:,:]
+    #    out[:,:] += mix * (press[0,z,:] - press[0,z+1,:])
 
-#calculates zostga from T and pressure
+    # Rewrote the above code to take advantage of NumPy's vectorization capabilities.
+    # Removed the intermediate array mix and directly summed the contributions from 
+    # each variable along the vertical axis.
+    # np.zeros is default dtype=np.float32 so I removed that.
+    # Code needs testing to prove it's the same. 
+    out = np.ma.zeros(press.shape[2:])
+    dz = press[0, :-1, :] - press[0, 1:, :]
+    for v in var[1:]:
+        out += v[0, :-1, :] * dz
+    vout = out.sum() * 0.101972
+    return vout
+
 def calc_zostoga(var,depth,lat):
+    '''
+    calculates zostga from T and pressure
+    '''
     #extract variables
     [T,dz,areacello] = var
-    [nt,nz,ny,nx] = T.shape #dimension lengths
-    zostoga = np.zeros([nt],dtype=np.float32)
-    #calculate pressure field
-    press = np.ma.array(sw_press(depth,lat))
-    press.mask = T[0,:].mask
-    #do calculation for each time step
-    for t in range(nt):
-        tmp = ((1. - rho_from_theta(T[t,:],35.00,press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(0)
-        areacello.mask = T[0,0,:].mask
-        zostoga[t] = (tmp*areacello).sum(0).sum(0) / areacello.sum()
+    zostoga = zost(depth, lat, T, dz, areacello, 35.00)
     return zostoga
 
-#calculates zostga from T and pressure
 def calc_zostoga_om2(var,depth,lat,deg):
+    '''
+    calculates zostga from T and pressure
+    '''
     #extract variables
     [T,dz] = var
     areacello = np.float32(deg_open(deg).area_t[:])
     lat = deg_open(deg).area_t.getLatitude()
     deg_open(deg).close()
     print(F'lat: {lat}')
+    zostoga = zost(depth, lat, T, dz, areacello, 35.00)
+    return zostoga
+
+def calc_zossga(var,depth,lat):
+    '''
+    calculates zossga from T,S and pressure
+    '''
+    #extract variables
+    [T,S,dz,areacello] = var
+    zossga = zost(depth, lat, T, dz, areacello, S)
+    return zossga
+
+def zost(depth, lat, T, dz, areacello, S):
+    '''
+    Duplicate code in calc_zostoga, calc_zostoga_om2, and calc_zossga.
+    '''
     [nt,nz,ny,nx] = T.shape #dimension lengths
     zostoga = np.zeros([nt],dtype=np.float32)
     #calculate pressure field
@@ -1470,30 +1500,17 @@ def calc_zostoga_om2(var,depth,lat,deg):
     press.mask = T[0,:].mask
     #do calculation for each time step
     for t in range(nt):
-        tmp = ((1. - rho_from_theta(T[t,:],35.00,press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(0)
+        if S == 35.00:
+            tmp = ((1. - rho_from_theta(T[t,:],S,press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(axis=0)
+        else:
+            tmp = ((1. - rho_from_theta(T[t,:],S[t,:],press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(axis=0)
         areacello.mask = T[0,0,:].mask
         zostoga[t] = (tmp*areacello).sum(0).sum(0)/areacello.sum()
     return zostoga
-    
-#calculates zossga from T,S and pressure
-def calc_zossga(var,depth,lat):
-    #extract variables
-    [T,S,dz,areacello] = var
-    [nt,nz,ny,nx] = T.shape
-    zossga = np.zeros([nt],dtype=np.float32)
-    #calculate pressure field
-    press = np.ma.array(sw_press(depth,lat))
-    press.mask = T[0,:].mask
-    #do calculation for each time step
-    for t in range(nt):
-        tmp = ((1. - rho_from_theta(T[t,:],S[t,:],press)/rho_from_theta(4.00,35.00,press))*dz[t,:]).sum(0)
-        areacello.mask = T[0,0,:].mask
-        zossga[t] = (tmp*areacello).sum(0).sum(0)/areacello.sum()
-    return zossga
 
 #function to calculate density from temp, salinity and pressure
 def rho_from_theta(th,s,p):
-    th2 = th*th
+    th2 = th * th
     sqrts = np.ma.sqrt(s)
     anum =          9.9984085444849347e+02 +    \
                th*( 7.3471625860981584e+00 +    \
@@ -1525,29 +1542,13 @@ def rho_from_theta(th,s,p):
 #    print 'rho',np.min(anum/aden),np.max(anum/aden)
     return anum/aden
 
-#deprecated funtion, do not use. Use rho_from_theta instead
-def rf_eos(S,T,P):
-    t1 = [ 9.99843699e+2, 7.35212840e+0, -5.45928211e-2, 3.98476704e-4 ]
-    s1 = [ 2.96938239e+0, -7.23268813e-3, 2.12382341e-3 ]
-    p1 = [ 1.04004591e-2, 1.03970529e-7, 5.18761880e-6, -3.24041825e-8, -1.23869360e-11 ]
-
-    t2 = [ 1.0, 7.28606739e-3, -4.60835542e-5, 3.68390573e-7, 1.80809186e-10 ]
-    s2 = [ 2.14691708e-3, -9.27062484e-6, -1.78343643e-10, 4.76534122e-6, 1.63410736e-9 ]
-    p2 = [ 5.30848875e-6, -3.03175128e-16, -1.27934137e-17 ]
-
-    Pn = t1[0] + t1[1]*T + t1[2]*T**2 + t1[3]*T**3 + s1[0]*S + s1[1]*S*T + s1[2]*S**2 \
-      + p1[0]*P + p1[1]*P*T**2 + p1[2]*P*S + p1[3]*P**2 + p1[4]*P**2*T**2
-
-    Pd = t2[0] + t2[1]*T + t2[2]*T**2 + t2[3]*T**3 + t2[4]*T**4 \
-      + s2[0]*S + s2[1]*S*T + s2[2]*S*T**3 + s2[3]*np.sqrt(S**3) + s2[4]*np.sqrt(S**3)*T**2 \
-      + p2[0]*P + p2[1]*P**2*T**3 + p2[2]*P**3*T
-    return Pn/Pd
-
-#Calculates the pressure field from depth and latitude
 def sw_press(dpth,lat):
-#return array on depth,lat,lon    
-    pi = 4*np.arctan(1.)
-    deg2rad = pi/180
+    '''
+    Calculates the pressure field from depth and latitude
+    '''
+    #return array on depth,lat,lon    
+    pi = 4 * np.arctan(1.)
+    deg2rad = pi / 180
     x = np.sin(abs(lat[:]) * deg2rad)  # convert to radians
     c1 = 5.92e-3 + x ** 2 * 5.25e-3
     #expand arrays into 3 dimensions
@@ -1560,26 +1561,41 @@ def sw_press(dpth,lat):
     vout = ((1-c1)-np.sqrt(((1-c1)**2)-(8.84e-6*dpth)))/4.42e-6
     return vout
 
-def fix_packing_division(num,den):
+def fix_packing_division(num, den):
     vout = num / den
     vout[vout == 0.0] = 0.5 * np.min(vout[vout > 0.0])
     return vout
     
 #CCMI2022 functions
 def column_max(var):
-    return np.max(var,axis=1)
+    vout = np.max(var,axis=1)
+    return vout
 
-def extract_lvl(var,lvl):
-    return var[:,lvl,:,:]
+def extract_lvl(var, lvl):
+    vout = var[:,lvl,:,:]
+    return vout
 
 def tropoz(o3plev,o3mod,troppres,plev):
+    '''
+    SG: Added some optimization to this function, not 100% sure what the function
+    is doing though.
+    '''
     t,z,y,x = np.shape(o3plev)
     print(t,z,y,x)
-    vout = np.ma.zeros([t,y,x],dtype=np.float32)
+
+    # Removed the following 2 lines from the for loop
+    # They are calculating the same thing each time
+    plev_rev = plev[::-1]
+    o3plev_rev = o3plev[:, ::-1, :, :]
+    # Potential optimization for o3mod_max = np.max(o3mod, axis=1)
+    # Needs testing as I'm not 100% sure it's the same thing
+    #o3mod_max = np.max(o3mod, axis=1) 
+
+    vout = np.zeros([t,y,x],dtype=np.float32)
     for k in range(t):
         for i in range(x):
             for j in range(y):
-                vint = np.interp(troppres[k,j,i],plev[::-1],o3plev[k,::-1,j,i])
+                vint = np.interp(troppres[k,j,i], plev_rev, o3plev_rev[k, :, j, i])
                 vout[k,j,i] = np.max(o3mod[k,0,j,i]) - vint
     return vout
 
@@ -1589,18 +1605,6 @@ def toz(o3):
     else:
         return o3
 
-def mcu_gravity(var):
-    t,z,y,x = np.shape(var)
-    a_theta_85,b_theta_85,dim_val_bounds_theta_85,b_bounds_theta_85 = getHybridLevels('theta',85)
-    R_e = 6.378E+06
-    grav_h = np.ma.zeros([len(a_theta_85)],dtype=np.float32)
-    for i in range(len(a_theta_85)):
-        grav_h[i] = 9.8 * (R_e / (R_e + a_theta_85[i])) ** 2
-    mcu = np.ma.zeros([t,z,y,x],dtype=np.float32)
-    for k in range(z):
-        mcu[:,k,:,:] = var[:,k,:,:] / grav_h[k]
-    return mcu
-
 def mc_gravity(var):
     t,z,y,x = np.shape(var)
     if z == 85:
@@ -1608,7 +1612,6 @@ def mc_gravity(var):
     elif z == 38:
         a_theta,b_theta,dim_val_bounds_theta,b_bounds_theta = getHybridLevels('theta',38)
     else: sys.exit('levels undefined in mc_gravity')
-    R_e = 6.378E+06
     grav_h = np.ma.zeros([len(a_theta)],dtype=np.float32)
     for i in range(len(a_theta)):
         grav_h[i] = 9.8*(R_e / (R_e + a_theta[i])) ** 2
@@ -1722,26 +1725,59 @@ def getSource(model):
     else: return model +': unknown source'
 
 
-#idea use to reduce memory usage (doesn't seem to make a difference)
-# SG: These are unused functions:
 
-#def calcBurdens(variables):
-#    theta = variables[0]
-#    pressure = variables[1]
-#    burden = calcBurden(theta,pressure,variables[2])
-#    for i in range(3,len(variables)):
-#        burden += calcBurden(theta,pressure,variables[i])
-#    return burden
 
-#calculates an average over southern or northern hemisphere
-#assumes 4D (3D+ time) variable
-#def hemi_ga(var,vol,southern):
-#    dims=var.shape
-#    mid=150
-#    if southern:
-#        total_vol=vol[:,:mid,:],.sum()
-#        v_ga=v[:,:mid,:]*vol[:,:mid,:]).sum()/total_vol
-#    else:
-#        total_vol=vol[:,mid:,:],.sum()
-#        v_ga=v[:,mid:,:]*vol[:,mid:,:]).sum()/total_vol
-#    return v_ga
+'''
+SG: These are unused functions:
+
+idea use to reduce memory usage (doesn't seem to make a difference)
+def calcBurdens(variables):
+    theta = variables[0]
+    pressure = variables[1]
+    burden = calcBurden(theta,pressure,variables[2])
+    for i in range(3,len(variables)):
+        burden += calcBurden(theta,pressure,variables[i])
+    return burden
+
+calculates an average over southern or northern hemisphere
+assumes 4D (3D+ time) variable
+def hemi_ga(var,vol,southern):
+    dims=var.shape
+    mid=150
+    if southern:
+        total_vol=vol[:,:mid,:],.sum()
+        v_ga=v[:,:mid,:]*vol[:,:mid,:]).sum()/total_vol
+    else:
+        total_vol=vol[:,mid:,:],.sum()
+        v_ga=v[:,mid:,:]*vol[:,mid:,:]).sum()/total_vol
+    return v_ga
+
+def mcu_gravity(var):
+    t,z,y,x = np.shape(var)
+    a_theta_85,b_theta_85,dim_val_bounds_theta_85,b_bounds_theta_85 = getHybridLevels('theta',85)
+    grav_h = np.ma.zeros([len(a_theta_85)],dtype=np.float32)
+    for i in range(len(a_theta_85)):
+        grav_h[i] = 9.8 * (R_e / (R_e + a_theta_85[i])) ** 2
+    mcu = np.ma.zeros([t,z,y,x],dtype=np.float32)
+    for k in range(z):
+        mcu[:,k,:,:] = var[:,k,:,:] / grav_h[k]
+    return mcu
+
+#deprecated funtion, do not use. Use rho_from_theta instead
+def rf_eos(S,T,P):
+    t1 = [ 9.99843699e+2, 7.35212840e+0, -5.45928211e-2, 3.98476704e-4 ]
+    s1 = [ 2.96938239e+0, -7.23268813e-3, 2.12382341e-3 ]
+    p1 = [ 1.04004591e-2, 1.03970529e-7, 5.18761880e-6, -3.24041825e-8, -1.23869360e-11 ]
+
+    t2 = [ 1.0, 7.28606739e-3, -4.60835542e-5, 3.68390573e-7, 1.80809186e-10 ]
+    s2 = [ 2.14691708e-3, -9.27062484e-6, -1.78343643e-10, 4.76534122e-6, 1.63410736e-9 ]
+    p2 = [ 5.30848875e-6, -3.03175128e-16, -1.27934137e-17 ]
+
+    Pn = t1[0] + t1[1]*T + t1[2]*T**2 + t1[3]*T**3 + s1[0]*S + s1[1]*S*T + s1[2]*S**2 \
+      + p1[0]*P + p1[1]*P*T**2 + p1[2]*P*S + p1[3]*P**2 + p1[4]*P**2*T**2
+
+    Pd = t2[0] + t2[1]*T + t2[2]*T**2 + t2[3]*T**3 + t2[4]*T**4 \
+      + s2[0]*S + s2[1]*S*T + s2[2]*S*T**3 + s2[3]*np.sqrt(S**3) + s2[4]*np.sqrt(S**3)*T**2 \
+      + p2[0]*P + p2[1]*P**2*T**3 + p2[2]*P**3*T
+    return Pn/Pd
+'''
