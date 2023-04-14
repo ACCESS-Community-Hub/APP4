@@ -59,7 +59,7 @@ def app_catch():
         debug_logger.exception(e)
         sys.exit(1)
 
-def config_log(cmorlogs):
+def config_log(debug):
     ''' configure log file to keep track of users queries '''
     # start a logger
     logger = logging.getLogger('app_log')
@@ -1388,7 +1388,7 @@ def app(ctx, flow, debug):
     # set up a default value for flow if none selected for logging
     if flow is None: flow = 'default'
     ctx.obj['flow'] = flow
-    ctx.obj['log'] = config_log(cmorlogs)
+    ctx.obj['log'] = config_log(debug)
 
 
 def app(option_dictionary):
