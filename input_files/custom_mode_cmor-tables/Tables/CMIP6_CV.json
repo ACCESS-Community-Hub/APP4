@@ -69,7 +69,8 @@
             "VolMIP": "Volcanic Forcings Model Intercomparison Project",
             "SOMIP": "SOMIP",
             "CNP-MIP": "CNP-MIP",
-            "PacemakerMIP": "PacemakerMIP"
+            "PacemakerMIP": "PacemakerMIP",
+            "FakeMIP": "FakeMIP"
         },
         "institution_id": {
             "AER": "Research and Climate Group, Atmospheric and Environmental Research, 131 Hartwell Avenue, Lexington, MA 02421, USA",
@@ -8963,7 +8964,7 @@
             },
             "piControl": {
                 "activity_id": [
-                    "PacemakerMIP"
+                    "FakeMIP"
                 ],
                 "additional_allowed_model_components": [
                     "AER",

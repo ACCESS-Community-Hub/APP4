@@ -22,4 +22,5 @@ else
   mkdir -p $VARIABLE_MAPS
   mkdir -p $CMOR_LOGS
   mkdir -p $VAR_LOGS
+  mkdir -p $APP_LOGS
 fi

@@ -66,6 +66,7 @@ VARIABLE_MAPS=${OUT_DIR}/variable_maps
 SUCCESS_LISTS=${OUT_DIR}/success_lists
 CMOR_LOGS=${OUT_DIR}/cmor_logs
 VAR_LOGS=${OUT_DIR}/variable_logs
+APP_LOGS=${OUT_DIR}/app_logs
 # Output files
 APP_JOB=${OUT_DIR}/app_job.sh
 JOB_OUTPUT=${OUT_DIR}/job_output.OU
