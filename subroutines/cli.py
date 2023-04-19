@@ -19,32 +19,34 @@ SG - Changed cdms2 to Xarray.
 21/03/23:
 PP - Changed cdtime to datetime. NB this is likely a bad way of doing this, but I need to remove cdtime to do further testing
 PP - datetime assumes Gregorian calendar
+
+18/04/23
+PP - complete restructure: now cli.py with cli_functions.py include functionality of both app.py and app_wrapper.py
+     to run 
+     python cli.py wrapper
+     I'm not yet sure if click is bets use here, currently not using the args either (except for debug) but I'm leaving them in just in case
+     Still using pool, app_bulk() contains most of the all app() function, however I generate many "subfunctions" mostly in cli_functions.py to avoid having a huge one. What stayed here is the cmor settings and writing
+     using xarray to open all files, passing sometimes dataset sometime variables this is surely not consistent yet with app_functions
+     
 '''
 
 
-
-from optparse import OptionParser
-import netCDF4
-import numpy as np
-import string
-import glob
-import re
-from app_functions import *
-from cli2_functions import *
 import os,sys
-import xarray as xr
-import cmor
 import warnings
-import time as timetime
-import psutil
-import calendar
-import click
 import logging
-import sqlite3
+import time as timetime
 import traceback
+import multiprocessing as mp
 import csv
 import ast
-import multiprocessing as mp
+import calendar
+import click
+import sqlite3
+import numpy as np
+import xarray as xr
+import cmor
+from app_functions import *
+from cli_functions import *
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -131,6 +133,7 @@ def app_args(f):
     for c in reversed(constraints):
         f = c(f)
     return f
+
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option('--debug', is_flag=True, default=False,
@@ -286,8 +289,7 @@ def app_bulk(ctx, app_log):
     #
     #PP create time_axis function
     # PP in my opinion this can be fully skipped, but as a start I will move it to a function
-    time_dimension = get_time_axis(ds, app_log)
-    print(time_dimension)
+    time_dimension = get_time_dim(ds, app_log)
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
     #PP start function
@@ -302,37 +304,114 @@ def app_bulk(ctx, app_log):
     #Load the first ACCESS NetCDF data file, and get the required information about the dimensions and so on.
     #
     #access_file = netCDF4.Dataset(inrange_files[0], 'r')
-    dsin = xr.open_mfdataset(inrange_files, 'r', parallel=True, use_cftime=True)
-    invar = dsin[ctx.obj['vin'][0]]
-    (axis_ids, z_ids, i_axis_id, j_axis_id, time_axis_id, n_grid_pts,
-        lev_name, z_len, dim_values, dim_vals, dim_val_bounds) = new_axis_dim(invar, app_log)
-
-
-    #app_log.info("opened input netCDF file: {inrange_files[0]}")
-    #PP load all files with xarray and grab time axis lat lon from it
-    #app_log.info("checking axes...")
+    # using parallel require dask so temporarily leaving it out
+    #dsin = xr.open_mfdataset(inrange_files, parallel=True, use_cftime=True)
+    #print(inrange_files)
+    #print(ctx.obj['vin'][0])
+    dsin = xr.open_mfdataset(inrange_files, parallel=True, use_cftime=True)
+    #print(dsin)
     sys.stdout.flush()
-    try:
-        #
-        #Determine which axes are X and Y, and what the values of the latitudes and longitudes are.
-        #PP possibly redundant but moving to function
-        #data_vals, lon_name, lat_name, lon_vals, lat_vals = check_axis(access_file, inrange_files, app_log)
-        #
-        #PP again might be redundant but moving it to function
-        #Work out which dimension(s) are associated with each coordinate variable.
-        #PP not yet sure what to return here!
-        # j_axis_id, i_axis_id etc are returned by cmor.axis
-        (axis_ids, z_ids, i_axis_id, j_axis_id, time_axis_id, n_grid_pts, 
-                lev_name, z_len, dim_values, dim_vals, dim_val_bounds) = axis_dim(data_vals, app_log)
-        #
-        #PP move to function
-        #If we are on a non-cartesian grid, Define the spatial grid
-        #
-        grid_id, axis_ids, z_ids = create_grid(i_axis_id, i_axis,
-                                 j_axis_id, j_axis, tables[0], app_log)
-    except Exception as e:
-        app_log.error(f"E: We should not be here! {e}")
+    invar = dsin[ctx.obj['vin'][0]]
+    #First try and get the units of the variable.
     #
+    in_units, in_missing, positive = get_attrs(invar, app_log) 
+
+    #PP swapped around the order: calculate first and then worry about cmor
+    app_log.info("writing data, and calculating if needed...")
+    app_log.info(f"calculation: {ctx.obj['calculation']}")
+    sys.stdout.flush()
+    #
+    #PP start from standard case and add modification when possible to cover other cases 
+    #PP in some case s
+    if 'A10dayPt' in ctx.obj['cmip_table']:
+        app_log.info('ONLY 1st, 11th, 21st days to be used')
+        dsin = dsin.where(dsin[time_dimension].dt.day.isin([1, 11, 21]), drop=True)
+    try:
+        out_var = normal_case(dsin, time_dimension, in_missing, app_log)
+    except Exception as e:
+        app_log.error(f"E: Unable to retrieve/calculate variable {e}")
+    # Now define axis, variable etc before writing to CMOR
+
+
+    #calculate time integral of the first variable (possibly adding a second variable to each time)
+    # PP I removed all the extra special calculations
+    # adding axis etc after calculation will need to extract cmor bit from calc_... etc
+    app_log.info("defining axes...")
+    # get axis of each dimension
+    t_axis, z_axis, j_axis, i_axis, p_axis = get_axis_dim(outvar, app_log)
+    # should we just calculate at end??
+    n_grid_pnts = 1
+    cmor.set_table(tables[1])
+    axis_ids = []
+    if t_axis is not None:
+        cmor_tName = get_cmorname('t')
+        t_bounds = get_bounds(t_axis, cmor_tName, app_log)
+        t_axis_id = cmor.axis(table_entry=cmor_tName,
+            units=axis.units,
+            length=len(t_axis),
+            coord_vals=t_axis.values,
+            cell_bounds=t_bounds,
+            interval=None)
+        axis_ids.append(t_axis_id)
+    if z_axis is not None:
+        z_bounds = get_bounds(z_axis, cmor_name, app_log)
+        t_axis_id = cmor.axis(table_entry=cmor_tName,
+            units=axis.units,
+            length=len(t_axis),
+            coord_vals=t_axis.values,
+            cell_bounds=t_bounds[:],
+            interval=None)
+        axis_ids.append(z_axis_id)
+    if j_axis == None or i_axis.ndim == 2:
+           #cmor.set_table(tables[0])
+           j_axis_id = cmor.axis(table=table[0],
+               table_entry='j_index',
+               units='1',
+               coord_vals=np.arange(len(dim_values)))
+           axis_ids.append(j_axis_id)
+       #             n_grid_pts=len(dim_values)
+    else:
+        cmor_jName = get_cmorname('j')
+        j_bounds = get_bounds(j_axis, cmor_name, app_log)
+        j_axis_id = cmor.axis(table_entry=cmor_jName,
+            units=axis.units,
+            length=len(j_axis),
+            coord_vals=j_axis.values,
+            cell_bounds=j_bounds[:],
+            interval=None)
+        axis_ids.append(j_axis_id)
+    #    n_grid_pts = n_grid_pts * len(j_axis)
+    if i_axis == None or i_axis.ndim == 2:
+        setgrid = True
+        i_axis_id = cmor.axis(table=table[0],
+             table_entry='i_index',
+             units='1',
+             coord_vals=np.arange(len(i_axis)))
+        axis_ids.append(i_axis_id)
+    else:
+        setgrid = False
+        cmor_iName = get_cmorname('i')
+        i_bounds = get_bounds(i_axis)
+        i_axis_id = cmor.axis(table_entry=cmor_iName,
+            units=axis.units,
+            length=len(i_axis),
+            coord_vals=np.mod(i_axis.values,360),
+            cell_bounds=i_bounds[:],
+            interval=None)
+        axis_ids.append(i_axis_id)
+        #n_grid_pts = n_grid_pts * len(j_axis)
+    if p_axis is not None:
+        cmor_pName, p_vals, p_len = pseudo_axis(p_axis) 
+        p_axis_id = cmor.axis(table_entry=cmor_pName,
+            units='',
+            length=p_len,
+            coord_vals=p_vals)
+        axis_ids.append(p_axis_id)
+    sys.stdout.flush()
+
+    #If we are on a non-cartesian grid, Define the spatial grid
+    if setgrid:
+        grid_id = create_grid(i_axis_id, i_axis, j_axis_id, j_axis, tables[0], app_log)
     #create oline, siline, basin axis
     for axm in ['oline', 'siline', 'basin']:
         if axm in ctx.obj['axes_modifier']:
@@ -340,16 +419,11 @@ def app_bulk(ctx, app_log):
             axis_ids.append(axis_id)
 
     #set up additional hybrid coordinate information
-    if lev_name in ['hybrid_height', 'hybrid_height_half']:
+    if cmor_zName in ['hybrid_height', 'hybrid_height_half']:
         zfactor_b_id, zfactor_orog_id = hybrid_axis(lev_name, app_log)
     #
     #Define the CMOR variable.
     #
-    cmor.set_table(tables[1])
-    #
-    #First try and get the units of the variable.
-    #
-    in_units, in_missing, positive = get_attrs(invar, app_log) 
     app_log.info(f"cmor axis variables: {axis_ids}")
     #
     #Define the CMOR variable, taking account of possible direction information.
@@ -357,81 +431,31 @@ def app_bulk(ctx, app_log):
     app_log.info("defining cmor variable...")
     try:    
         #set positive value from input variable attribute
-        variable_id = cmor_var(app_log, positive=positive)
+        #PP potentially we might want this defined before?? or at least check somewhere that vcmip is in table
+        variable_id = cmor.variable(table_entry=ctx.obj['vcmip'],
+                    units=in_units,
+                    axis_ids=axis_ids,
+                    data_type='f',
+                    missing_value=in_missing,
+                    positive=positive)
     except Exception as e:
         app_log.error(f"E: Unable to define the CMOR variable {e}")
         raise
-    #
-    #Close the ACCESS file.
-    #
-    #access_file.close()
-    #app_log.info("closed input netCDF file")    
-    #Loop over all the in time range ACCESS files, and process those which we need to.
-    #
-    app_log.info("writing data, and calculating if needed...")
-    app_log.info(f"calculation: {ctx.obj['calculation']}")
-    sys.stdout.flush()
-    #
-    #PP this is were some of the calculation starts I think we shpuld reverse the order, calculate first and then define axis based on results
-    #calculate time integral of the first variable (possibly adding a second variable to each time)
-    #
-    if 'time_integral' in ctx.obj['axes_modifier']:
-        axm_t_integral(invar, dsin, variable_id, app_log)
-    #
-    #Monthly Climatology case
-    #
-    elif ctx.obj['timeshot'].find('clim') != -1:
-        axm_timeshot(dsin, variable_id, app_log)
-    #
-    #Annual means - Oyr / Eyr tables
-    #
-    elif 'mon2yr' in ctx.obj['axes_modifier']:
-        axm_mon2yr(dsin, variable_id, app_log)
-    #
-    #Annual point values - landUse variables
-    #
-    elif 'yrpoint' in ctx.obj['axes_modifier']:
-        #PP we should be able to just write them as they are, I believe the assumption here is that
-        # the frequency in the file is already yearly, just slecting time between start and end date
-        dsinsel = dsin.sel(time_dimension=slice(startyear, endyear)).sel(time_dimension.dt.month==12)
-        #PP then it seems to select only Dec?? Does this means actually orignal frequnecy is monthly?
-        if ctx.obj['calculation'] != '':
-            var = calculateVals(dsinsel, ctx.obj['vin'], ctx.obj['calculation'])
-            try:
-                data_vals = var.values()
-                data_vals = data_vals.filled(in_missing)
-            except:
-                #if values aren't in a masked array
-                pass 
-                app_log(f"shape: {np.shape(data_vals)}")
-                app_log(f"time index: {index}, date: {d}")
-        app_log.info("writing with cmor...")
-        app_log.info(np.shape(data_vals))
-        cmor.write(variable_id, data_vals[0,:,:,:], ntimes_passed=1)
-    #
-    #Aday10Pt processing for CCMI2022
-    #
-    elif ctx.obj['cmip_table'].find('A10dayPt') != -1:
-        calc_a10daypt(dsin, time_dimension, variable_id, app_log)
+    try:
+        app_log.info('writing...')
+        if time_dimension != None:
+            app_log.info(f"Variable shape is {out_var.shape}")
+            cmor.write(variable_id, out_var.values,
+                ntimes_passed=out_var[time_dimension].size)
+        else:
+            cmor.write(variable_id, out_var.values, ntimes_passed=0)
 
-    #
-    #Convert monthly integral to rate (e.g. K to K s-1, as in tntrl)
-    #
-    elif 'monsecs' in ctx.obj['axes_modifier']:
-        calc_monsecs(dsin, time_dimension, variable_id, app_log)
-    #
-    #normal case
-    #
-    else:
-        try:
-            normal_case(dsin, time_dimension, variable_id, app_log)
-            app_log.info(f"finished writing @ {timetime.time()-start_time}")
-        except Exception as e:
-            app_log.error(f"E: Unable to write the CMOR variable to file {e}")
-            raise
+    except Exception as e:
+        app_log.error(f"E: Unable to write the CMOR variable to file {e}")
     #
     #Close the CMOR file.
     #
+    app_log.info(f"finished writing @ {timetime.time()-start_time}")
     try:
         path = cmor.close(variable_id, file_name=True)
     except:
@@ -504,7 +528,6 @@ def process_row(ctx, row):
         exp_description = f"Exp: {experiment_id}"
     if ctx.obj['dreq_years']:
         #PP temporarily adding this
-        print("if here dreq_years is true")
         try:
             msg_return = ("years requested for variable are outside " +
                          f"specified period: {table}, {vcmip}, {tstart}, {tend}")

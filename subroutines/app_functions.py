@@ -122,16 +122,20 @@ def calcRefDate(time):
     vout = datetime.date(int(ref[0]), int(ref[1]), int(ref[2]))
     return vout
 
-def calculateVals(access_file,varNames,calculation):
+def calculateVals(access_file, varNames, calculation):
     '''
     Function to call the calculation defined in the 'calculation' string in the database
     '''
+    #PP WE need to take into account that we are using xarray now
+    #PP first we should review if we need to get dimensions, that would depend on the 
+    #PP calculation as defined in this file, however if we need to do so
+    #PP get dimensions from variable.dims 
+    #PP another possibility is to pass a list of dimensions in mapping file 
+    #PP or even better being specific in calculation on what the dimension name is
     #Set array for coordinates if used by calculation
-    if calculation.find('times')!=-1:
-        times = access_file[0][varNames[0]].getTime()
-    else:
-        pass
-    if calculation.find('depth')!=-1:
+    if 'times' in calculation:
+        times = access_file[varNames[0]].getTime()
+    if 'depth' in calculation:
         depth = access_file[0][varNames[0]].getAxis(1)
     else:
         pass

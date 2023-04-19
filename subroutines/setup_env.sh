@@ -17,13 +17,15 @@ module load parallel
 
 # CMIP6-pub env
 #PP NB I changed this to relfect my own conda env with the latest CMOR version installed
-module load conda
+module load conda/analysis3-unstable
 #PATH=${PATH}:/g/data/hh5/public/apps/miniconda3/envs/cmip6-publication/bin:/g/data/hh5/public/apps/miniconda3/bin
-PATH=${PATH}:/scratch/v45/pxp581/conda/envs/CMOR/bin:/g/data/hh5/public/apps/miniconda3/bin
-source activate CMOR 
+#PATH=${PATH}:/scratch/v45/pxp581/conda/envs/CMOR/bin:/g/data/hh5/public/apps/miniconda3/bin
+PATH=${PATH}:/g/data/ua8/Working/packages/envs/py3cmor/bin:/g/data/hh5/public/apps/miniconda3/bin
+source activate py3cmor 
 
 module list
 python -V
+conda list | grep cmor
 
 # Environment variables
 
