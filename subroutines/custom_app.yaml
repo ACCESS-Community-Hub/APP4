@@ -1,5 +1,7 @@
 ################################################################
 #
+# a grids.csv file is also needed
+# can we generate that automatically?
 # USER OPTIONS
 # Setting to manage cmorisation and set tables/variables to process
 cmor:
@@ -8,10 +10,15 @@ cmor:
     # from exp_to_process: local name of experiment
     exp: cm000 
     # year to begin/end CMORisation inclusive interval
-    start_year: 950                        
-    end_year: 950                        
+    # use YYYYMMDD
+    # NB this will be sued to select input files so they need to include
+    # a startdate in the name at least the year
+    # if not all input files need to be opened for each variable to work out
+    # which ones to use!
+    start_date: 09500101                        
+    end_date: 09501231                        
     # select one of: [CM2, ESM, OM2[-025]]
-    version: CM2 
+    access_version: CM2 
     # reference date for time units (set as 'default' to use START_YEAR)
     reference_year: default              
     # previously output_path/file_template
@@ -32,14 +39,15 @@ cmor:
     # input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv ???
     # is this used?
     # choose here the mapping created with cli_db.py based on the actual model output
-    mapping: master_cm000.csv
+    master_map: input_files/master_cm000.csv
     _control_vocabulary_file: "CMIP6_CV.json"
     _cmip6_option: CMIP6
   # Additional NCI information:
     project: w40                             # NCI project to charge compute; $PROJECT = your default project
     # output directory for all generated data (CMORISED files & logs)
-    # if default it is set to /scratch/$project/$user/APP5_OUTPUT
+    # if default it is set to /scratch/$project/$user/APP5_OUTPUT<exp>
     outdir: default
+    appdir: ${PWD} 
  # this defined based on scratch/project/user
  # possibly we should define it only if user wants to choose different one
 

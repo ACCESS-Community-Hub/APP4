@@ -292,9 +292,12 @@ def app_bulk(ctx, app_log):
     time_dimension = get_time_dim(ds, app_log)
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
-    #PP start function
-    # this could be potentially simplified??
-    inrange_files = check_in_range(all_files, time_dimension, app_log) 
+    # First try to do so base don timestamp on file, if this fails
+    # open files and read time axis
+    try:
+        inrange_files = check_timestamp(all_files, app_log) 
+    except:
+        inrange_files = check_in_range(all_files, time_dimension, app_log) 
     #check if the requested range is covered
     if inrange_files == []:
         app_log.warning("no data exists in the requested time range")
@@ -309,7 +312,6 @@ def app_bulk(ctx, app_log):
     #print(inrange_files)
     #print(ctx.obj['vin'][0])
     dsin = xr.open_mfdataset(inrange_files, parallel=True, use_cftime=True)
-    #print(dsin)
     sys.stdout.flush()
     invar = dsin[ctx.obj['vin'][0]]
     #First try and get the units of the variable.
@@ -338,7 +340,7 @@ def app_bulk(ctx, app_log):
     # adding axis etc after calculation will need to extract cmor bit from calc_... etc
     app_log.info("defining axes...")
     # get axis of each dimension
-    t_axis, z_axis, j_axis, i_axis, p_axis = get_axis_dim(outvar, app_log)
+    t_axis, z_axis, j_axis, i_axis, p_axis = get_axis_dim(out_var, app_log)
     # should we just calculate at end??
     n_grid_pnts = 1
     cmor.set_table(tables[1])
@@ -347,7 +349,7 @@ def app_bulk(ctx, app_log):
         cmor_tName = get_cmorname('t')
         t_bounds = get_bounds(t_axis, cmor_tName, app_log)
         t_axis_id = cmor.axis(table_entry=cmor_tName,
-            units=axis.units,
+            units=t_axis.units,
             length=len(t_axis),
             coord_vals=t_axis.values,
             cell_bounds=t_bounds,
@@ -356,7 +358,7 @@ def app_bulk(ctx, app_log):
     if z_axis is not None:
         z_bounds = get_bounds(z_axis, cmor_name, app_log)
         t_axis_id = cmor.axis(table_entry=cmor_tName,
-            units=axis.units,
+            units=z_axis.units,
             length=len(t_axis),
             coord_vals=t_axis.values,
             cell_bounds=t_bounds[:],
@@ -374,7 +376,7 @@ def app_bulk(ctx, app_log):
         cmor_jName = get_cmorname('j')
         j_bounds = get_bounds(j_axis, cmor_name, app_log)
         j_axis_id = cmor.axis(table_entry=cmor_jName,
-            units=axis.units,
+            units=j_axis.units,
             length=len(j_axis),
             coord_vals=j_axis.values,
             cell_bounds=j_bounds[:],
@@ -393,7 +395,7 @@ def app_bulk(ctx, app_log):
         cmor_iName = get_cmorname('i')
         i_bounds = get_bounds(i_axis)
         i_axis_id = cmor.axis(table_entry=cmor_iName,
-            units=axis.units,
+            units=i_axis.units,
             length=len(i_axis),
             coord_vals=np.mod(i_axis.values,360),
             cell_bounds=i_bounds[:],

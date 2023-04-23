@@ -10,11 +10,6 @@ module use ~access/modules
 module load pbs
 module load parallel
 
-# Claire's CMOR env
-#module load conda/analysis27-18.10
-#export PYTHONPATH=${PYTHONPATH}:/g/data1/p66/ars599/python2.7/site-packages
-#export LD_LIBRARY_PATH=/short/p66/ct5255/conda/envs/CMOR/lib:${LD_LIBRARY_PATH}
-
 # CMIP6-pub env
 #PP NB I changed this to relfect my own conda env with the latest CMOR version installed
 module load conda/analysis3-unstable
@@ -22,6 +17,7 @@ module load conda/analysis3-unstable
 #PATH=${PATH}:/scratch/v45/pxp581/conda/envs/CMOR/bin:/g/data/hh5/public/apps/miniconda3/bin
 PATH=${PATH}:/g/data/ua8/Working/packages/envs/py3cmor/bin:/g/data/hh5/public/apps/miniconda3/bin
 source activate py3cmor 
+#source activate CMOR 
 
 module list
 python -V

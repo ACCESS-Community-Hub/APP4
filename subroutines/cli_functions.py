@@ -201,10 +201,67 @@ def get_time_dim(ctx, ds, app_log):
     return time_dimension
 
 
+@click.pass_context
+def check_timestamp(ctx, all_files, app_log):
+    """This function tries to guess the time coverage of a file based on its timestamp
+       and return the files in range. At the moment it does a lot of checks based on the realm and real examples
+       eventually it would make sense to make sure all files generated are consistent in naming
+    """
+    inrange_files = []
+    realm = ctx.obj['realm']
+    app_log.info("checking files timestamp ...")
+    #if we are using a time invariant parameter, just use a file with vin
+    if ctx.obj['cmip_table'].find('fx') != -1:
+        inrange_files = [all_files[0]]
+    else:
+        for infile in all_files:
+            inf = infile.replace('.','_')
+            inf = inf.replace('-','_')
+            dummy = inf.split("_")
+            if realm == 'ocean':
+                tstamp = dummy[-1]
+            elif realm == 'ice':
+                tstamp = ''.join(dummy[-3:-2])
+            else:
+                tstamp = dummy[-3]
+            # usually atm files are xxx.code_date_frequency.nc
+            # sometimes there's no separator between code and date
+            # 1 make all separator _ so xxx_code_date_freq_nc
+            # then analyse date to check if is only date or codedate
+            # check if timestamp as the date time separator T
+            if 'T' in tstamp:
+                tstamp = tstamp.split('T')[0]
+            # if tstamp start with number assume is date
+            if not tstamp[0].isdigit():
+                tstamp = re.sub("\\D", "", tstamp)
+                tlen = len(tstamp)
+                if tlen >= 8:
+                    tstamp = tstamp[-8:]
+                elif 6 <= tlen < 8:
+                    tstamp = tstamp[-6:]
+                elif 4 <= tlen < 6:
+                    tstamp = tstamp[-4:]
+            tlen = len(tstamp)
+            if tlen != 8:
+                if tlen in [3, 5, 7] :
+                    #assume year is yyy
+                    tstamp += '0'
+                if len(tstamp) == 4:
+                    tstamp += '0101'
+                elif len(tstamp) == 6:
+                    tstamp += '01'
+            # get first and last values as date string
+            app_log.debug(f"tstamp for {inf}: {tstamp}")
+            if ctx.obj['tstart'] <= int(tstamp) <= ctx.obj['tend']:
+                inrange_files.append(infile)
+    return inrange_files
 
+ 
 @click.pass_context
 def check_in_range(ctx, all_files, tdim, app_log):
-    """
+    """Return a list of files in time range
+       Open each file and check based on time axis
+       Use this function only if check_timestamp fails
     """
     inrange_files = []
     app_log.info("loading files...")
@@ -227,9 +284,7 @@ def check_in_range(ctx, all_files, tdim, app_log):
                 del ds
             except Exception as e:
                 app_log.error(f"Cannot open file: {e}")
-    app_log.info(f"number of files in time range: {inrange_files}")
-    print(f"Number of inrange_files: {len(inrange_files)}")
-    sys.stdout.flush()
+    app_log.debug(f"Number of files in time range: {len(inrange_files)}")
     return inrange_files
 
  
@@ -296,15 +351,15 @@ def get_cmorname(ctx, axis_name, z_len=None):
     if axis_name == 't':
         timeshot = ctx.obj['timeshot']
         if 'mean' in timeshot:
-            cmor_tName = 'time'
+            cmor_name = 'time'
         elif 'inst' in timeshot:
-            cmor_tName = 'time1'
+            cmor_name = 'time1'
         elif 'clim' in timeshot:
-            cmor_tName = 'time2'
+            cmor_name = 'time2'
         else:
             #assume timeshot is mean
             app_log.warning("timeshot unknown or incorrectly specified")
-            cmor_tName = 'time'
+            cmor_name = 'time'
     elif axis_name == 'j':
         if 'gridlat' in ctx.obj['axes_modifier']:
             cmor_name = 'gridlatitude',
@@ -317,31 +372,32 @@ def get_cmorname(ctx, axis_name, z_len=None):
             j_axis_id = 'longitude'
     elif axis_name == 'z':
         if 'mod2plev19' in ctx.obj['axes_modifier']:
-            lev_name = 'plev19'
+            cmor_name = 'plev19'
         elif 'depth100' in ctx.obj['axes_modifier']:
-            lev_name = 'depth100m'
+            cmor_name = 'depth100m'
         elif (dim == 'st_ocean') or (dim == 'sw_ocean'):
-            lev_name = 'depth_coord'
+            cmor_name = 'depth_coord'
         #ocean pressure levels
         elif dim == 'potrho':
-            lev_name = 'rho'
+            cmor_name = 'rho'
         elif axis.name == 'model_level_number' or 'theta_level' in axis.name:
-            lev_name = 'hybrid_height'
+            cmor_name = 'hybrid_height'
             if 'switchlevs':
-                lev_name = 'hybrid_height_half'
+                cmor_name = 'hybrid_height_half'
         elif 'rho_level' in axis_name:
-            lev_name = 'hybrid_height_half'
+            cmor_name = 'hybrid_height_half'
             if 'switchlevs':
-                lev_name = 'hybrid_height'
+                cmor_name = 'hybrid_height'
         #atmospheric pressure levels:
         elif axis_name == 'lev' or any(x in axis_name for x in ['_p_level', 'pressure']):
-            lev_name = f"plev{str(z_len)}"
+            cmor_name = f"plev{str(z_len)}"
         elif 'soil' in axis_name or axis_name == 'depth':
-            lev_name = 'sdepth'
+            cmor_name = 'sdepth'
             if 'topsoil' in ctx.obj['axes_modifier']:
                 #top layer of soil only
-                lev_name = 'sdepth1'
+                cmor_name = 'sdepth1'
     return cmor_name
+
 
 @click.pass_context
 def set_plev(ctx, data_vals, app_log):
@@ -584,10 +640,10 @@ def define_grid(ctx, i_axis_id, i_axis, j_axis_id, j_axis,
             lon_vals_360 = np.mod(i_axis[:],360)
             lat_vertices = get_vertices(j_axis.name)
             lon_vertices = np.mod(get_vertices(i_axis.name),360)
-        app_log.info(j_axis.name)
-        app_log.debug(type(lat_vertices),lat_vertices[0])
-        app_log.info(i_axis.name)
-        app_log.debug(type(lon_vertices),lon_vertices[0])
+        app_log.info(f"{j_axis.name}")
+        app_log.debug(f"lat vertices type and value: {type(lat_vertices)},{lat_vertices[0]}")
+        app_log.info(f"{i_axis.name}")
+        app_log.debug(f"lon vertices type and value: {type(lon_vertices)},{lon_vertices[0]}")
         app_log.info(f"grid shape: {lat_vertices.shape} {lon_vertices.shape}")
         app_log.info("setup of vertices complete")
         try:
@@ -630,7 +686,7 @@ def get_axis_dim(ctx, var, app_log):
     p_axis = None    
     # Check variable dimensions
     dims = var.dims
-    app_log("list of dimensions: {dim_list}")
+    app_log.info(f"list of dimensions: {dims}")
 
     # make sure axis are correctly defined
     for dim in dims:
@@ -641,8 +697,9 @@ def get_axis_dim(ctx, var, app_log):
             axis = None
         # need to file to give a value then???
         if axis is not None:
-            axis_name = axis.get('axis', None)
-            axis_name = axis.get('cartesian_axis', axis_name)
+            attrs = axis.attrs
+            axis_name = attrs.get('axis', None)
+            axis_name = attrs.get('cartesian_axis', axis_name)
             if axis_name == 'T' or 'time' in dim:
                 t_axis = axis
                 t_axis.attrs['axis'] = 'T'
@@ -668,42 +725,45 @@ def get_axis_dim(ctx, var, app_log):
 def get_bounds(ctx, axis, cmor_name, app_log):
     """
     """
-    print(f"Getting bounds for axis: {axis.name}")
+    dim = axis.name
+    print(f"Getting bounds for axis: {dim}")
     #Try and get the dimension bounds. The bounds attribute might also be called "edges"
     #If we cannot find any dimension bounds, create default bounds in a sensible way.
     #The default bounds assume that the grid cells are centred on
     #each grid point specified by the coordinate variable.
-    try:
+    keys = [k for k in axis.attrs]
+    if  'bounds' in keys:
         dim_val_bounds = axis.bounds
         app_log.info("using dimension bounds")
-    except:
+    elif edges in keys:
         dim_val_bounds = axis.edges
         app_log.info("using dimension edges as bounds")
     else:
         app_log.info(f"No bounds for {dim} - creating default bounds")
+        #PP this probably doens't work for time!!
         try:
-            min_vals = (axis + axis.shift(1))/2
+            min_vals = (axis + axis.shift({dim:1}))/2
             min_vals[0] = 1.5*axis[0] - 0.5*axis[1]
-            max_vals = min_vals.shift(-1)
+            max_vals = min_vals.shift({dim:-1})
             max_vals[-1] = 1.5*axis[-1] - 0.5*axis[-2]
         except Exception as e:
             app_log.warning(f"dodgy bounds for dimension: {dim}")
             app_log.error(f"error: {e}")
-            dim_val_bounds = np.column_stack((min_vals.values,max_vals.values))
+            dim_val_bounds = np.column_stack((min_vals.values, max_vals.values))
     # Take into account type of axis
     #not sure yet if i need special treatment for if cmor_name == 'time2':
     if cmor_name == 'time1':
         dim_val_bounds = None
     elif cmor_name == 'latitude':
         #force the bounds back to the poles if necessary
-        if dim_val_bounds[0,0]<-90.0:
-            dim_val_bounds[0,0]=-90.0
+        if dim_val_bounds[0,0] < -90.0:
+            dim_val_bounds[0,0] = -90.0
             print("setting minimum latitude bound to -90")
-        if dim_val_bounds[-1,-1]>90.0:
-            dim_val_bounds[-1,-1]=90.0
+        if dim_val_bounds[-1,-1] > 90.0:
+            dim_val_bounds[-1,-1] = 90.0
             print("setting maximum latitude bound to 90")
     elif cmor_name == 'depth':
-        if 'OM2' in ctx.obj['access_version'] and axis.name == 'sw_ocean':
+        if 'OM2' in ctx.obj['access_version'] and dim == 'sw_ocean':
             dim_val_bounds[-1] = axis[-1]
     return dim_val_bounds
 
@@ -934,7 +994,7 @@ def calc_monsecs(ctx, dsin, tdim, in_missing, app_log):
 
 
 @click.pass_context
-def normal_case(ctx, dsin, tdim, app_log):
+def normal_case(ctx, dsin, tdim, in_missing, app_log):
     """
     """
     if ctx.obj['calculation'] == '':
