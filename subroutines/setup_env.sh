@@ -15,8 +15,10 @@ module load parallel
 module load conda/analysis3-unstable
 #PATH=${PATH}:/g/data/hh5/public/apps/miniconda3/envs/cmip6-publication/bin:/g/data/hh5/public/apps/miniconda3/bin
 #PATH=${PATH}:/scratch/v45/pxp581/conda/envs/CMOR/bin:/g/data/hh5/public/apps/miniconda3/bin
-PATH=${PATH}:/g/data/ua8/Working/packages/envs/py3cmor/bin:/g/data/hh5/public/apps/miniconda3/bin
-source activate py3cmor 
+#PATH=${PATH}:/g/data/ua8/Working/packages/envs/py3cmor/bin:/g/data/hh5/public/apps/miniconda3/bin
+PATH=${PATH}:/g/data/ua8/Working/packages/envs/newcmor/bin:/g/data/hh5/public/apps/miniconda3/bin
+#source activate py3cmor 
+source activate newcmor 
 #source activate CMOR 
 
 module list

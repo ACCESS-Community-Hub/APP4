@@ -289,7 +289,7 @@ def app_bulk(ctx, app_log):
     #
     #PP create time_axis function
     # PP in my opinion this can be fully skipped, but as a start I will move it to a function
-    time_dimension = get_time_dim(ds, app_log)
+    time_dimension, time_units = get_time_dim(ds, app_log)
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
     # First try to do so base don timestamp on file, if this fails
@@ -340,16 +340,18 @@ def app_bulk(ctx, app_log):
     # adding axis etc after calculation will need to extract cmor bit from calc_... etc
     app_log.info("defining axes...")
     # get axis of each dimension
+    print(out_var)
     t_axis, z_axis, j_axis, i_axis, p_axis = get_axis_dim(out_var, app_log)
     # should we just calculate at end??
     n_grid_pnts = 1
     cmor.set_table(tables[1])
     axis_ids = []
+    print(t_axis)
     if t_axis is not None:
         cmor_tName = get_cmorname('t')
         t_bounds = get_bounds(t_axis, cmor_tName, app_log)
         t_axis_id = cmor.axis(table_entry=cmor_tName,
-            units=t_axis.units,
+            units=time_units,
             length=len(t_axis),
             coord_vals=t_axis.values,
             cell_bounds=t_bounds,

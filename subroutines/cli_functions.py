@@ -127,7 +127,7 @@ def check_var_in_file(all_files, varname, app_log):
     found = False
     while i < len(all_files):
         try:
-            ds = xr.open_dataset(all_files[i], use_cftime=True)
+            ds = xr.open_dataset(all_files[i], decode_times=False)
             #see if the variable is in the file
             var = ds[varname]
             found = True
@@ -187,6 +187,7 @@ def get_time_dim(ctx, ds, app_log):
             for var_dim in ds[varname].dims:
                 if 'time' in var_dim or ds[var_dim].axis == 'T':
                     time_dimension = var_dim
+                    units = ds[var_dim].units
                     app_log.debug(f"first attempt to tdim: {time_dimension}")
             #
             #refdate is the "reference date" used as an arbitray 0 point for dates. Common values for
@@ -195,10 +196,11 @@ def get_time_dim(ctx, ds, app_log):
             #in some climate runs?
             #
             app_log.info(f"time var is: {time_dimension}")
+            app_log.info(f"Reference time is: {units}")
         except:
             pass
         del ds 
-    return time_dimension
+    return time_dimension, units
 
 
 @click.pass_context
@@ -676,7 +678,7 @@ def cmor_var(ctx, app_log, positive=None):
 
 
 @click.pass_context
-def get_axis_dim(ctx, var, app_log):
+def get_axis_dim(ctx, ds, var, app_log):
     """
     """
     t_axis = None
@@ -691,7 +693,7 @@ def get_axis_dim(ctx, var, app_log):
     # make sure axis are correctly defined
     for dim in dims:
         try:
-            axis = var[dim]
+            axis = ds[dim]
         except:
             app_log.warning(f"No coordinate variable associated with the dimension {dim}")
             axis = None
