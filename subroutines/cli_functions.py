@@ -678,7 +678,7 @@ def cmor_var(ctx, app_log, positive=None):
 
 
 @click.pass_context
-def get_axis_dim(ctx, ds, var, app_log):
+def get_axis_dim(ctx, var, app_log):
     """
     """
     t_axis = None
@@ -693,7 +693,7 @@ def get_axis_dim(ctx, ds, var, app_log):
     # make sure axis are correctly defined
     for dim in dims:
         try:
-            axis = ds[dim]
+            axis = var[dim]
         except:
             app_log.warning(f"No coordinate variable associated with the dimension {dim}")
             axis = None
