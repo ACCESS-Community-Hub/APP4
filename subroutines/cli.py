@@ -44,6 +44,7 @@ import click
 import sqlite3
 import numpy as np
 import xarray as xr
+import cftime
 import cmor
 from app_functions import *
 from cli_functions import *
@@ -289,7 +290,7 @@ def app_bulk(ctx, app_log):
     #
     #PP create time_axis function
     # PP in my opinion this can be fully skipped, but as a start I will move it to a function
-    time_dimension, time_units = get_time_dim(ds, app_log)
+    time_dimension, inref_time = get_time_dim(ds, app_log)
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
     # First try to do so base don timestamp on file, if this fails
@@ -311,6 +312,8 @@ def app_bulk(ctx, app_log):
     #dsin = xr.open_mfdataset(inrange_files, parallel=True, use_cftime=True)
     #print(inrange_files)
     #print(ctx.obj['vin'][0])
+    # as we want to pass time as float value we don't decode time when openin files
+    # if we need to decode times can be done if needed by calculation`
     dsin = xr.open_mfdataset(inrange_files, parallel=True, use_cftime=True)
     sys.stdout.flush()
     invar = dsin[ctx.obj['vin'][0]]
@@ -324,7 +327,6 @@ def app_bulk(ctx, app_log):
     sys.stdout.flush()
     #
     #PP start from standard case and add modification when possible to cover other cases 
-    #PP in some case s
     if 'A10dayPt' in ctx.obj['cmip_table']:
         app_log.info('ONLY 1st, 11th, 21st days to be used')
         dsin = dsin.where(dsin[time_dimension].dt.day.isin([1, 11, 21]), drop=True)
@@ -340,33 +342,41 @@ def app_bulk(ctx, app_log):
     # adding axis etc after calculation will need to extract cmor bit from calc_... etc
     app_log.info("defining axes...")
     # get axis of each dimension
-    print(out_var)
     t_axis, z_axis, j_axis, i_axis, p_axis = get_axis_dim(out_var, app_log)
     # should we just calculate at end??
     n_grid_pnts = 1
     cmor.set_table(tables[1])
     axis_ids = []
-    print(t_axis)
     if t_axis is not None:
         cmor_tName = get_cmorname('t')
-        t_bounds = get_bounds(t_axis, cmor_tName, app_log)
+        ctx.obj['reference_date'] = f"days since {ctx.obj['reference_date']}-01-01"
+        # this is getting more complciated, if calculation hasn't chnage dims
+        # we can simply get original bnds from dsin but if calculation has changed dims we cannot assume that's ok
+        # temporarily I will check in get_bounds that calculation='' otherwise we force recalculating bounds
+        # eventually we can be more sophisticated and add a bounds changed flag somewhere
+        t_bounds = get_bounds(dsin, t_axis, cmor_tName, app_log)
+        t_axis_val = cftime.date2num(t_axis, units=ctx.obj['reference_date'])
         t_axis_id = cmor.axis(table_entry=cmor_tName,
-            units=time_units,
-            length=len(t_axis),
-            coord_vals=t_axis.values,
+            units=ctx.obj['reference_date'],
+            length=len(t_axis_val),
+            coord_vals=t_axis_val,
             cell_bounds=t_bounds,
             interval=None)
         axis_ids.append(t_axis_id)
     if z_axis is not None:
-        z_bounds = get_bounds(z_axis, cmor_name, app_log)
-        t_axis_id = cmor.axis(table_entry=cmor_tName,
+        cmor_zName = get_cmorname('z')
+        z_bounds = get_bounds(dsin, z_axis, cmor_zName, app_log)
+        z_axis_id = cmor.axis(table_entry=cmor_zName,
             units=z_axis.units,
-            length=len(t_axis),
-            coord_vals=t_axis.values,
-            cell_bounds=t_bounds[:],
+            length=len(z_axis),
+            coord_vals=z_axis.values,
+            cell_bounds=z_bounds[:],
             interval=None)
         axis_ids.append(z_axis_id)
-    if j_axis == None or i_axis.ndim == 2:
+        #set up additional hybrid coordinate information
+        if cmor_zName in ['hybrid_height', 'hybrid_height_half']:
+            zfactor_b_id, zfactor_orog_id = hybrid_axis(lev_name, app_log)
+    if j_axis is None or i_axis.ndim == 2:
            #cmor.set_table(tables[0])
            j_axis_id = cmor.axis(table=table[0],
                table_entry='j_index',
@@ -376,7 +386,7 @@ def app_bulk(ctx, app_log):
        #             n_grid_pts=len(dim_values)
     else:
         cmor_jName = get_cmorname('j')
-        j_bounds = get_bounds(j_axis, cmor_name, app_log)
+        j_bounds = get_bounds(dsin, j_axis, cmor_jName, app_log)
         j_axis_id = cmor.axis(table_entry=cmor_jName,
             units=j_axis.units,
             length=len(j_axis),
@@ -385,7 +395,7 @@ def app_bulk(ctx, app_log):
             interval=None)
         axis_ids.append(j_axis_id)
     #    n_grid_pts = n_grid_pts * len(j_axis)
-    if i_axis == None or i_axis.ndim == 2:
+    if i_axis is None or i_axis.ndim == 2:
         setgrid = True
         i_axis_id = cmor.axis(table=table[0],
              table_entry='i_index',
@@ -395,7 +405,7 @@ def app_bulk(ctx, app_log):
     else:
         setgrid = False
         cmor_iName = get_cmorname('i')
-        i_bounds = get_bounds(i_axis)
+        i_bounds = get_bounds(dsin, i_axis, cmor_iName, app_log)
         i_axis_id = cmor.axis(table_entry=cmor_iName,
             units=i_axis.units,
             length=len(i_axis),
@@ -422,9 +432,6 @@ def app_bulk(ctx, app_log):
             axis_id = create_axis(axm, tables[1], app_log)
             axis_ids.append(axis_id)
 
-    #set up additional hybrid coordinate information
-    if cmor_zName in ['hybrid_height', 'hybrid_height_half']:
-        zfactor_b_id, zfactor_orog_id = hybrid_axis(lev_name, app_log)
     #
     #Define the CMOR variable.
     #

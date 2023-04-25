@@ -36,6 +36,7 @@ import time as timetime
 import calendar
 import click
 import logging
+import cftime
 
 
 def config_log(debug, path):
@@ -366,12 +367,12 @@ def get_cmorname(ctx, axis_name, z_len=None):
         if 'gridlat' in ctx.obj['axes_modifier']:
             cmor_name = 'gridlatitude',
         else:
-            j_axis_id = 'latitude'
+            cmor_name = 'latitude'
     elif axis_name == 'i':
         if 'gridlon' in ctx.obj['axes_modifier']:
             cmor_name = 'gridlongitude',
         else:
-            j_axis_id = 'longitude'
+            cmor_name = 'longitude'
     elif axis_name == 'z':
         if 'mod2plev19' in ctx.obj['axes_modifier']:
             cmor_name = 'plev19'
@@ -724,50 +725,65 @@ def get_axis_dim(ctx, var, app_log):
 
 
 @click.pass_context
-def get_bounds(ctx, axis, cmor_name, app_log):
+def get_bounds(ctx, ds, axis, cmor_name, app_log):
+    """Returns bounds for input dimension, if bounds are not available
+       uses edges or tries to calculate them.
+       If variable goes through calculation potentially bounds are different from
+       input file and forces re-calculating them
     """
-    """
+    changed_bnds = False
+    if ctx.obj['calculation'] != '':
+        changed_bnds = True
     dim = axis.name
     print(f"Getting bounds for axis: {dim}")
-    #Try and get the dimension bounds. The bounds attribute might also be called "edges"
-    #If we cannot find any dimension bounds, create default bounds in a sensible way.
     #The default bounds assume that the grid cells are centred on
     #each grid point specified by the coordinate variable.
     keys = [k for k in axis.attrs]
-    if  'bounds' in keys:
-        dim_val_bounds = axis.bounds
+    if  'bounds' in keys and not changed_bnds:
+        dim_val_bnds = ds[axis.bounds].values
         app_log.info("using dimension bounds")
-    elif edges in keys:
-        dim_val_bounds = axis.edges
+        if 'time' in cmor_name:
+            dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'])
+    elif edges in keys and not changed_bnds:
+        dim_val_bnds = ds[axis.edges].values
         app_log.info("using dimension edges as bounds")
     else:
         app_log.info(f"No bounds for {dim} - creating default bounds")
-        #PP this probably doens't work for time!!
+        # if time check we have units and convert dates to floats
+        if 'time' in cmor_name:
+            axis_val = cftime.date2num(axis, units=ctx.obj['reference_date'])
+        else:
+            axis_val = axis.values
         try:
-            min_vals = (axis + axis.shift({dim:1}))/2
+            min_vals = (axis + axis.shift(1))/2
             min_vals[0] = 1.5*axis[0] - 0.5*axis[1]
-            max_vals = min_vals.shift({dim:-1})
+            max_vals = min_vals.shift(-1)
             max_vals[-1] = 1.5*axis[-1] - 0.5*axis[-2]
         except Exception as e:
             app_log.warning(f"dodgy bounds for dimension: {dim}")
             app_log.error(f"error: {e}")
-            dim_val_bounds = np.column_stack((min_vals.values, max_vals.values))
+        dim_val_bnds = np.column_stack((min_vals, max_vals))
     # Take into account type of axis
-    #not sure yet if i need special treatment for if cmor_name == 'time2':
+    # as we are often concatenating along time axis and bnds are considered variables
+    # they will also be concatenated along time axis and we need only 1st timestep
+    #not sure yet if I need special treatment for if cmor_name == 'time2':
+    if 'time' not in cmor_name:
+        if dim_val_bnds.ndim == 3:
+            dim_val_bnds = dim_val_bnds[0,:,:].squeeze() 
     if cmor_name == 'time1':
-        dim_val_bounds = None
-    elif cmor_name == 'latitude':
+        dim_val_bnds = None
+    elif cmor_name == 'latitude' and changed_bnds:
         #force the bounds back to the poles if necessary
-        if dim_val_bounds[0,0] < -90.0:
-            dim_val_bounds[0,0] = -90.0
+        if dim_val_bnds[0,0] < -90.0:
+            dim_val_bnds[0,0] = -90.0
             print("setting minimum latitude bound to -90")
-        if dim_val_bounds[-1,-1] > 90.0:
-            dim_val_bounds[-1,-1] = 90.0
+        if dim_val_bnds[-1,-1] > 90.0:
+            dim_val_bnds[-1,-1] = 90.0
             print("setting maximum latitude bound to 90")
     elif cmor_name == 'depth':
         if 'OM2' in ctx.obj['access_version'] and dim == 'sw_ocean':
-            dim_val_bounds[-1] = axis[-1]
-    return dim_val_bounds
+            dim_val_bnds[-1] = axis[-1]
+    return dim_val_bnds
 
 
 @click.pass_context

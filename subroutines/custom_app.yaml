@@ -5,7 +5,13 @@
 # USER OPTIONS
 # Setting to manage cmorisation and set tables/variables to process
 cmor:
+    appdir:  /g/data/ua8/Working/packages/APP4 
+    # output directory for all generated data (CMORISED files & logs)
+    # if default it is set to /scratch/$project/$user/APP5_OUTPUT<exp>
+    maindir: default
     # from data_loc location of input data
+    # HISTORY_DATA=$DATA_LOC/$EXP_TO_PROCESS/history
+    # # no need of history-data
     datadir: /g/data/hh5/tmp/zg0866/cm000_APP4_archive/cm000/history
     # from exp_to_process: local name of experiment
     exp: cm000 
@@ -31,34 +37,31 @@ cmor:
     # CMIP6 table/variable to process; default is 'all'. Or create a file listing variables to process (VAR_SUBSET[_LIST]).
     table_to_process: Amon                        # CMIP6 table to process. Default is 'all'
     variable_to_process: tas                      # CMIP6 variable to process. Default is 'all'
-    subdaily: false                               # subdaily selection options - select one of: [true, false, only]
-    var_subset: false                             # use a sub-set list of variables to process, as defined by 'VAR_SUBSET_LIST'
-    var_subset_list: input_files/var_subset_lists/var_subset_ACS.csv
+    subdaily: !!str false                               # subdaily selection options - select one of: [true, false, only]
+    var_subset: !!bool false                             # use a sub-set list of variables to process, as defined by 'VAR_SUBSET_LIST'
+    var_subset_list: '' 
     # Mappings, vocab and tables settings
     dreq: default                                 # default=input_files/dreq/cmvme_all_piControl_3_3.csv
+    force_dreq: !!bool False
+    dreq_years: !!bool False
     # input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv ???
     # is this used?
     # choose here the mapping created with cli_db.py based on the actual model output
-    master_map: input_files/master_cm000.csv
+    master_map: "input_files/master_cm000.csv"
+    history_data: ''
     _control_vocabulary_file: "CMIP6_CV.json"
     _cmip6_option: CMIP6
   # Additional NCI information:
     project: w40                             # NCI project to charge compute; $PROJECT = your default project
-    # output directory for all generated data (CMORISED files & logs)
-    # if default it is set to /scratch/$project/$user/APP5_OUTPUT<exp>
-    outdir: default
-    appdir: ${PWD} 
+
  # this defined based on scratch/project/user
  # possibly we should define it only if user wants to choose different one
 
 #
       # ua8 for cmor env
-    addprojs:
-        - ua8
-        - v45
-        - p66                         # additional NCI projects to be included in the storage flags
-    queue: hugemem                                # NCI queue to use; hugemem is recommended
-    mem_per_cpu: 24                               # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
+    addprojs: [ua8, v45, p66] # additional NCI projects to be included in the storage flags
+    queue: hugemem            # NCI queue to use; hugemem is recommended
+    mem_per_cpu: 24           # memory (GB) per CPU (recommended: 24 for daily/monthly; 48 for subdaily) 
     mode: custom
 # DATA_LOC must point to dir above experiment; and experiment subdir must contain history/atm/[,ocn/,ice/]
 #
@@ -107,7 +110,7 @@ attrs:
     # Parent experiment details:
     # if parent=false, all parent fields are automatically set to "no parent". If true, defined values are used.
     #
-    parent: false 
+    parent: !!bool false 
     parent_experiment_id: piControl               # experiment name of the parent (e.g. piControl-spinup)
     parent_activity_id: FakeMIP                      # activity/MIP name of the parent (e.g. CMIP)
     parent_mip_era: CMIP6                      # activity/MIP name of the parent (e.g. CMIP)
