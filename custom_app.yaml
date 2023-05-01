@@ -9,6 +9,8 @@ cmor:
     # output directory for all generated data (CMORISED files & logs)
     # if default it is set to /scratch/$project/$user/APP5_OUTPUT<exp>
     maindir: default
+    # if true override files already exsiting in maindir
+    override: !!bool true
     # from data_loc location of input data
     # HISTORY_DATA=$DATA_LOC/$EXP_TO_PROCESS/history
     # # no need of history-data
@@ -28,8 +30,8 @@ cmor:
     # reference date for time units (set as 'default' to use START_YEAR)
     reference_year: default              
     # previously output_path/file_template
-    path_template: "<source_id><experiment_id><variant_label><table><variable_id><grid_label><version>"
-    file_template: "<variable_id><table><source_id><experiment_id><variant_label><grid_label>"
+    path_template: "{source_id}/{experiment_id}/{cmip_table}/{variable_id}/{grid_label}/{version}/"
+    file_template: "{variable_id}_{source_id}_{experiment_id}_{cmip_table}_{date_range}"
     # official CMIP6
     #path_template: "<activity_id><source_id><experiment_id><variant_label><table><variable_id><grid_label><version>"
     #file_template: "<variable_id><table><source_id><experiment_id><variant_label><grid_label>"
@@ -47,7 +49,8 @@ cmor:
     # input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv ???
     # is this used?
     # choose here the mapping created with cli_db.py based on the actual model output
-    master_map: "input_files/master_cm000.csv"
+    master_map: "input_files/master_cm000a.csv"
+    grid_file: "input_files/grids.csv"
     history_data: ''
     _control_vocabulary_file: "CMIP6_CV.json"
     _cmip6_option: CMIP6

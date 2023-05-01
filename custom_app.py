@@ -41,13 +41,180 @@
 import os
 import sys
 import shutil
+import calendar
 import glob
 import yaml
 import json
 import csv
 import sqlite3
+import subprocess
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timedelta
+
+
+def write_variable_map(outpath, table, matches):
+    with open(f"{outpath}/{table}.csv", 'w') as fcsv:
+        fwriter = csv.writer(fcsv, delimiter=',')
+        fwriter.writerow(f"#cmip table: {table},,,,,,,,,,,,".split(","))
+        header2 = ("#cmipvar,definable,access_vars,file_structure," +
+                   "calculation,units,axes_modifier,positive," +
+                   "timeshot,years,varnotes,cfname,dimension")
+        fwriter.writerow(header2.split(","))
+        for line in matches:
+            print(f"  {line}")
+            fwriter.writerow(f"{line}".split(","))
+    fcsv.close()
+
+
+def determine_dimension(freq,dimensions,timeshot,realm,table,skip):
+    UM_realms, MOM_realms, CICE_realms = define_realms()
+    if skip:
+        dimension = ''
+    elif (freq == 'fx') or (dimensions.find('time') == -1):
+        dimension = 'fx'
+    elif (timeshot == 'clim') or (dimensions.find('time2') != -1):
+        dimension = 'clim'
+    elif len(dimensions.split()) == 1:
+        dimension = 'scalar'
+    elif dimensions.find('alev') != -1:
+        if realm in UM_realms:
+            dimension = '3Dalev'
+        else:
+            raise Exception('E: realm not identified')
+    elif dimensions.find('plev') != -1:
+        if realm in UM_realms:
+            dimension = '3Datmos'
+        else:
+            raise Exception('E: realm not identified')
+    elif dimensions.find('olev') != -1:
+        if realm in MOM_realms:
+            dimension = '3Docean'
+        else:
+            raise Exception('E: realm not identified')
+    elif dimensions.find('sdepth') != -1:
+        if realm in UM_realms:
+            if dimensions.find('sdepth1') != -1:
+                dimension = '2Datmos'
+            else:
+                dimension = '3Datmos'
+        else:
+            raise Exception('E: realm not identified')
+    else:
+        if realm in UM_realms:
+            dimension = '2Datmos'
+        elif realm in MOM_realms:
+            dimension = '2Docean'
+        elif realm in CICE_realms:
+            dimension = '2Dseaice'
+        else:
+            raise Exception('E: no dimension identified')
+    return dimension
+
+
+def priority_check(cmipvar, table, priorityonly):
+    """Return 1 if variable in variable list, 0 if not
+       Used only if prioritylist is available
+    """
+    priority_ret = 0
+    if priorityonly:
+        for item in priority_vars:
+            if (table == item[0]) and (cmipvar == item[1]):
+                priority_ret = 1
+            else:
+                pass
+    else:
+        priority_ret = 1
+    return priority_ret
+
+
+def find_matches(cdict, table, cmorname, realm, freq, cfname,
+                 years, dimensions, matches, nomatches):
+    matchlist = []
+    skiplist = set()
+    if 'Pt' in freq:
+        timeshot = 'inst'
+        freq = str(freq)[:-2]
+    elif freq == 'monC':
+        timeshot = 'clim'
+        freq = 'mon'
+    else:
+        timeshot = 'mean'
+    with open(cdict['master_map'],'r') as g:
+        champ_reader = csv.reader(g, delimiter=',')
+        for row in champ_reader:
+            skip = False
+            try:
+                row[0]
+            except:
+                row = '#'
+            if row[0].startswith('#'):
+                pass
+            elif (row[0] == cmorname) and ((row[7] == cdict['access_version'])
+                    or (row[7] == 'both')):
+                ## catch zonal vars here
+                cmipvar = row[0]
+                definable = row[1]
+                access_vars = row[2]
+                calculation = row[3]
+                if ',' in calculation:
+                    calculation = f'"{calculation}"'
+                units = row[4]
+                axes_modifier = row[5]
+                positive = row[6]
+                realm2 = row[8].split()[0]
+                varnotes = row[9]
+                # temporarily use atm ocn then we should change the folder names
+                if realm == 'uncertain':
+                    realm = realm2
+                #elif realm != realm2:
+                #    realm = realm2
+                #check for special cases
+                #freq, axes_modifier, calculation, realm, realm2, \
+                #timeshot, access_vars, skip = special_cases(exptoprocess,
+                #    cmipvar, freq, axes_modifier, calculation, realm, \
+                #    realm2,table, timeshot, access_vars, skip,
+                #    access_version, varnotes)
+                try:
+                    # will need to ad dmore cases and possibly just use a dictionary?
+                    dimension = determine_dimension(freq, dimensions,
+                                timeshot, realm, table, skip)
+                except:
+                    raise Exception('E: realm not identified')
+                if realm in ['atmos', 'land']:
+                    realmdir = 'atm/netCDF'
+                elif realm == 'ocean':
+                    realmdir == 'ocn' 
+                elif realm == 'ice':
+                    realmdir = 'ice'
+                priority_ret = priority_check(cmipvar, table, cdict['priorityonly'])
+                #PP as I'm ingoring special cases this is the first time we potentially define skip as True
+                if priority_ret == 0:
+                    skip = True
+                    file_structure = None
+                    skiplist.append(cmipvar)
+                #elif realm in UM_realms:
+                else:
+                    file_structure = f"/{realmdir}/{row[12]}*.nc"
+                if file_structure != None:
+                    matches.append(f"{cmipvar},{definable}," +
+                         f"{access_vars},{file_structure},{calculation}," +
+                         f"{units},{axes_modifier},{positive}," +
+                         f"{timeshot},{years},{varnotes},{cfname}," +
+                         f"{dimension}")
+                    if not cmorname in matchlist:
+                        matchlist.append(cmipvar)
+                elif (file_structure == None) and (not skip):
+                    if not cmorname in nomatches:
+                        nomatches.append(cmorname)
+    all_list = matchlist + nomatches + list(skiplist)
+    if cmorname not in all_list:
+        priority_ret = priority_check(cmorname, table, cdict['priorityonly'])
+        if priority_ret == 1:
+            nomatches.append(cmorname)
+        elif priority_ret == 0:
+            pass
+    g.close()
+    return matches,nomatches
 
 
 def read_yaml(fname):
@@ -93,6 +260,7 @@ def setup_env(config):
     # just making sure that custom_py is not in subroutines
     cdict['appdir'] = cdict['appdir'].replace('/subroutines','')
     cdict['master_map'] = f"{cdict['appdir']}/{cdict['master_map']}"
+    cdict['grid_file'] = f"{cdict['appdir']}/{cdict['grid_file']}"
     # we probably don't need this??? just transfer to custom_appp.yaml
     # dreq file is the only field that wasn't yet present!
     #cdict['exps_table'] = f"{cdict['appdir']}/input_files/experiments.csv" 
@@ -105,7 +273,7 @@ def setup_env(config):
     # Output files
     cdict['app_job'] = f"{cdict['outdir']}/app_job.sh"
     cdict['job_output'] =f"{cdict['outdir']}/job_output.OU"
-    cdict['database'] = f"{cdict['outdir']}/database.db"
+    cdict['database'] = f"{cdict['outdir']}/app5.db"
     config['cmor'] = cdict
     return config
 
@@ -241,11 +409,11 @@ def read_dreq_vars(cdict, table):
                         years = 'all'
                     if (cdict['mode'] == 'custom') or not cdict['dreq_years']:
                         years = 'all'
-                    if cdict['variables_to_process'].lower() == 'all':
+                    if cdict['variable_to_process'].lower() == 'all':
                         dreq_variables.append([cmorname, realm, freq,
                                           cfname, years, dimensions])
                     else:
-                        if cmorname == cdict['variables_to_process']:
+                        if cmorname == cdict['variable_to_process']:
                             dreq_variables.append([cmorname, realm,
                                     freq, cfname, years, dimensions])
             except:
@@ -260,7 +428,7 @@ def create_variable_map(cdict, table):
     matches = []
     nomatches = []
     for cmorname, realm, freq, cfname, years, dimensions in dreq_variables:
-        matches, nomatches = find_matches(table, cdict['master_map'], cmorname,
+        matches, nomatches = find_matches(cdict, table, cmorname,
                  realm, freq, cfname, years, dimensions, matches, nomatches)
     if matches == []:
         print(f"{table}:  no ACCESS variables found")
@@ -298,6 +466,7 @@ def dreq_map(cdict):
     else:
         check_file(f"{cdict['appdir']}/{varsub}")
         priorityonly = True
+    cdict['priorityonly'] = priorityonly
 # Custom mode vars
     if cdict['mode'].lower() == 'custom':
         access_version = cdict['access_version']
@@ -325,7 +494,7 @@ def dreq_map(cdict):
                     row = '#'
                 if row[0].startswith('#'):
                     pass
-                elif row[0] == exptoprocess:
+                elif row[0] == exp:
                     access_version = row[7]
                     if cdict['force_dreq']:
                         dreq = f"{cdict['appdir']}/input_files/dreq/cmvme_all_piControl_3_3.csv"
@@ -398,7 +567,7 @@ def master_setup(conn):
             outpath text,
             file_name text,
             vin text,
-            vcmip text,
+            variable_id text,
             cmip_table text,
             frequency text,
             tstart integer,
@@ -419,13 +588,11 @@ def master_setup(conn):
             source_id text,
             grid_label text,
             access_version text,
-            json_file_path text,
             reference_date integer,
             version text,
-            primary key(local_exp_id,experiment_id,vcmip,cmip_table,realization_idx,initialization_idx,physics_idx,forcing_idx,tstart))''')
+            primary key(local_exp_id,experiment_id,variable_id,cmip_table,realization_idx,initialization_idx,physics_idx,forcing_idx,tstart))''')
     except Exception as e:
-        print("Unable to create the APP file_master table.")
-        print(e)
+        print("Unable to create the APP file_master table.\n {e}")
         raise e
     conn.commit()
 
@@ -437,7 +604,7 @@ def cleanup(config):
     cdict = config['cmor']
     outpath = cdict['outdir']
     if os.path.exists(outpath):
-        answer = input(f"Output directory 'outpath' exists.\n"+
+        answer = input(f"Output directory '{outpath}' exists.\n"+
                        "Delete and continue? [Y,n]\n")
         if answer == 'Y':
             try:
@@ -466,29 +633,26 @@ def cleanup(config):
     return
 
 
-def define_template(cdict, flag, nrows, ncpus, nmem):
+def define_template(cdict, flag, nrows):
     """
     not setting contact and I'm sure I don't need the other envs either!
     CONTACT={cdict['contact']}
     """
-    cdict = config['cmor']
     template = f"""#!/bin/bash
 #PBS -P {cdict['project']} 
 #PBS -q {cdict['queue']}
 #PBS -l {flag}
-#PBS -l ncpus={ncpus},walltime=1:00:00,mem={nmem}GB,wd
+#PBS -l ncpus={cdict['ncpus']},walltime=1:00:00,mem={cdict['nmem']}GB,wd
 #PBS -j oe
-#PBS -o ${cdict['job_output']}
-#PBS -e ${cdict['job_output']}
+#PBS -o {cdict['job_output']}
+#PBS -e {cdict['job_output']}
 #PBS -N custom_app4_{cdict['exp']}
 
 module use /g/data/hh5/public/modules
 module use ~access/modules
-# doesn't seem to use parallel
-#module load parallel
 module load conda
-PATH=${{PATH}}:/g/data/ua8/Working/packages/envs/py3bin/bin:/g/data/hh5/public/apps/miniconda3/bin
-source activate py3cmor
+PATH=${{PATH}}:/g/data/ua8/Working/packages/envs/newcmor/bin:/g/data/hh5/public/apps/miniconda3/bin
+source activate /g/data/ua8/Working/packages/envs/newcmor
 
 module list
 python -V
@@ -498,11 +662,10 @@ set -a
 EXP_TO_PROCESS={cdict['exp']}
 OUTPUT_LOC={cdict['maindir']}
 MODE={cdict['mode']}
-#source ./subroutines/setup_env.sh
 # main
-python ./subroutines/cli.py --debug wrapper
+python {cdict['appdir']}/subroutines/cli.py --debug -i {cdict['exp']}_config.yaml wrapper 
 # post
-python {cdict['outdir']}/database_updater.py
+#python {cdict['outdir']}/database_updater.py
 sort {cdict['success_lists']}/{cdict['exp']}_success.csv \
     > {cdict['success_lists']}/{cdict['exp']}_success_sorted.csv
 mv {cdict['success_lists']}/{cdict['exp']}_success_sorted.csv \
@@ -520,28 +683,29 @@ def write_job(cdict):
     """
     # define storage flag
     flag = "storage=gdata/hh5+gdata/access"
-    projects = cdict['addprojs'] + cdict['project']
+    projects = cdict['addprojs'] + [cdict['project']]
     for proj in projects:
        flag += f"+scratch/{proj}+gdata/{proj}"
     # work out number of cpus based on number of files to process
+    #PP need to fix this still
     #NUM_ROWS=$( cat $OUT_DIR/database_count.txt )
     nrows = 2 
     if nrows <= 24:
-        ncpus = nrows
+        cdict['ncpus'] = nrows
     else:
-        ncpus = 24
-    nmem = ncpus * cdict['mem_per_cpu']
+        cdict['ncpus'] = 24
+    cdict['nmem'] = cdict['ncpus'] * cdict['mem_per_cpu']
 #NUM_MEM=$(echo "${NUM_CPUS} * ${MEM_PER_CPU}" | bc)
-    if nmem >= 1470: 
-        nmem = 1470
+    if cdict['nmem'] >= 1470: 
+        cdict['nmem'] = 1470
     print(f"number of files to create: {nrows}")
-    print(f"number of cpus to to be used: {ncpus}")
-    print(f"total amount of memory to be used: {nmem}GB")
+    print(f"number of cpus to to be used: {cdict['ncpus']}")
+    print(f"total amount of memory to be used: {cdict['nmem']}GB")
     fpath = cdict['app_job']
-    template = define_template(cdict, flag, nrows, ncpus, nmem)
+    template = define_template(cdict, flag, nrows)
     with open(fpath, 'w') as f:
         f.write(template)
-    return fpath
+    return cdict
 
 
 def edit_cv_json(json_cv, attrs):
@@ -600,19 +764,6 @@ def add_exp(version):
     #read file first create function
     exp_dict = read_json()
     return
-
-
-def grid_file_choose(access_version):
-    """Probably better to pass this!
-    """
-    if access_version.find('OM2') != -1:
-        if access_version.find('025') != -1:
-            grid_file = f"{sys.path[0]}/../input_files/grids_om2-025.csv"
-        else:
-            grid_file = f"{sys.path[0]}/../input_files/grids_om2.csv"
-    else:
-        grid_file = f"{sys.path[0]}/../input_files/grids.csv"
-    return grid_file
 
 
 def grids_setup(conn, grid_file):
@@ -696,9 +847,10 @@ def populate(conn, config):
     cursor = conn.cursor()
     #defaults
 
-    config['cmor']['status'] = 'unprocessed'
+    #config['cmor']['status'] = 'unprocessed'
     #get experiment information
     opts = {}
+    opts['status'] = 'unprocessed'
     opts['outpath'] = config['cmor']['outdir']
     config['attrs']['version'] = config['attrs'].get('version', datetime.today().strftime('%Y%m%d'))
     #Experiment Details:
@@ -720,27 +872,145 @@ def populate(conn, config):
     opts['access_version'] = config['cmor']['access_version']
     opts['cmip_exp_id'] = config['attrs']['experiment_id'] 
     print(f"found local experiment: {opts['local_exp_id']}")
-    populate_unlimited(cursor, opts)
+    populate_unlimited(cursor, config['cmor'], opts)
     conn.commit()
 
 
 #populate the database for variables that are requested for all times for all experiments
-def populate_unlimited(cursor, opts):
+def populate_unlimited(cursor, cdict, opts):
     #monthly, daily unlimited except cable or moses specific diagnostics
     cursor.execute("select * from champions where definable=='yes'")
     rows = cursor.fetchall()
     #populateRows(cursor.fetchall(), opts, cursor)
-    populateRows(rows, opts, cursor)
+    populateRows(rows, cdict, opts, cursor)
 
 
-def populateRows(rows, opts, cursor):
+def addRow(values, cursor):
+    """Add a row to the file_master database table
+       one row specifies the information to produce one output cmip5 file
+    """
+    print(values)
+    try:
+        cursor.execute('''insert into file_master
+            (experiment_id,realization_idx,initialization_idx,physics_idx,forcing_idx,infile,outpath,file_name,vin,variable_id,cmip_table,
+            frequency,tstart,tend,status,file_size,local_exp_id,calculation,axes_modifier,in_units,positive,
+            timeshot,years,var_notes,cfname,activity_id,institution_id,source_id,grid_label,access_version,reference_date,version)
+        values
+            (:experiment_id,:realization_idx,:initialization_idx,:physics_idx,:forcing_idx,:infile,:outpath,:file_name,:vin,:variable_id,:cmip_table,
+            :frequency,:tstart,:tend,:status,:file_size,:local_exp_id,:calculation,:axes_modifier,:in_units,:positive,
+            :timeshot,:years,:var_notes,:cfname,:activity_id,:institution_id,:source_id,:grid_label,:access_version,:reference_date,:version)''', values)
+    except sqlite3.IntegrityError as e:
+        print(f"Row already exists:\n{e}")
+    except Exception as e:
+        print(f"Could not insert row for {values['file_name']}:\n{e}")
+    return cursor.lastrowid
+
+
+def computeFileSize(grid_points, frequency, length):
+    """Calculate an estimated output file size (in megabytes)
+    """
+    #additional amount to take into account space the grid and metadata take up
+    length = float(length)
+    # base size is for fixed data
+    #    return grid_points*4/1024/1024.0
+    size = grid_points*4.0/1024.0**2
+    if frequency == 'yr':
+        size = size*length/365
+        #return ((length/365)*grid_points*4))/1024.0^2
+    elif frequency == 'mon':
+        size = size * length * 12/365
+        #return length/365*12*grid_points*4/1024/1024.0
+    elif frequency == 'day':
+        size = size * length
+        #return length*grid_points*4/1024/1024.0
+    elif frequency == 'monClim':
+        size = size * 12
+        #return 12*grid_points*4/1024/1024.0
+    elif frequency == '6hr':
+        size = size * length * 4
+        #return length*grid_points*4/1024/1024.0*4
+    elif frequency == '3hr':
+        size = size * length * 8
+        #return length*grid_points*4/1024/1024.0*8
+    elif frequency == '1hr':
+        size = size * length * 24
+    elif frequency == '10min':
+        size = size * length * 144
+    else:
+        size = -1
+    return size
+
+
+def buildFileName(cdict, opts):
+    """
+    finish is the last day covered by file as datetime object
+    """
+    #date=datetime.today().strftime('%Y%m%d')
+    date = opts['version']
+    tString = ''
+    frequency = opts['frequency']
+    if frequency != 'fx':
+        #time values
+        start = opts['tstart']
+        fin = opts['tend']
+        #PP I think this is actually not a requirement of CMIP6 so except for fx which has not date range
+        # just using tstart-tend as they are should be sufficient and also more correct
+        # so removing the year and yer-month only options
+        start = f"{start.strftime('%Y%m%d')}"
+        if opts['timeshot'] in ['mean','clim']:
+            fin = f"{fin.strftime('%Y%m%d')}"
+            if frequency == '6hr':
+                start = f"{start}0300"
+                fin = f"{fin}2100"
+            elif frequency == '3hr':
+                #add minutes to string
+                start = f"{start}0130"
+                fin = f"{fin}2230"
+            #hack to fix time for variables where only a single value is used (time invariant)
+            #PP how is this different from fx??
+            if opts['axes_modifier'].find('firsttime') != -1:
+                fin = start
+        elif opts['timeshot'] == 'inst':
+            # add extra day to fin
+            #snapshot time bounds:
+            if frequency == '10day':
+                #add month to final date
+                fin = fin + timedelta(months=1)
+                start = f"{start.strftime('%Y%m')}11"
+                fin = f"{fin.strftime('%Y%m')}01"
+            #add day to final date
+            fin = (fin + timedelta(days=1)).strftime('%Y%m%dd')
+            if frequency == '6hr':
+                start = f"{start}0600"
+                fin = f"{fin}0000"
+            elif frequency == '3hr':
+                start = f"{start}0300"
+                fin = f"{fin}0000"
+            else:
+                raise Exception('Error creating file name for snapshot data: 6hr or 3hr data expected')
+        else:
+            raise Exception('Error creating file name: no timeshot in champions table')
+                #add time elements into one string
+        opts['date_range'] = f"{start}-{fin}"
+        if opts['timeshot'] == 'clim':
+            opts['date_range'] += '-clim'
+    # PP probably need to adapt this with python3 string??
+    #P use path_template and file_template instead
+    template = f"{cdict['outdir']}/{cdict['path_template']}{cdict['file_template']}"
+    file_name = template.format(**opts) 
+    print(file_name)
+    return file_name
+
+
+def populateRows(rows, cdict, opts, cursor):
+    tableToFreq = read_yaml(f"input_files/table2freq.yaml")
     for champ in rows:
         #defaults
         #from champions table:
-        frequency = tableToFreq(champ[0])
+        frequency = tableToFreq[champ[0]]
         opts['frequency'] = frequency
         opts['cmip_table'] = champ[0]
-        opts['vcmip'] = champ[1]
+        opts['variable_id'] = champ[1]
         opts['vin'] = champ[3]
         try:
             [a,b] = champ[4].split()
@@ -758,12 +1028,12 @@ def populateRows(rows, opts, cursor):
         opts['var_notes'] = champ[11]
         opts['cfname'] = champ[12]
         dimension = champ[13]
-        time = opts['exp_start']
-        finish = opts['exp_end']
+        time = datetime.strptime(opts['exp_start'], '%Y%m%d').date()
+        finish = datetime.strptime(opts['exp_end'], '%Y%m%d').date()
         cursor.execute(f"select max_file_years,gridpoints from grids where dimensions=='{dimension}' and frequency=='{frequency}'")
         #TODO add in check that there is only one value
         try:
-            if opts['vcmip'] == 'co2':
+            if opts['variable_id'] == 'co2':
                 stepyears = 10
                 gridpoints = 528960
             else:
@@ -772,18 +1042,48 @@ def populateRows(rows, opts, cursor):
             print("error: no grid specification for")
             print(f"frequency: {frequency}")
             print(dimension)
-            print(opts['vcmip'])
+            print(opts['variable_id'])
             raise
         #loop over times
+        print(time, finish)
         while (time <= finish):
-            newtime = min(time+stepyears-1,finish)
-            stepDays = (datetime(newtime+1,1,1)-datetime(time,1,1)).days
+            stepdays = stepyears*365
+            if calendar.isleap(time.year):
+                stepdays = stepyears*366
+            newtime = min(time+timedelta(days=stepdays-1), finish)
+            #newtime = min(time+stepyears-1,finish)
+            #stepDays = (datetime(newtime+1,1,1)-datetime(time,1,1)).days
             opts['tstart'] = time
             opts['tend'] = newtime
-            opts['file_size'] = computeFileSize(gridpoints,frequency,stepDays)
-            opts['file_name'] = buildFileName(opts)
+            opts['file_size'] = computeFileSize(gridpoints,frequency,stepdays)
+            opts['file_name'] = buildFileName(cdict, opts)
             rowid = addRow(opts, cursor)
-            time = newtime+1
+            time = newtime + timedelta(days=stepdays)
+
+
+def count_rows(conn):
+    cursor=conn.cursor()
+    #cursor.execute(f"select * from file_master where status=='unprocessed' and local_exp_id=='{exptoprocess}'")
+    cursor.execute(f"select * from file_master")
+    rows = cursor.fetchall()
+    print(f"Number of rowsin file_master: {len(rows)}")
+    #for row in rows:
+    #    print(row)
+    #P we really don't need this!!!
+    # should we just print it in log??
+    # database_count=f"{outdir}/database_count.txt"
+    # with open(database_count,'w') as dbc:
+    #    dbc.write(str(len(rows)))
+    #dbc.close()
+
+def sum_file_sizes(conn):
+    cursor=conn.cursor()
+    cursor.execute('select file_size from file_master')
+    sizeList=cursor.fetchall()
+    size=0.0
+    for s in sizeList:
+        size += float(s[0])
+    return size/1024.
 
 
 def main():
@@ -792,40 +1092,40 @@ def main():
     # then add setup_env to config
     config = setup_env(config)
     cdict = config['cmor']
-    fname = f"{cdict['exp']}_config.yaml"
-    print("Exporting config data to yaml file")
-    write_yaml(config, fname)
     cleanup(config)
     json_cv = f"{cdict['appdir']}/input_files/custom_mode_cmor-tables/Tables/CMIP6_CV.json"
+    #PP do we ened this??
     edit_cv_json(json_cv, config['attrs'])
-    print(config['cmor'])
     # mapping
-    cdict = dreq_map(config['cmor'])
+    cdict = dreq_map(cdict)
     #database_manager
     database = cdict['database']
-    if not database:
-        sys.exit('missing database')
     print(f"creating & using database: {database}")
     conn = sqlite3.connect(database)
     conn.text_factory = str
     #setup database tables
     master_setup(conn)
-    grid_file = grid_file_choose(cdict['access_version'])
-    grids_setup(conn, grid_file)
+    grids_setup(conn, cdict['grid_file'])
     champions_setup(conn, cdict['variable_maps'])
     populate(conn, config)
     print('past populate')
-    create_database_updater()
+    #PP this can be totally done directly in cli.py, if it needs doing at all!
+    #create_database_updater()
     count_rows(conn)
-    print(f"max total file size is: {sumFileSizes(conn)/1024} GB")
+    tot_size = sum_file_sizes(conn)
+    print(f"max total file size is: {tot_size} GB")
     #write app_job.sh
-    write_job(cdict)
+    config['cmor'] = write_job(cdict)
     print(f"app job script: {cdict['app_job']}")
+    # write setting to yaml file to pass to wrapper
+    fname = f"{cdict['exp']}_config.yaml"
+    print("Exporting config data to yaml file")
+    write_yaml(config, fname)
     #submint job
-    chmod(cdict['app_job'], 775)
-    status = subprocess(f"qsub {cdict['app_job']}", shell=True)
-    if status != 0:
-        print(f"{cdict['app_job']} submission failed, try manually")
+    os.chmod(cdict['app_job'], 775)
+    #status = subprocess.run(f"qsub {cdict['app_job']}", shell=True)
+    #if status.returncode != 0:
+    #    print(f"{cdict['app_job']} submission failed, returned code is {status.returncode}.\n Try manually")
     
 
 if __name__ == "__main__":

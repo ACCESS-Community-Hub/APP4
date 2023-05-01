@@ -222,6 +222,7 @@ def special_cases(exptoprocess, cmipvar, freq, axes_modifier,
                   calculation, realm, realm2, table,timeshot,
                   access_vars, skip, access_version, varnotes):
     #tasmin/tasmax:
+    # is this because freq refers to freq of orig variable here and then we add axes mod to get monthly mean?
     if cmipvar in ['tasmin','tasmax']:
         if freq == 'mon':
             freq = 'day'
@@ -658,16 +659,15 @@ def find_matches(table, master_map, cmorname, realm, freq, cfname,
                 elif (file_structure == None) and (not skip):
                     if not cmorname in nomatches:
                         nomatches.append(cmorname)
-    if not cmorname in matchlist:
-        if not cmorname in skiplist:
-            if not cmorname in nomatches:
-                priority_ret = priority_check(cmorname,table)
-                if priority_ret == 1:
-                    nomatches.append(cmorname)
-                elif priority_ret == 0:
-                    pass
+    all_list = matchlist + nomatches + list(skiplist)
+    if cmorname not in all_list:
+        priority_ret = priority_check(cmorname,table)
+        if priority_ret == 1:
+            nomatches.append(cmorname)
+        elif priority_ret == 0:
+            pass
     g.close()
-    return matches,nomatches
+    return matches, nomatches
 
 
 def write_variable_map(outpath, table, matches):

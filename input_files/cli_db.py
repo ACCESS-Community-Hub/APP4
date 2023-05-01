@@ -270,17 +270,17 @@ def write_varlist(conn, indir, startdate, db_log):
        to a csv file. Main attributes needed to map output are provided
        for each variable
     """
-    sdate = f"*{startdate}*.nc"
+    #PP temporarily remove .nc as ocean files sometimes have pattern.nc-datestamp
+    #sdate = f"*{startdate}*.nc"
+    sdate = f"*{startdate}*"
     files = list_files(indir, sdate, db_log)
-    db_log.debug(f"{files}")
+    db_log.debug(f"Found files: {files}")
     patterns = []
     for fpath in files:
         # get first two items of filename <exp>_<group>
         fname = fpath.split("/")[-1]
         db_log.debug(f"Filename: {fname}")
         fbits = fname.split("_")
-        frequency = fbits[-1].replace(".nc","")
-        db_log.debug(f"Frequency: {frequency}")
         # we rebuild file pattern until up to startdate
         fpattern = "_".join(fbits[:2]).split(startdate)[0]
         # adding this in case we have a mix of yyyy/yyyymn date stamps 
@@ -289,10 +289,30 @@ def write_varlist(conn, indir, startdate, db_log):
             continue
         patterns.append(fpattern)
         db_log.debug(f"File pattern: {fpattern}")
+        #realm = [x for x in ['/atmos/', '/ocean/', '/ice/'] if x in fpath][0]
+        realm = [x for x in ['/atm/', '/ocn/', '/ice/'] if x in fpath][0]
+        realm = realm[1:-1]
+        db_log.debug(realm)
+        frequency = 'NA'
+        if realm == 'atm':
+            frequency = fbits[-1].replace(".nc","")
+        elif realm == 'ocn':
+            print(fbits)
+            # if I found scalar or monthly in any of fbits 
+            if any(x in fname for x in ['scalar', 'monthly']):
+                frequency = 'mon'
+            elif 'daily' in fname:
+                frequency = 'day'
+        elif realm == 'ice':
+            if '_m.' in fname:
+                frequency = 'mon'
+            elif '_d.' in fname:
+                frequency = 'day'
+        db_log.debug(f"Frequency: {frequency}")
         fcsv = open(f"{fpattern}.csv", 'w')
         fwriter = csv.writer(fcsv, delimiter=',')
         fwriter.writerow(["name", "cmip_name", "units", "dimensions",
-                          "frequency", "long_name", "standard_name",
+                          "frequency", "realm", "long_name", "standard_name",
                           "file_name"])
         ds = xr.open_dataset(fpath, use_cftime=True)
         coords = [c for c in ds.coords] + ['latitude_longitude']
@@ -303,7 +323,7 @@ def write_varlist(conn, indir, startdate, db_log):
                 cmip_name = get_cmipname(conn, vname, db_log)
                 attrs = v.attrs
                 line = [v.name, cmip_name, attrs.get('units', ""),
-                        " ".join(v.dims), frequency,
+                        " ".join(v.dims), frequency, realm,
                         attrs.get('long_name', ""), 
                         attrs.get('standard_name', ""), fpattern]
                 fwriter.writerow(line)
@@ -312,23 +332,36 @@ def write_varlist(conn, indir, startdate, db_log):
     return
 
 
-def write_map_template(vars_list, different, columns, alias, db_log):
+def write_map_template(vars_list, different, pot_vars, columns, alias, version, db_log):
     """Write mapping csv file template based on list of variables to define 
     """
     with open(f"master_{alias}.csv", 'w') as fcsv:
         fwriter = csv.writer(fcsv, delimiter=',')
         #fwriter.writerow(columns[1:])
-        fwriter.writerow(columns[1:]+['dimensions', 'frequency', 'standard_name', 'long_name', 'filename'])
+        header = ['cmip_var', 'input_vars', 'calculation', 'units',
+                  'positive', 'access_ver', 'dimensions', 'frequency',
+                  'realm', 'long_name', 'standard_name', 'filename'] 
+        #fwriter.writerow(columns[1:]+['dimensions', 'frequency', 'realm', 'standard_name', 'long_name', 'filename'])
+        fwriter.writerow(header)
+        # add to template variables that can be defined
         for var in vars_list[1:]:
             if var[1] == '':
                 var[1] = var[0]
-            line = [var[1],'yes',var[0],'',var[2],'','',alias] + var[3:]
+            line = [var[1], var[0], '', var[2], '', version] + var[3:]
             fwriter.writerow(line)
+        # add variables which presents more than one to calculate them
         fwriter.writerow(["# these are variables that are defined with different inputs",'','','','','','','','',''])
         for var in different:
             if var[1] == '':
                 var[1] = var[0]
-            line = [var[1],'yes',var[0],'',var[2],'','',alias,var[4],var[5]]
+            #line = [var[1], var[0], '', var[2], '', version] + var[3:]
+            #fwriter.writerow(line)
+        # add variables which can only be calculated: be careful that calculation is correct
+        fwriter.writerow(["# these are variables that can be potentially calculated. Use with caution!",
+                          '','','','','','','','',''])
+        for var in pot_vars:
+            print(var)
+            line = [var[1], var[0], '', var[2], '', version] + var[3:]
             fwriter.writerow(line)
         fcsv.close()
 
@@ -423,10 +456,13 @@ def update_cmor(ctx, dbname, fname, alias):
 
 @dbapp.command(name='template')
 @db_args
+@click.option('--access_version', '-v', required=True,
+    type=click.Choice(['ESM', 'CM2']), show_default=True,
+    help='ACCESS version currently only CM2 or ESM')
 @click.pass_context
-def list_var(ctx, dbname, fname, alias):
+def list_var(ctx, dbname, fname, alias, access_version):
     """Open database and check if variables passed as input are present in
-       mapping database. Then attemot to create a template file with specific 
+       mapping database. Then attempt to create a template file with specific 
        mapping based on model output itself
     """
     db_log = ctx.obj['log']
@@ -451,6 +487,7 @@ def list_var(ctx, dbname, fname, alias):
         reader = csv.reader(csvfile, delimiter=',')
         vars_list = []
         pot_vars = []
+        pot_varnames = []
         already = []
         for row in reader:
             # if row commented skip
@@ -460,19 +497,20 @@ def list_var(ctx, dbname, fname, alias):
             elif row[0] in existing_vars: 
                 already.append(row[0])
                 db_log.info(f"{row[0]} already defined in db")
-            else:
-                vars_list.append((row))
+            #else:
+            vars_list.append((row))
             if row[1] in stash_vars:
                 sql = f'SELECT cmip_var,input_vars FROM variable WHERE input_vars like "%{row[1]}%"'
                 results3 = query(conn, sql,(), first=False)
                 for r in results3:
                     allinput = r[1].split(" ")
                     if all(x in stash_vars for x in allinput):
-                        pot_vars.append(r[0]) 
+                        pot_vars.append(r) 
+                        pot_varnames.append(r[0]) 
     db_log.info(f"Missing cmip var: {[x[0] for x in vars_list]}")
-    db_log.info(f"Already cmip var: {[x[0] for x in already]}")
+    db_log.info(f"Already cmip var: {[x for x in already]}")
     # at the moment we don't distiguish yet between different definitions of the variables (i.e. different frequency etc)
-    db_log.info(f"Definable cmip var: {set(pot_vars)}")
+    db_log.info(f"Definable cmip var: {set(pot_varnames)}")
     # if variable in already defined are not in definable list, than add them to separate list
     # it's possible that most of the definition exists but clearly they need to be calculated differently
     different = set(already) - set(pot_vars)# - set(already)
@@ -481,7 +519,7 @@ def list_var(ctx, dbname, fname, alias):
     # prepare template
     # get names of current variable table
     columns = get_columns(conn, 'variable')
-    write_map_template(vars_list, different, columns, alias, db_log)
+    write_map_template(vars_list, different, pot_vars, columns, alias, access_version, db_log)
 
 
 @dbapp.command(name='map')

@@ -405,10 +405,8 @@ def populateRows(rows, opts, cursor):
         try:
             [a,b] = champ[4].split()
             opts['infile'] = f"{opts['local_exp_dir']}/{a} {opts['local_exp_dir']}/{b}"
-            print("all good to here")
         except:    
             opts['infile'] = f"{opts['local_exp_dir']}/{champ[4]}"
-        print(opts['infile'])
         opts['calculation'] = champ[5]
         opts['in_units'] = champ[6]
         opts['axes_modifier'] = champ[7]

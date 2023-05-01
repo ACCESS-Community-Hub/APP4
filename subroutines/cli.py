@@ -38,6 +38,7 @@ import time as timetime
 import traceback
 import multiprocessing as mp
 import csv
+import yaml
 import ast
 import calendar
 import click
@@ -51,7 +52,6 @@ from cli_functions import *
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
-cmorlogs = os.environ.get('CMOR_LOGS')
 
 #
 #main function to post-process files
@@ -137,53 +137,28 @@ def app_args(f):
 
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
+@click.option('--infile', '-i', type=str, required=True, 
+                help='Input yaml file with experiment information')
 @click.option('--debug', is_flag=True, default=False,
                help="Show debug info")
 @click.pass_context
-def app(ctx, debug):
+def app(ctx, infile, debug):
     """Wrapper setup
     """
-    ctx.obj={}
-    # set up paths
-    ctx.obj['successlists'] = os.environ.get('SUCCESS_LISTS')
-    ctx.obj['out_dir'] = os.environ.get('OUT_DIR')
-    ctx.obj['varlogs'] = os.environ.get('VAR_LOGS')
-    log_path = os.environ.get('APP_LOGS')
+    with open(infile, 'r') as yfile:
+        cfg = yaml.safe_load(yfile)
+
+    ctx.obj = cfg['cmor']
+    print(ctx.obj)
     # set up main app4 log
-    ctx.obj['log'] = config_log(debug, log_path)
+    ctx.obj['log'] = config_log(debug, ctx.obj['app_logs'])
     app_log = ctx.obj['log']
     app_log.info("\nstarting app_wrapper...")
 
-    ctx.obj['exp'] = os.environ.get('EXP_TO_PROCESS')
-    ctx.obj['table'] = os.environ.get('TABLE_TO_PROCESS')
-    ctx.obj['var'] = os.environ.get('VARIABLE_TO_PROCESS')
     app_log.info(f"local experiment being processed: {ctx.obj['exp']}")
-    app_log.info(f"cmip6 table being processed: {ctx.obj['table']}")
-    app_log.info(f"cmip6 variable being processed: {ctx.obj['var']}")
-    try:
-        ctx.obj['ncpus'] = int(os.environ.get('NCPUS'))
-    except:
-        ctx.obj['ncpus'] = 1
-    ctx.obj['database_updater'] = f"{ctx.obj['out_dir']}/database_updater.py"
-    if os.environ.get('MODE').lower() == 'custom':
-        ctx.obj['mode'] = 'custom'
-    elif os.environ.get('MODE').lower() == 'ccmi':
-        ctx.obj['mode'] = 'ccmi'
-    else: 
-        ctx.obj['mode'] = 'cmip6'
-
-    #options
-
-    if os.environ.get('OVERRIDEFILES').lower() in ['true','yes']:
-        ctx.obj['overRideFiles'] = True
-    else:
-        ctx.obj['overRideFiles'] = False
-    #if os.environ.get('PLOT').lower() == 'true': plot=True
-    #else: plot=False
-    if os.environ.get('DREQ_YEARS').lower() == 'true':
-        ctx.obj['dreq_years'] = True
-    else:
-        ctx.obj['dreq_years'] = False
+    app_log.info(f"cmip6 table being processed: {ctx.obj['table_to_process']}")
+    app_log.info(f"cmip6 variable being processed: {ctx.obj['variable_to_process']}")
+    #ctx.obj['database_updater'] = f"{ctx.obj['outdir']}/database_updater.py"
     print(f"dreq years = {ctx.obj['dreq_years']}")
 
 
@@ -194,12 +169,7 @@ def app_wrapper(ctx):
     """Main method to select and process variables
     """
     #open database    
-    database = os.environ.get('DATABASE')
-    print(database)
-    if not database:
-        #default database
-        database = f"{ctx.obj['out_dir']}/database.db"
-    conn=sqlite3.connect(database, timeout=200.0)
+    conn=sqlite3.connect(ctx.obj['database'], timeout=200.0)
     conn.text_factory = str
     cursor = conn.cursor()
 
@@ -209,6 +179,7 @@ def app_wrapper(ctx):
     #fetch rows
     try:
        rows = cursor.fetchall()
+       print(rows)
     except:
        print("no more rows to process")
     conn.commit()
@@ -247,7 +218,7 @@ def app_bulk(ctx, app_log):
         set_verbosity = cmor.CMOR_NORMAL,
         exit_control = cmor.CMOR_NORMAL,
         #exit_control=cmor.CMOR_EXIT_ON_MAJOR,
-        logfile = f"{cmorlogs}/log", create_subdirectories=1)
+        logfile = f"{ctx.obj['cmor_logs']}/log", create_subdirectories=1)
     #
     #Define the dataset.
     #
@@ -476,7 +447,7 @@ def app_bulk(ctx, app_log):
 
 #
 #function to process set of rows in the database
-#if overRideFiles is true, write over files that already exist
+#if override is true, write over files that already exist
 #otherwise they will be skipped
 #
 #PP not sure if better passing dreq_years with context or as argument
@@ -608,7 +579,7 @@ def process_row(ctx, row):
         #if not os.path.exists(outpath):
         #    print(f"creating outpath directory: {outpath}")
         #    os.makedirs(outpath)
-        if ctx.obj['overRideFiles'] or not os.path.exists(expected_file):
+        if ctx.obj['override'] or not os.path.exists(expected_file):
             #if file doesn't already exist (and we're not overriding), run the app
             #
             #version_number = f"v{version}"
