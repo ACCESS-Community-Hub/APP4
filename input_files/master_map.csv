@@ -179,7 +179,7 @@ fDeforestToProduct,yes,fld_s03i895,"tileSum(var[0],1)",g m-2 yr-1,dropLev,,ESM,l
 #...landIce...
 sbl,yes,fld_s03i298,,kg m-2 s-1,,,both,landIce,
 sbl,yes,fld_s03i331 fld_s03i317,"tileAve(var[0],var[1],0)",kg m-2 s-1,dropLev LImon,,CM2,landIce,
-hfdsn,yes,fld_s08i202,,W m-2,,down,ESM,both,landIce,
+hfdsn,yes,fld_s08i202,,W m-2,,down,both,landIce,
 snw,yes,fld_s08i236 fld_s03i317,"tileAve(var[0],var[1],0)",kg m-2,dropLev,,ESM,landIce,
 snw,yes,fld_s08i236,"tileAve(var[0],'317',0)",kg m-2,dropLev,,CM2,landIce,
 snm,yes,fld_s08i237 fld_s03i317,"tileAve(var[0],var[1],0)",kg m-2 s-1,dropLev,,both,landIce,

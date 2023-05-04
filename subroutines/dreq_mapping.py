@@ -720,8 +720,8 @@ def main():
         check_file(prioritylist)
     check_output_directory(outpath)
     print(f"beginning creation of variable maps in directory '{outpath}'")
-    tables = find_cmip_tables(dreq)
     if tabletoprocess.lower() == 'all':
+        tables = find_cmip_tables(dreq)
         for table in tables:
             print(f"\n{table}:")
             create_variable_map(dreq, master_map, outpath, table)

@@ -216,6 +216,8 @@ def app(option_dictionary):
             #
             time = temp_file[time_dimension]
             refString = time.units
+            #if opts['reference_date'] != "":
+            #    refString = "days since {r:04d}-01-01".format(r=opts['reference_date'])
         except:
             refString = "days since 0001-01-01"
             print("W: Unable to extract a reference date: assuming it is 0001")
@@ -223,10 +225,11 @@ def app(option_dictionary):
         try:
             # PP set reference time as datetime
             date1 = refString.split('since ')[1]
-            #PP ingoring time assuming is 0
+            #PP ignoring time assuming is 0
             dateref =  date1.split(" ")[0]
-            print(dateref)
+            print(f"Paola dateref step1: {dateref}")
             dateref = datetime.datetime.strptime(dateref, "%Y-%m-%d")
+            print(f"Paola dateref step2: {dateref}")
             #set to very end of the year
             startyear = int(opts['tstart'])
             endyear = int(opts['tend'])
@@ -236,7 +239,7 @@ def app(option_dictionary):
             #opts['tstart'] = cdtime.comptime(opts['tstart']).torel(refString,cdtime.DefaultCalendar).value
             opts['tstart'] = (datetime.datetime(startyear, 1, 1) - dateref).days
             #opts['tstart'] = date2num(startyear, units=refString, calendar=default_cal)
-            print('start after datetime', opts['tstart'])
+            print('Paola start after datetime', opts['tstart'])
             if os.path.basename(all_access_files[0]).startswith('ice'):
                 #opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value
                 opts['tend'] = (datetime.datetime(endyear+1, 1, 1) - dateref).days
@@ -249,6 +252,7 @@ def app(option_dictionary):
             else:
                 #opts['tend'] = cdtime.comptime(opts['tend']+1).torel(refString,cdtime.DefaultCalendar).value - 0.01 
                 opts['tend'] = (datetime.datetime(endyear+1, 1, 1) - dateref).days - 0.01
+                print(f"shuld be here: {opts['tend']}")
                 #opts['tend'] = date2num(endyear + 1, units=refString, calendar=default_cal) - 0.01
             print(f"time start: {opts['tstart']}")
             print(f"time end: {opts['tend']}")
@@ -260,7 +264,6 @@ def app(option_dictionary):
     #PP start function to retunr file in time range
     print("loading files...")
     print(f"time dimension: {time_dimension}")
-    #????
     sys.stdout.flush()
     exit = False
     # if a time dimension exists and tMonOverride is not part of axes_modifiers
@@ -272,11 +275,14 @@ def app(option_dictionary):
                 #Read the time information.
                 #
                 tvals = access_file[time_dimension]
-                #print opts['tend']
-                #print float(tvals[0])
+                print(f"tend: {opts['tend']}")
+                print(f"tstart: {opts['tstart']}")
+                print("first values time axis")
+                print( float(tvals[0]))
                 #test each file to see if it contains time values within the time range from tstart to tend
                 #if (opts['tend'] == None or float(tvals[0]) < float(opts['tend'])) and (opts['tstart'] == None or float(tvals[-1]) > float(opts['tstart'])):
                 if (opts['tend'] == None or float(tvals[0]) <= float(opts['tend'])) and (opts['tstart'] == None or float(tvals[-1]) >= float(opts['tstart'])):
+                    print("if thisnshows I'm in if")
                     inrange_access_files.append(input_file)
                     if opts['axes_modifier'].find('firsttime') != -1:
                         #only take first time
@@ -284,11 +290,16 @@ def app(option_dictionary):
                         inrange_access_times.append(tvals[0])
                         exit = True
                     else:
+                        print("I really should b ehere")
                         irefString = access_file[time_dimension].units
+                        print(f"irefString: {irefString}, refstring: {refString}")
                         if irefString != refString: 
-                            #print 'WRONG refString ', irefString, refString
+                            #print( 'WRONG refString ', irefString, refString)
                             #tvals = np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
+                            print(f"just before tvals: dateref {dateref}")
+                            print(f"file ref time correpsondent:  {datetime.datetime(irefString[:-10])}")
                             tvals = np.array(tvals) + (datetime.datetime(irefString[:-10]) - dateref).days 
+                            print(f"should be here: tvals: {tvals}")
                         inrange_access_times.extend(tvals[:])
                 #
                 #Close the file.
@@ -307,13 +318,19 @@ def app(option_dictionary):
                 try:
                     access_file = netCDF4.Dataset(input_file,'r')
                     tvals = access_file[time_dimension]
-                    #print opts['tend']
-                    #print float(tvals[0])
+                    #print( opts['tend'])
+                    #print( float(tvals[0]))
                     irefString = access_file[time_dimension].units
+                    print(f"irefsttring: {irefString}")
+                    print(f"refsttring: {refString}")
                     if irefString != refString: 
                         #print 'WRONG refString ', irefString, refString
                         #tvals = np.array(tvals) + cdtime.reltime(0,irefString).torel(refString,cdtime.DefaultCalendar).value
+                        print(f"just before tvals: dateref {dateref}")
+                        print(irefString[:-10])
+                        print(f"file ref time correpsondent:  {datetime.datetime(irefString[:-10])}")
                         tvals = np.array(tvals) + (datetime.datetime(irefString[:-10]) - dateref).days 
+                        print(f"should be here: tvals: {tvals}")
                     inrange_access_times.extend(tvals[:])
                     access_file.close()
                 except Exception as e:
@@ -1142,6 +1159,7 @@ def app(option_dictionary):
     sys.stdout.flush()
     #
     #calculate time integral of the first variable (possibly adding a second variable to each time)
+    #PP can't find time-integral anywhere in variable mapping, maybe is not needed?
     #
     if opts['axes_modifier'].find('time_integral') != -1:
         try:    
@@ -1150,7 +1168,7 @@ def app(option_dictionary):
             run = np.float32(0.0)
         for input_file in inrange_access_files:
             #If the data is a climatology, store the values in a running sum
-            access_file = xr.open_dataset(f'{input_file}')
+            access_file = xr.open_dataset(f'{input_file}', use_cftime=True)
             var = access_file[opts['vin'][0]]
             t = var.getTime()
             tbox = daysInMonth(t)
@@ -1163,10 +1181,11 @@ def app(option_dictionary):
             cmor.write(variable_id, (varout), ntimes_passed=np.shape(varout)[0])
     #
     #Monthly Climatology case
+    # PP timeshot here means that car is either instantaneous, monthly or climatology value
     #
     elif opts['timeshot'].find('clim') != -1:
         for input_file in inrange_access_files:
-            access_file = xr.open_dataset(f'{input_file}')
+            access_file = xr.open_dataset(f'{input_file}', use_cftime=True)
             t = access_file[opts['vin'][0]].getTime()
             #Set var to be sum of variables in 'vin' (can modify to use calculation if needed)
             var = None
@@ -1198,7 +1217,7 @@ def app(option_dictionary):
     #Annual means - Oyr / Eyr tables
     #
     elif (opts['axes_modifier'].find('mon2yr') != -1):
-        access_file0 = xr.open_dataset(f'{inrange_access_files[0]}')
+        access_file0 = xr.open_dataset(f'{inrange_access_files[0]}', use_cftime=True)
         #access_file0=netCDF4.Dataset(inrange_access_files[0])
         if opts['calculation'] == '':
             data_val0 = access_file0[opts['vin'][0]][:]
@@ -1220,14 +1239,14 @@ def app(option_dictionary):
                             yearstamp = int(os.path.basename(input_file).split('.')[1][2:6])
                         elif opts['access_version'].find('ESM') != -1:
                             yearstamp = int(os.path.basename(input_file).split('.')[1][3:7])
-                    access_file = xr.open_dataset(f'{input_file}')
+                    access_file = xr.open_dataset(f'{input_file}', use_cftime=True)
                     t = access_file[opts['vin'][0]].getTime()
                     datelist = t.asComponentTime()
                     if yearstamp == year: yearinside=True
                     else: yearinside = False
                 else:
                     print('reading date info from time dimension')
-                    access_file = xr.open_dataset(f'{input_file}')
+                    access_file = xr.open_dataset(f'{input_file}', use_cftime=True)
                     t = access_file[opts['vin'][0]].getTime()
                     datelist = t.asComponentTime()
                     yearinside = False
@@ -1259,7 +1278,7 @@ def app(option_dictionary):
             if count == 12:
                 vyr = vsum / 12
                 print("writing with cmor...")
-                cmor.write(variable_id, vyr, ntimes_passed=1)
+                cmor.write(variable_id, vyr.values, ntimes_passed=1)
             else:
                 print(count)
                 raise Exception(f'WARNING: annual data contains {count} months of data')    
@@ -1279,8 +1298,9 @@ def app(option_dictionary):
                     except:
                         yearstamp = int(os.path.basename(input_file).split('.')[1][3:7])
                         monstamp = int(os.path.basename(input_file).split('.')[1][7:9])
-                if not monstamp == 12 or not yearstamp == year: continue
-                access_file = xr.open_dataset(f'{input_file}')
+                if not monstamp == 12 or not yearstamp == year:
+                    continue
+                access_file = xr.open_dataset(f'{input_file}', use_cftime=True)
                 t = access_file[opts['vin'][0]].getTime()
                 datelist = t.asComponentTime()
                 yearcurrent = datelist[0].year
@@ -1310,7 +1330,7 @@ def app(option_dictionary):
     elif opts['cmip_table'].find('A10dayPt') != -1:
         for i, input_file in enumerate(inrange_access_files):
             print(f"processing file: {input_file}")
-            access_file = xr.open_dataset(f'{input_file}')
+            access_file = xr.open_dataset(f'{input_file}', use_cftime=True)
             t = access_file[opts['vin'][0]].getTime()
             datelist = t.asdatetime()
             print('ONLY 1st, 11th, 21st days to be used')
@@ -1346,10 +1366,10 @@ def app(option_dictionary):
                 if time_dimension != None:
                     #assuming time is the first dimension
                     print(np.shape(a10_datavals))
-                    cmor.write(variable_id, a10_datavals,
+                    cmor.write(variable_id, a10_datavals.values,
                         ntimes_passed=np.shape(a10_datavals)[0])
                 else:
-                    cmor.write(variable_id, a10_datavals, ntimes_passed=0)
+                    cmor.write(variable_id, a10_datavals.values, ntimes_passed=0)
             except Exception as e:
                 print(f"E: Unable to write the CMOR variable to file {e}")
                 raise
@@ -1359,7 +1379,7 @@ def app(option_dictionary):
     elif opts['axes_modifier'].find('monsecs') != -1:
         for i, input_file in enumerate(inrange_access_files):
             print(f"processing file: {input_file}")
-            access_file = xr.open_dataset(f'{input_file}')
+            access_file = xr.open_dataset(f'{input_file}', use_cftime=True)
             t = access_file[opts['vin'][0]].getTime()
             datelist = t.asdatetime()
             #print(calendar.monthrange(datelist[0].year,datelist[0].month)[1])
@@ -1393,10 +1413,10 @@ def app(option_dictionary):
                 if time_dimension != None:
                     #assuming time is the first dimension
                     print(np.shape(data_vals))
-                    cmor.write(variable_id, data_vals,
+                    cmor.write(variable_id, data_vals.values,
                         ntimes_passed=np.shape(data_vals)[0])
                 else:
-                    cmor.write(variable_id, data_vals, ntimes_passed=0)
+                    cmor.write(variable_id, data_vals.values, ntimes_passed=0)
             except Exception as e:
                 print(f"E: Unable to write the CMOR variable to file {e}")
                 raise
@@ -1408,7 +1428,7 @@ def app(option_dictionary):
             #
             #Load the ACCESS NetCDF data.
             #
-            access_file = xr.open_dataset(f'{input_file}')
+            access_file = xr.open_dataset(f'{input_file}', use_cftime=True)
             #access_file=netCDF4.Dataset(input_file)
             print(f"processing file: {input_file}")
             try:
@@ -1445,10 +1465,10 @@ def app(option_dictionary):
                     if time_dimension != None:
                         #assuming time is the first dimension
                         print(np.shape(data_vals))
-                        cmor.write(variable_id, data_vals,
+                        cmor.write(variable_id, data_vals.values,
                             ntimes_passed=np.shape(data_vals)[0])
                     else:
-                        cmor.write(variable_id, data_vals, ntimes_passed=0)
+                        cmor.write(variable_id, data_vals.values, ntimes_passed=0)
                     print(f"finished writing @ {timetime.time()-start_time}")
                 except Exception as e:
                     print(f"E: Unable to write the CMOR variable to file {e}")
