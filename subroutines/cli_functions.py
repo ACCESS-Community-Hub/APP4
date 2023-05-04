@@ -1021,10 +1021,11 @@ def normal_case(ctx, dsin, tdim, in_missing, app_log):
     else:
         print("calculating...")
         #PP potentially pass tdim??
-        data = calculateVals(dsin, ctx.obj['vin'], ctx.obj['calculation'])
+        array = calculateVals(dsin, ctx.obj['vin'], ctx.obj['calculation'])
         #convert mask to missing values
         #PP why mask???
         array = array.fillna(in_missing)
+        app_log.debug(f"{array}")
     # temporarily ignore this exception
     #if 'depth100' in ctx.obj['axes_modifier']:
     #    data_vals = depth100(data_vals[:,9,:,:], data_vals[:,10,:,:])

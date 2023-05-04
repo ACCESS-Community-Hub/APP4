@@ -3,7 +3,7 @@
 ## ACCESS-CM2
 #
 # CMIP
-cm000,/g/data/hh5/tmp/zg0866/cm000_APP4_archive/cm000/history,input_files/json/cm000.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv,950,950,1100,CM2,piControl
+cm000,/g/data/hh5/tmp/zg0866/cm000_APP4_archive_timefix/cm000/history,input_files/json/cm000.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv,950,950,1100,CM2,piControl
 bi889,/g/data/p73/archive/CMIP6/ACCESS-CM2/bi889/history,input_files/json/bi889.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv,950,950,1449,CM2,piControl
 bj400,/g/data/p73/archive/CMIP6/ACCESS-CM2/bj400/history,input_files/json/bj400.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r1
 bj402,/g/data/p73/archive/CMIP6/ACCESS-CM2/bj402/history,input_files/json/bj402.json,input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_amip_1_2.csv,1979,1979,2014,CM2,amip-r2
