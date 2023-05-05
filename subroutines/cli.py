@@ -334,6 +334,7 @@ def app_bulk(ctx, app_log):
     # Perform the calculation:
     try:
         out_var = normal_case(dsin, time_dimension, in_missing, app_log)
+        app_log.info("Calculation completed!")
     except Exception as e:
         app_log.error(f"E: Unable to run calculation because: {e}")
     # Now define axis, variable etc before writing to CMOR

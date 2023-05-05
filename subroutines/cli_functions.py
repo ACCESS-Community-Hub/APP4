@@ -1019,62 +1019,44 @@ def calc_monsecs(ctx, dsin, tdim, in_missing, app_log):
     #    raise
     return array
 
-# SG: Modified this a bit, will tidy it up.
 @click.pass_context
 def normal_case(ctx, dsin, tdim, in_missing, app_log):
     """
+    This function pulls the required variables from the Xarray dataset.
+    If a calculation isn't needed then it just returns the variables to be saved.
+    If a calculation is needed then it evaluates the calculation and returns the result.
     """
+    # Save the variables
     if ctx.obj['calculation'] == '':
         array = dsin[ctx.obj['vin'][0]][:]
         app_log.debug(f"{array}")
     else:
-        app_log.info("Calculating...")
-        #PP potentially pass tdim??
-        #app_log.info(f"Files for calculation: {dsin}")
-        app_log.info(f"variables for calculation: {ctx.obj['vin']}")
-        #app_log.info(f"Calculation to be performed: {ctx.obj['calculation']}")
-        #array = calculateVals(dsin, ctx.obj['vin'], ctx.obj['calculation'])
-        array = calculateValsTEST(dsin, ctx.obj['vin'], ctx.obj['calculation'], app_log)
-        app_log.info("Calculation completed...")
-        #convert mask to missing values
-        #PP why mask???
-        array = array.fillna(in_missing)
-        app_log.debug(f"{array}")
-    # temporarily ignore this exception
-    #if 'depth100' in ctx.obj['axes_modifier']:
-    #    data_vals = depth100(data_vals[:,9,:,:], data_vals[:,10,:,:])
-    #If the data is not a climatology:
-    #Write the data to the CMOR file.
-    return array 
+        var = []
+        app_log.info("Adding variables to var list")
+        for v in ctx.obj['vin']:
+            try:
+                var.append(dsin[v][:])
+            except Exception as e:
+                app_log.error(f"Error appending variable, {v}: {e}")
+                raise
 
-# SG: I've moved this from app_functions.py to help with debugging
-# I think this should be combined into the above function anyway.
-@click.pass_context
-def calculateValsTEST(ctx, access_file, varNames, calculation, app_log):
-    '''
-    Function to call the calculation defined in the 'calculation' string in the database
-    '''
+        app_log.info("Finished adding variables to var list")
 
-    var = []
-    app_log.info("Adding variables to var list")
-    for v in varNames:
-        print(f'variable[{varNames.index(v)}] = {v}')
-        try: 
-            #extract variable out of file
-            var.append(access_file[v][:])
+        # Now try to perform the required calculation
+        try:
+            calc = eval(ctx.obj['calculation'])
         except Exception as e:
-            app_log.error(f"Error appending variable, {v}: {e}")
+            app_log.error(f"error evaluating calculation, {ctx.obj['calculation']}: {e}")
             raise
 
-    app_log.info("Finished adding variables to var list")
+        #convert mask to missing values
+        #PP why mask???
+        #SG: Yeh not sure this is needed.
+        array = calc.fillna(in_missing)
+        app_log.debug(f"{array}")
+        
+        # temporarily ignore this exception
+        #if 'depth100' in ctx.obj['axes_modifier']:
+        #   data_vals = depth100(data_vals[:,9,:,:], data_vals[:,10,:,:])
 
-    # Now try to perform the required calculation
-    try:
-        app_log.info("Doing calculation...")
-        calc = eval(calculation)
-        app_log.info("Done..")
-    except Exception as e:
-        app_log.error(f"error evaluating calculation, {calculation}: {e}")
-        raise
-
-    return calc
+    return array
