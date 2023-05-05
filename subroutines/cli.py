@@ -330,10 +330,12 @@ def app_bulk(ctx, app_log):
     if 'A10dayPt' in ctx.obj['cmip_table']:
         app_log.info('ONLY 1st, 11th, 21st days to be used')
         dsin = dsin.where(dsin[time_dimension].dt.day.isin([1, 11, 21]), drop=True)
+    
+    # Perform the calculation:
     try:
         out_var = normal_case(dsin, time_dimension, in_missing, app_log)
     except Exception as e:
-        app_log.error(f"E: Unable to retrieve/calculate variable {e}")
+        app_log.error(f"E: Unable to run calculation because: {e}")
     # Now define axis, variable etc before writing to CMOR
 
 

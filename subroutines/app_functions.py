@@ -15,6 +15,8 @@ SG - Removed some missed cdms2 lines.
 30/03/23:
 SG - Refactored a lot of the functions to removed repetitive code.
 '''
+import click
+import logging
 
 import datetime
 import numpy as np
@@ -46,7 +48,8 @@ p_0 = 100000.0
 R_e = 6.378E+06
 #-----------------------------------
 
-def calculateVals(access_file, varNames, calculation):
+@click.pass_context
+def calculateVals(ctx, access_file, varNames, calculation):
     '''
     Function to call the calculation defined in the 'calculation' string in the database
     '''
@@ -79,7 +82,7 @@ def calculateVals(access_file, varNames, calculation):
         print(f'variable[{varNames.index(v)}] = {v}')
         try: 
             #extract variable out of file
-            var.append(access_file[0][f'{v}'][:])
+            var.append(access_file[0][v][:])
         except Exception as e:
             print(f'Error appending variable, {v}: {e}')
             raise
