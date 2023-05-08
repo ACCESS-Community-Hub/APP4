@@ -455,7 +455,6 @@ def app_bulk(ctx, app_log):
 def process_row(ctx, row):
     app_log = ctx.obj['log']
     #set version number
-    #date=datetime.today().strftime('%Y%m%d')
     #set location of cmor tables
     cmip_table_path = os.environ.get('CMIP_TABLES')
     #

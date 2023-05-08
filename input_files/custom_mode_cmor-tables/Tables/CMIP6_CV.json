@@ -8974,10 +8974,10 @@
                 "experiment": "piControl",
                 "experiment_id": "piControl",
                 "parent_activity_id": [
-                    "no parent"
+                    "FakeMIP"
                 ],
                 "parent_experiment_id": [
-                    "no parent"
+                    "piControl"
                 ],
                 "required_model_components": [
                     "AOGCM"

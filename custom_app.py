@@ -945,7 +945,6 @@ def buildFileName(cdict, opts):
     """
     finish is the last day covered by file as datetime object
     """
-    #date=datetime.today().strftime('%Y%m%d')
     date = opts['version']
     tString = ''
     frequency = opts['frequency']
@@ -956,9 +955,9 @@ def buildFileName(cdict, opts):
         #PP I think this is actually not a requirement of CMIP6 so except for fx which has not date range
         # just using tstart-tend as they are should be sufficient and also more correct
         # so removing the year and yer-month only options
-        start = f"{start.strftime('%Y%m%d')}"
+        start = f"{start.strftime('%4Y%m%d')}"
         if opts['timeshot'] in ['mean','clim']:
-            fin = f"{fin.strftime('%Y%m%d')}"
+            fin = f"{fin.strftime('%4Y%m%d')}"
             if frequency == '6hr':
                 start = f"{start}0300"
                 fin = f"{fin}2100"
@@ -976,10 +975,10 @@ def buildFileName(cdict, opts):
             if frequency == '10day':
                 #add month to final date
                 fin = fin + timedelta(months=1)
-                start = f"{start.strftime('%Y%m')}11"
-                fin = f"{fin.strftime('%Y%m')}01"
+                start = f"{start.strftime('%4Y%m')}11"
+                fin = f"{fin.strftime('%4Y%m')}01"
             #add day to final date
-            fin = (fin + timedelta(days=1)).strftime('%Y%m%dd')
+            fin = (fin + timedelta(days=1)).strftime('%4Y%m%d')
             if frequency == '6hr':
                 start = f"{start}0600"
                 fin = f"{fin}0000"
@@ -998,7 +997,6 @@ def buildFileName(cdict, opts):
     #P use path_template and file_template instead
     template = f"{cdict['outdir']}/{cdict['path_template']}{cdict['file_template']}"
     file_name = template.format(**opts) 
-    print(file_name)
     return file_name
 
 
