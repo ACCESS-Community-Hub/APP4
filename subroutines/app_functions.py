@@ -15,6 +15,8 @@ SG - Removed some missed cdms2 lines.
 30/03/23:
 SG - Refactored a lot of the functions to removed repetitive code.
 '''
+import click
+import logging
 
 import datetime
 import numpy as np
@@ -46,83 +48,8 @@ p_0 = 100000.0
 R_e = 6.378E+06
 #-----------------------------------
 
-def plotVar(outpath,ret,cmip_table,vcmip,parent_source_id,experiment_id):
-    '''
-    Give a sample plot of a variable
-    '''
-    f = xr.open_dataset(ret)
-    var = f.fld_s00i033
-    dims = var.shape
-    units = var.units
-    plt.figure()
-    print('plotting...')
-    #3D field: 
-    #plot lat-lon plots at different levels, 
-    #for first time step only
-    if len(dims)==4:
-        #3D- plot contour at first z level, 
-        plt.subplot(221)
-        plt.title('first level')
-        plt.imshow(var[0,0,:,:],origin='lower')
-        plt.colorbar()
-        #last level
-        plt.subplot(222)
-        plt.title('last level')
-        plt.imshow(var[0,-1,:,:],origin='lower')
-        plt.colorbar()
-        #middle level
-        plt.subplot(223)
-        plt.title('middle level')
-        lev=int(np.floor(dims[1]/2))
-        plt.imshow(var[0,lev,:,:],origin='lower')
-        plt.colorbar()
-        #average
-        plt.subplot(224)
-        plt.title('ave over z')
-        print('calculating ave over z...')
-        plt.imshow(np.ma.average(var[0,:],axis=0),origin='lower')
-        print('done')        
-        plt.colorbar()
-    elif len(dims)==3: 
-    #
-    #2D field:
-    #plot lat-lon contour at first time
-        plt.imshow(var[0,:,:],origin='lower')
-        #plt.contourf(lon[:],lat[:],var[0,:,:],100)
-        plt.colorbar()
-    elif len(dims)==2:
-    #2D field:(fixed time variables)
-    #plot lat-lon contours 
-        plt.imshow(var[:,:],origin='lower')
-        #plt.contourf(lon[:],lat[:],var[0,:,:],100)
-        plt.colorbar()
-    else: 
-    #assume scalar
-    #plot line plot, variable vs. time
-        plt.plot(np.array(var[:]))
-
-    #Set a super title for whole image
-    plt.suptitle('Plot of '+vcmip +' ('+units+')')    
-
-    #
-    #make output directory and save figure:
-    #
-    folder = outpath+'/plots/'+parent_source_id+'/'+experiment_id+'/'+cmip_table
-    if not os.path.isdir(folder):
-        os.makedirs(folder)
-    plt.savefig(folder+'/'+vcmip+'.png')
-    figloc = folder+'/'+vcmip+'.png'
-    print(f"saved figure for variable '{vcmip}': {figloc}")
-    #cleanup
-    plt.clf()
-    f.close()
-
-def calcRefDate(time):
-    ref = re.search('\d{4}-\d{2}-\d{2}', time.units).group(0).split('-')
-    vout = datetime.date(int(ref[0]), int(ref[1]), int(ref[2]))
-    return vout
-
-def calculateVals(access_file, varNames, calculation):
+@click.pass_context
+def calculateVals(ctx, access_file, varNames, calculation):
     '''
     Function to call the calculation defined in the 'calculation' string in the database
     '''
@@ -337,112 +264,7 @@ def ave_months(var,time,vals_wsum,clim_days):
         print(e)
         raise
 
-    return vals_wsum,clim_days
-
-
-#def daysInMonth(time):
-#    tvals=time[:]
-#        
-#    days=np.zeros([len(tvals)])
-#    for i,t in enumerate(tvals):    
-#        d=datetime.timedelta(int(t))+refdate
-#        dummy,days[i]=calendar.monthrange(d.year,d.month)
-#    print days
-#    return days[0]
-
-# returns days in month for time variable
-def daysInMonth(time):
-    tvals = time[:]
-    refdate = calcRefDate(time)
-    if len(tvals)==1:
-        d = datetime.timedelta(int(tvals[0]))+refdate
-        dummy,days = calendar.monthrange(d.year,d.month)
-    else:
-        days = []
-        for t in tvals:
-            d = datetime.timedelta(int(t))+refdate
-            dummy,d = calendar.monthrange(d.year,d.month)
-            days.append(d)
-    return days        
-
-#convert daily time values to monthly
-#returns time values, 
-#and the min and max time for each month (bounds)
-#assumes time is in the gregorian calandar, relative to date reference date
-def day2mon(tvals,ref):
-    datelist = []
-    for t in tvals: 
-        datelist.append(datetime.datetime(ref,1,1)+ datetime.timedelta(t))
-    #get month, value of first date
-    month = datelist[0].month
-    val_sum = tvals[0]
-    count = 1
-    tmonth = [] #List of average time value for each month
-    tmin = [] #list of start of month bounds
-    tmax = [] #list of end of month bounds
-    tmin.append(np.floor(tvals[0]))
-    #loop over all dates
-    for index, d in enumerate(datelist[1:]):
-        if d.month==month: #same month 
-            count += 1
-            val_sum += tvals[index+1] #add value to sum
-        else: #new month
-            tmonth.append(val_sum/count) #calculate average for previous month and add to list
-            val_sum = tvals[index+1] #get first value for the new month
-            count = 1
-            month = d.month
-            tmin.append(np.floor(tvals[index+1]))
-            tmax.append(np.floor(tvals[index+1]))
-    #append last month to list 
-    tmonth.append(val_sum/count)
-    print(tmonth)
-    tmax.append(np.floor(tvals[index+1])+1)
-    return np.array(tmonth), tmin,tmax
-
-# SG: CAN THE FOLLOWING 2 FUNCTIONS BE COMBINED IN ANY WAY??
-def mon2yr(tvals,refString):
-    tyr = []
-    tmin = []
-    tmax = []
-    starttime = cdtime.reltime(tvals[0],refString).tocomp(cdtime.DefaultCalendar)
-    year = starttime.year
-    tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
-    for i in tvals:
-        yearnew = cdtime.reltime(i,refString).tocomp(cdtime.DefaultCalendar).year
-        if yearnew==year:
-            pass
-        else:
-            tyr.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value+(cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value - cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)/2)
-            year = yearnew
-            tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
-            tmax.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
-    tyr.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value + (cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value - cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)/2)
-    tmax.append(cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value)
-    tyr_ar = np.array(tyr)
-    print(f'tvals: {tyr_ar}')
-    return tyr_ar,tmin,tmax
-
-def yrpoint(tvals,refString):
-    tyr = []
-    tmin = []
-    tmax = []
-    starttime = cdtime.reltime(tvals[0],refString).tocomp(cdtime.DefaultCalendar)
-    year = starttime.year
-    tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
-    for i,tval in enumerate(tvals):
-        yearnew = cdtime.reltime(tval,refString).tocomp(cdtime.DefaultCalendar).year
-        if yearnew==year:
-            pass
-        else:
-            tyr.append(tvals[i-1])
-            year = yearnew
-            tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
-            tmax.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
-    tyr.append(tvals[-1])
-    tmax.append(cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value)
-    tyr_ar = np.array(tyr)
-    print(f'tvals: {tyr_ar}')
-    return tyr_ar,tmin,tmax
+    return vals_wsum,clim_days     
 
 def zonal_mean(var):
     return var.mean(axis=-1)
@@ -1751,10 +1573,204 @@ def getSource(model):
     else: return model +': unknown source'
 
 
+# SG: Not really sure why this plotting function exists when it's 
+# better/easier to plot data in a notebook (i.e. ARE)
+# I've modified it to work better anyway.
+def plotVar(outpath,ret,cmip_table,vcmip,parent_source_id,experiment_id):
+    '''
+    Give a sample plot of a variable
+    '''
+
+# Using with to open the file ensures that the file is closed properly even if an error occurs.
+    with xr.open_dataset(ret) as f:
+
+        var = f.fld_s00i033
+        dims = var.shape  # don't need this
+        units = var.units
+
+        print('plotting...')
+
+        #3D field: 
+        #plot lat-lon plots at different levels, 
+        #for first time step only
+        if var.ndim == 4:
+
+            fig, axes = plt.subplots(nrows=2, ncols=2)
+            axes = axes.flatten()
+
+            #3D- plot contour at first z level, 
+            axes[0].set_title('first level')
+            axes[0].imshow(var[0,0,:,:],origin='lower')
+            axes[0].colorbar()
+
+            #last level
+            axes[1].set_title('last level')
+            axes[1].imshow(var[0,-1,:,:],origin='lower')
+            axes[1].colorbar()
+
+            #middle level
+            lev = dims[1] // 2
+            axes[2].set_title('middle level')
+            axes[2].imshow(var[0,lev,:,:],origin='lower')
+            axes[2].colorbar()
+
+            #average
+            axes[3].set_title('ave over z')
+            ave = np.ma.average(var[0,:],axis=0)
+            axes[3].imshow(ave,origin='lower')
+            axes[3].colorbar()
+
+            plt.tight_layout()
+
+        #2D field:
+        elif var.ndim == 3:
+
+            plt.figure()
+            #plot lat-lon contour at first time
+            plt.imshow(var[0,:,:],origin='lower')
+            plt.colorbar()
+
+        #2D field:(fixed time variables)
+        elif var.ndim == 2:
+            
+            plt.figure()
+            #plot lat-lon contours 
+            plt.imshow(var[:,:],origin='lower')
+            plt.colorbar()
+        else: 
+        #assume scalar
+        #plot line plot, variable vs. time
+            plt.plot(np.array(var[:]))
+
+        #Set a super title for whole image
+        plt.suptitle('Plot of '+vcmip +' ('+units+')')    
+
+        # Make output directory and save figure:
+        folder = outpath+'/plots/'+parent_source_id+'/'+experiment_id+'/'+cmip_table
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+        plt.savefig(folder+'/'+vcmip+'.png')
+        figloc = folder+'/'+vcmip+'.png'
+        print(f"saved figure for variable '{vcmip}': {figloc}")
+        #cleanup
+        plt.clf()
+
+#-------------------------------------------
+# Time functions that Paola could have bypassed by now:
+'''
+def calcRefDate(time):
+    ref = re.search('\d{4}-\d{2}-\d{2}', time.units).group(0).split('-')
+    vout = datetime.date(int(ref[0]), int(ref[1]), int(ref[2]))
+    return vout
+
+# returns days in month for time variable
+def daysInMonth(time):
+    tvals = time[:]
+    refdate = calcRefDate(time)
+    if len(tvals)==1:
+        d = datetime.timedelta(int(tvals[0]))+refdate
+        dummy,days = calendar.monthrange(d.year,d.month)
+    else:
+        days = []
+        for t in tvals:
+            d = datetime.timedelta(int(t))+refdate
+            dummy,d = calendar.monthrange(d.year,d.month)
+            days.append(d)
+    return days   
+
+#convert daily time values to monthly
+#returns time values, 
+#and the min and max time for each month (bounds)
+#assumes time is in the gregorian calandar, relative to date reference date
+def day2mon(tvals,ref):
+    datelist = []
+    for t in tvals: 
+        datelist.append(datetime.datetime(ref,1,1)+ datetime.timedelta(t))
+    #get month, value of first date
+    month = datelist[0].month
+    val_sum = tvals[0]
+    count = 1
+    tmonth = [] #List of average time value for each month
+    tmin = [] #list of start of month bounds
+    tmax = [] #list of end of month bounds
+    tmin.append(np.floor(tvals[0]))
+    #loop over all dates
+    for index, d in enumerate(datelist[1:]):
+        if d.month==month: #same month 
+            count += 1
+            val_sum += tvals[index+1] #add value to sum
+        else: #new month
+            tmonth.append(val_sum/count) #calculate average for previous month and add to list
+            val_sum = tvals[index+1] #get first value for the new month
+            count = 1
+            month = d.month
+            tmin.append(np.floor(tvals[index+1]))
+            tmax.append(np.floor(tvals[index+1]))
+    #append last month to list 
+    tmonth.append(val_sum/count)
+    print(tmonth)
+    tmax.append(np.floor(tvals[index+1])+1)
+    return np.array(tmonth), tmin,tmax
+
+# SG: CAN THE FOLLOWING 2 FUNCTIONS BE COMBINED IN ANY WAY??
+def mon2yr(tvals,refString):
+    tyr = []
+    tmin = []
+    tmax = []
+    starttime = cdtime.reltime(tvals[0],refString).tocomp(cdtime.DefaultCalendar)
+    year = starttime.year
+    tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
+    for i in tvals:
+        yearnew = cdtime.reltime(i,refString).tocomp(cdtime.DefaultCalendar).year
+        if yearnew==year:
+            pass
+        else:
+            tyr.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value+(cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value - cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)/2)
+            year = yearnew
+            tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
+            tmax.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
+    tyr.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value + (cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value - cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)/2)
+    tmax.append(cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value)
+    tyr_ar = np.array(tyr)
+    print(f'tvals: {tyr_ar}')
+    return tyr_ar,tmin,tmax
+
+def yrpoint(tvals,refString):
+    tyr = []
+    tmin = []
+    tmax = []
+    starttime = cdtime.reltime(tvals[0],refString).tocomp(cdtime.DefaultCalendar)
+    year = starttime.year
+    tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
+    for i,tval in enumerate(tvals):
+        yearnew = cdtime.reltime(tval,refString).tocomp(cdtime.DefaultCalendar).year
+        if yearnew==year:
+            pass
+        else:
+            tyr.append(tvals[i-1])
+            year = yearnew
+            tmin.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
+            tmax.append(cdtime.comptime(year,1,1).torel(refString,cdtime.DefaultCalendar).value)
+    tyr.append(tvals[-1])
+    tmax.append(cdtime.comptime(year+1,1,1).torel(refString,cdtime.DefaultCalendar).value)
+    tyr_ar = np.array(tyr)
+    print(f'tvals: {tyr_ar}')
+    return tyr_ar,tmin,tmax
+'''
 
 
 '''
 SG: These are unused functions:
+
+#def daysInMonth(time):
+#    tvals=time[:]
+#        
+#    days=np.zeros([len(tvals)])
+#    for i,t in enumerate(tvals):    
+#        d=datetime.timedelta(int(t))+refdate
+#        dummy,days[i]=calendar.monthrange(d.year,d.month)
+#    print days
+#    return days[0]
 
 idea use to reduce memory usage (doesn't seem to make a difference)
 def calcBurdens(variables):

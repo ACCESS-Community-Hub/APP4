@@ -288,6 +288,7 @@ def check_in_range(ctx, all_files, tdim, app_log):
             except Exception as e:
                 app_log.error(f"Cannot open file: {e}")
     app_log.debug(f"Number of files in time range: {len(inrange_files)}")
+    app_log.info("Found all the files...")
     return inrange_files
 
  
@@ -723,7 +724,7 @@ def get_axis_dim(ctx, var, app_log):
                 print(f"Unknown axis: {axis_name}")
     return t_axis, z_axis, j_axis, i_axis, p_axis
 
-
+# SG: need to have a chat about this function...
 @click.pass_context
 def get_bounds(ctx, ds, axis, cmor_name, app_log):
     """Returns bounds for input dimension, if bounds are not available
@@ -739,14 +740,22 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log):
     #The default bounds assume that the grid cells are centred on
     #each grid point specified by the coordinate variable.
     keys = [k for k in axis.attrs]
-    if  'bounds' in keys and not changed_bnds:
+    if 'bounds' in keys and not changed_bnds:
         dim_val_bnds = ds[axis.bounds].values
         app_log.info("using dimension bounds")
         if 'time' in cmor_name:
             dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'])
-    elif edges in keys and not changed_bnds:
-        dim_val_bnds = ds[axis.edges].values
-        app_log.info("using dimension edges as bounds")
+    # SG: I had to add this so that the bounds were taken from the Xarray dataset
+    # I think this whole function needs to be re-written. There definitely doesn't need
+    # to be a difference between variables that need a claulation and those that don't
+    elif 'bounds' in keys and changed_bnds:
+        dim_val_bnds = ds[axis.bounds].values
+        app_log.info("using dimension bounds")
+        if 'time' in cmor_name:
+            dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'])
+    #elif edges in keys and not changed_bnds:
+        #dim_val_bnds = ds[axis.edges].values
+        #app_log.info("using dimension edges as bounds")
     else:
         app_log.info(f"No bounds for {dim} - creating default bounds")
         # if time check we have units and convert dates to floats
@@ -1010,24 +1019,44 @@ def calc_monsecs(ctx, dsin, tdim, in_missing, app_log):
     #    raise
     return array
 
-
 @click.pass_context
 def normal_case(ctx, dsin, tdim, in_missing, app_log):
     """
+    This function pulls the required variables from the Xarray dataset.
+    If a calculation isn't needed then it just returns the variables to be saved.
+    If a calculation is needed then it evaluates the calculation and returns the result.
     """
+    # Save the variables
     if ctx.obj['calculation'] == '':
         array = dsin[ctx.obj['vin'][0]][:]
         app_log.debug(f"{array}")
     else:
-        print("calculating...")
-        #PP potentially pass tdim??
-        data = calculateVals(dsin, ctx.obj['vin'], ctx.obj['calculation'])
+        var = []
+        app_log.info("Adding variables to var list")
+        for v in ctx.obj['vin']:
+            try:
+                var.append(dsin[v][:])
+            except Exception as e:
+                app_log.error(f"Error appending variable, {v}: {e}")
+                raise
+
+        app_log.info("Finished adding variables to var list")
+
+        # Now try to perform the required calculation
+        try:
+            calc = eval(ctx.obj['calculation'])
+        except Exception as e:
+            app_log.error(f"error evaluating calculation, {ctx.obj['calculation']}: {e}")
+            raise
+
         #convert mask to missing values
         #PP why mask???
-        array = array.fillna(in_missing)
-    # temporarily ignore this exception
-    #if 'depth100' in ctx.obj['axes_modifier']:
-    #    data_vals = depth100(data_vals[:,9,:,:], data_vals[:,10,:,:])
-    #If the data is not a climatology:
-    #Write the data to the CMOR file.
-    return array 
+        #SG: Yeh not sure this is needed.
+        array = calc.fillna(in_missing)
+        app_log.debug(f"{array}")
+        
+        # temporarily ignore this exception
+        #if 'depth100' in ctx.obj['axes_modifier']:
+        #   data_vals = depth100(data_vals[:,9,:,:], data_vals[:,10,:,:])
+
+    return array
