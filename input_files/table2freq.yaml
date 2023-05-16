@@ -1,7 +1,8 @@
 #define the frequency of variable from the cmip table (and variable name (pfull and phalf only))
-10m: 10m
-1hr: 1hr
+A10m: 10m
+A1hr: 1hr
 3hr: 3hr
+A6hr: 6hr
 6hrLev:  6hr
 6hrPlevPt:  6hr
 6hrPlev:  6hr

@@ -66,7 +66,7 @@ def write_variable_map(outpath, table, matches):
     fcsv.close()
 
 
-def determine_dimension(freq,dimensions,timeshot,realm,table,skip):
+def determine_dimension(freq, dimensions, timeshot, realm, table, skip):
     UM_realms, MOM_realms, CICE_realms = define_realms()
     if skip:
         dimension = ''
@@ -111,26 +111,9 @@ def determine_dimension(freq,dimensions,timeshot,realm,table,skip):
     return dimension
 
 
-def priority_check(cmipvar, table, priorityonly):
-    """Return 1 if variable in variable list, 0 if not
-       Used only if prioritylist is available
-    """
-    priority_ret = 0
-    if priorityonly:
-        for item in priority_vars:
-            if (table == item[0]) and (cmipvar == item[1]):
-                priority_ret = 1
-            else:
-                pass
-    else:
-        priority_ret = 1
-    return priority_ret
-
-
 def find_matches(cdict, table, cmorname, realm, freq, cfname,
-                 years, dimensions, matches, nomatches):
-    matchlist = []
-    skiplist = set()
+                 years, dimensions):
+    matches = [] 
     if 'Pt' in freq:
         timeshot = 'inst'
         freq = str(freq)[:-2]
@@ -140,78 +123,19 @@ def find_matches(cdict, table, cmorname, realm, freq, cfname,
     else:
         timeshot = 'mean'
     with open(cdict['master_map'],'r') as g:
-        champ_reader = csv.reader(g, delimiter=',')
-        for row in champ_reader:
-            skip = False
-            try:
-                row[0]
-            except:
-                row = '#'
-            if row[0].startswith('#'):
-                pass
-            elif row[0] == cmorname and row[7] == cdict['access_version']:
-                ## catch zonal vars here
-                cmipvar = row[0]
-                access_vars = row[1]
-                calculation = row[2]
-                if ',' in calculation:
-                    calculation = f'"{calculation}"'
-                units = row[4]
-                positive = row[6]
-                realm2 = row[8].split()[0]
-                varnotes = row[9]
-                # temporarily use atm ocn then we should change the folder names
-                if realm == 'uncertain':
-                    realm = realm2
-                #elif realm != realm2:
-                #    realm = realm2
-                #check for special cases
-                #freq, axes_modifier, calculation, realm, realm2, \
-                #timeshot, access_vars, skip = special_cases(exptoprocess,
-                #    cmipvar, freq, axes_modifier, calculation, realm, \
-                #    realm2,table, timeshot, access_vars, skip,
-                #    access_version, varnotes)
-                try:
-                    # will need to ad dmore cases and possibly just use a dictionary?
-                    dimension = determine_dimension(freq, dimensions,
-                                timeshot, realm, table, skip)
-                except:
-                    raise Exception('E: realm not identified')
-                if realm in ['atmos', 'land']:
-                    realmdir = 'atm/netCDF'
-                elif realm == 'ocean':
-                    realmdir == 'ocn' 
-                elif realm == 'ice':
-                    realmdir = 'ice'
-                priority_ret = priority_check(cmipvar, table, cdict['priorityonly'])
-                #PP as I'm ingoring special cases this is the first time we potentially define skip as True
-                if priority_ret == 0:
-                    skip = True
-                    file_structure = None
-                    skiplist.append(cmipvar)
-                #elif realm in UM_realms:
-                else:
-                    file_structure = f"/{realmdir}/{row[12]}*.nc"
-                if file_structure != None:
-                    matches.append(f"{cmipvar},{definable}," +
-                         f"{access_vars},{file_structure},{calculation}," +
-                         f"{units},{axes_modifier},{positive}," +
-                         f"{timeshot},{years},{varnotes},{cfname}," +
-                         f"{dimension}")
-                    if not cmorname in matchlist:
-                        matchlist.append(cmipvar)
-                elif (file_structure == None) and (not skip):
-                    if not cmorname in nomatches:
-                        nomatches.append(cmorname)
-    all_list = matchlist + nomatches + list(skiplist)
-    if cmorname not in all_list:
-        priority_ret = priority_check(cmorname, table, cdict['priorityonly'])
-        if priority_ret == 1:
-            nomatches.append(cmorname)
-        elif priority_ret == 0:
+        champ_reader = DictReader(g)
+        var_list = list(dict_reader)
+    for v in var_list
+        if v['cmip_var'].startswith('#'):
             pass
+        elif v['cmip_var'] == cmorname and v['version'] == cdict['access_version']:
+            v['file_structure'] = f"/{v['realm']}/{v['finput']}*.nc"
+            v['timeshot'] = timeshot
+            v['years'] = years
+            v['cfname'] = cfname
+            matches.append(v)
     g.close()
-    return matches,nomatches
+    return matches
 
 
 def read_yaml(fname):
@@ -422,22 +346,13 @@ def read_dreq_vars(cdict, table):
 
 def create_variable_map(cdict, table):
     dreq_variables = read_dreq_vars(cdict, table)
-    matches = []
-    nomatches = []
     for cmorname, realm, freq, cfname, years, dimensions in dreq_variables:
-        matches, nomatches = find_matches(cdict, table, cmorname,
-                 realm, freq, cfname, years, dimensions, matches, nomatches)
+        matches = find_matches(cdict, table, cmorname,
+                 realm, freq, cfname, years, dimensions)
     if matches == []:
         print(f"{table}:  no ACCESS variables found")
     else:
         write_variable_map(cdict['variable_maps'], table, matches)
-    if nomatches != []:
-        print(f"    variables in table '{table}' that were not " +
-              "identified in the master variable map:")
-        print(f"      {nomatches}")
-    else:
-        print(f"    success: all variables in table '{table}' were " +
-              "identified in the master variable map")
         
 
 def dreq_map(cdict):
@@ -573,7 +488,6 @@ def master_setup(conn):
             file_size real,
             local_exp_id text,
             calculation text,
-            axes_modifier text,
             in_units text,
             positive text,
             timeshot text,
@@ -775,31 +689,6 @@ def add_exp(version):
     return
 
 
-def grids_setup(conn, grid_file):
-    cursor = conn.cursor()
-    #The grids table describes the number of gridpoints for different classes of variables
-    #Delete the grids table then make it again (only necessary if changes are made to its structure)
-    cursor.execute('''drop table if exists grids''')
-    try:
-        cursor.execute('''create table if not exists grids (
-            frequency text,
-            dimensions text,
-            max_dimensions text,
-            gridpoints integer,
-            max_file_size_per_year integer,
-            max_file_years integer,
-            primary key (dimensions,frequency)) ''')
-        f=csv.reader(open(grid_file,'r'))
-        print(f"using grid file: {grid_file}")
-        for line in f:
-            if len(line) != 0:
-                if line[0][0] != '#':
-                    cursor.execute('insert into grids values (?,?,?,?,?,?)', line[0:6])
-    except Exception as e:
-        print( e, "\n unable to perform operations on grids table")
-    conn.commit()
-
-
 def champions_setup(conn, champions_dir):
     cursor = conn.cursor()
     cursor.execute('drop table if exists champions')
@@ -889,7 +778,7 @@ def populate(conn, config):
 #populate the database for variables that are requested for all times for all experiments
 def populate_unlimited(cursor, cdict, opts):
     #monthly, daily unlimited except cable or moses specific diagnostics
-    cursor.execute("select * from champions where definable=='yes'")
+    cursor.execute("select * from champions")
     rows = cursor.fetchall()
     #populateRows(cursor.fetchall(), opts, cursor)
     populateRows(rows, cdict, opts, cursor)
@@ -1020,22 +909,21 @@ def buildFileName(cdict, opts):
 
 def populateRows(rows, cdict, opts, cursor):
     tableToFreq = read_yaml(f"input_files/table2freq.yaml")
+    #CREATE TABLE champions( cmip_table cmip_variable definable text, access_variable text, file_structure text, calculation text, in_units text, axes_modifier text, positive text, timeshot text, years text, notes text, cfname text, dimension text, primary key (cmip_variable,cmip_table))
     for champ in rows:
         #defaults
         #from champions table:
-        frequency = tableToFreq[champ[0]]
+        frequency = tableToFreq[cdict['cmip_table']] #cmip table
         opts['frequency'] = frequency
-        opts['cmip_table'] = champ[0]
-        opts['variable_id'] = champ[1]
-        opts['vin'] = champ[3]
-        try:
-            [a,b] = champ[4].split()
-            opts['infile'] = f"{opts['local_exp_dir']}/{a} {opts['local_exp_dir']}/{b}"
-        except:
-            opts['infile'] = f"{opts['local_exp_dir']}/{champ[4]}"
+        opts['cmip_table'] = cdict['cmip_table']
+        opts['variable_id'] = champ[1] # cmip_var
+        opts['vin'] = champ[3] # access_vars
+        paths = file_structure.split() 
+        opts['infile'] = ''
+        for x in paths:
+            opts['infile'] += f"{opts['local_exp_dir']}/{x} "
         opts['calculation'] = champ[5]
         opts['in_units'] = champ[6]
-        opts['axes_modifier'] = champ[7]
         opts['positive'] = champ[8]
         opts['timeshot'] = champ[9]
         opts['years'] = champ[10]
@@ -1127,7 +1015,6 @@ def main():
     conn.text_factory = str
     #setup database tables
     master_setup(conn)
-    grids_setup(conn, cdict['grid_file'])
     champions_setup(conn, cdict['variable_maps'])
     populate(conn, config)
     print('past populate')
