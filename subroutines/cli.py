@@ -149,6 +149,7 @@ def app(ctx, infile, debug):
         cfg = yaml.safe_load(yfile)
 
     ctx.obj = cfg['cmor']
+    ctx.obj['attrs'] = cfg['attrs']
     print(ctx.obj)
     # set up main app4 log
     ctx.obj['log'] = config_log(debug, ctx.obj['app_logs'])
@@ -170,6 +171,7 @@ def app_wrapper(ctx):
     """
     #open database    
     conn=sqlite3.connect(ctx.obj['database'], timeout=200.0)
+    print(ctx.obj['database'])
     conn.text_factory = str
     cursor = conn.cursor()
 
@@ -179,7 +181,7 @@ def app_wrapper(ctx):
     #fetch rows
     try:
        rows = cursor.fetchall()
-       print(rows)
+       print(f"totol rows: {rows}")
     except:
        print("no more rows to process")
     conn.commit()
@@ -222,6 +224,7 @@ def app_bulk(ctx, app_log):
     #
     #Define the dataset.
     #
+    #json_file = ctx.obj['json_file_path']
     cmor.dataset_json(ctx.obj['json_file_path'])
     #
     #Write a global variable called version_number which is used for CSIRO purposes.
@@ -456,10 +459,11 @@ def app_bulk(ctx, app_log):
 #PP not sure if better passing dreq_years with context or as argument
 @click.pass_context
 def process_row(ctx, row):
+    print(row)
     app_log = ctx.obj['log']
     #set version number
     #set location of cmor tables
-    cmip_table_path = os.environ.get('CMIP_TABLES')
+    cmip_table_path = ctx.obj['cmip_tables']
     #
     #First map entries from database row to variables
     #
@@ -502,14 +506,13 @@ def process_row(ctx, row):
     grid_label = row[28]
     access_version = row[29]
     json_file_path = row[30]
+    print(json_file_path)
     reference_date = row[31]
     version = row[32]
     rowid = row[33]
     notes = f"Local exp ID: {local_exp_id}; Variable: {vcmip} ({vin})"
-    try:
-        exp_description = os.environ.get('EXP_DESCRIPTION')
-    except: 
-        exp_description = f"Exp: {experiment_id}"
+    exp_description = ctx.obj['attrs']['exp_description']
+
     if ctx.obj['dreq_years']:
         #PP temporarily adding this
         try:
@@ -577,7 +580,7 @@ def process_row(ctx, row):
         #Do the processing:
         #
         expected_file = file_name
-        successlists = ctx.obj['successlists']
+        successlists = ctx.obj['success_lists']
         #if not os.path.exists(outpath):
         #    print(f"creating outpath directory: {outpath}")
         #    os.makedirs(outpath)
@@ -588,7 +591,7 @@ def process_row(ctx, row):
             local_vars = locals()
             for x in ['infile', 'tstart', 'tend', 'vin', 'vcmip', 'cmip_table_path', 'frequency',
                 'cmip_table', 'in_units', 'calculation', 'axes_modifier', 'positive', 'notes',
-                'json_file_path', 'timeshot', 'access_version', 'reference_date', 'exp_description']:
+                'timeshot', 'access_version', 'reference_date', 'exp_description']:
                 ctx.obj[x] = local_vars[x]
             #process the file,
             ret = app_bulk(app_log)
@@ -602,14 +605,15 @@ def process_row(ctx, row):
             #
             if ret == 0:
                 msg = f"\ndata incomplete for variable: {vcmip}\n"
-                with open(ctx.obj['database_updater'],'a+') as dbu:
-                    dbu.write(f"setStatus('data_Unavailable',{rowid})\n")
-                dbu.close()
+                #PP temporarily commenting this
+                #with open(ctx.obj['database_updater'],'a+') as dbu:
+                #    dbu.write(f"setStatus('data_Unavailable',{rowid})\n")
+                #dbu.close()
             elif ret == -1:
                 msg = "\nreturn status from the APP shows an error\n"
-                with open(['database_updater'],'a+') as dbu:
-                    dbu.write(f"setStatus('unknown_return_code',{rowid})\n")
-                dbu.close()
+                #with open(['database_updater'],'a+') as dbu:
+                #    dbu.write(f"setStatus('unknown_return_code',{rowid})\n")
+                #dbu.close()
             else:
                 insuccesslist = 0
                 with open(f"{successlists}/{ctx.obj['exp']}_success.csv",'a+') as c:
@@ -635,10 +639,11 @@ def process_row(ctx, row):
                     print(f"expected and cmor file paths match")
                     msg = f"\nsuccessfully processed variable: {table},{vcmip},{tstart},{tend}\n"
                     #modify file permissions to globally readable
-                    #os.chmod(ret, 0o493)
-                    with open(ctx.obj['database_updater'],'a+') as dbu:
-                        dbu.write(f"setStatus('processed',{rowid})\n")
-                    dbu.close()
+                    #oos.chmod(ret, 0o493)
+                    #PP temporarily commenting this
+                    #with open(ctx.obj['database_updater'],'a+') as dbu:
+                    #    dbu.write(f"setStatus('processed',{rowid})\n")
+                    #dbu.close()
                     #plot variable
                     #try:
                     #    if plot:
@@ -650,18 +655,20 @@ def process_row(ctx, row):
                     print("expected file: {expected_file}")
                     print("expected and cmor file paths do not match")
                     msg = f"\nproduced but file name does not match expected: {table},{vcmip},{tstart},{tend}\n"
-                    with open(ctx.obj['database_updater'],'a+') as dbu:
-                        dbu.write(f"setStatus('file_mismatch',{rowid})\n")
-                    dbu.close()
+                    #PP temporarily commenting this
+                    #with open(ctx.obj['database_updater'],'a+') as dbu:
+                    #    dbu.write(f"setStatus('file_mismatch',{rowid})\n")
+                    #dbu.close()
         else :
             #
             #we are not processing because the file already exists.     
             #
             msg = f"\nskipping because file already exists for variable: {table},{vcmip},{tstart},{tend}\n"
             print(f"file: {expected_file}")
-            with open(ctx.obj['database_updater'],'a+') as dbu:
-                dbu.write(f"setStatus('processed',{rowid})\n")
-            dbu.close()
+            #PP temporarily commenting this
+            #with open(ctx.obj['database_updater'],'a+') as dbu:
+            #    dbu.write(f"setStatus('processed',{rowid})\n")
+            #dbu.close()
     except Exception as e: #something has gone wrong in the processing
         print(e)
         traceback.print_exc()
@@ -680,16 +687,17 @@ def process_row(ctx, row):
                 pass
         c.close()
         msg = f"\ncould not process file for variable: {table},{vcmip},{tstart},{tend}\n"
-        with open(ctx.obj['database_updater'],'a+') as dbu:
-            dbu.write(f"setStatus('processing_failed',{rowid})\n")
-        dbu.close()
+        #PP temporarily commenting this
+        #with open(ctx.obj['database_updater'],'a+') as dbu:
+        #    dbu.write(f"setStatus('processing_failed',{rowid})\n")
+        #dbu.close()
     print(msg)
     return msg
 
 
 @click.pass_context
 def process_experiment(ctx, row):
-    varlogfile = f"{ctx.obj['varlogs']}/varlog_{row[10]}_{row[9]}_{row[12]}-{row[13]}.txt"
+    varlogfile = f"{ctx.obj['var_logs']}/varlog_{row[10]}_{row[9]}_{row[12]}-{row[13]}.txt"
     sys.stdout = open(varlogfile, 'w')
     sys.stderr = open(varlogfile, 'w')
     print(f"process: {mp.Process()}")

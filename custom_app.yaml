@@ -38,7 +38,7 @@ cmor:
     # Variables to CMORise: 
     # CMIP6 table/variable to process; default is 'all'. Or create a file listing variables to process (VAR_SUBSET[_LIST]).
     table_to_process: Amon                        # CMIP6 table to process. Default is 'all'
-    variable_to_process: tas                      # CMIP6 variable to process. Default is 'all'
+    variable_to_process: prc                      # CMIP6 variable to process. Default is 'all'
     subdaily: !!str false                               # subdaily selection options - select one of: [true, false, only]
     var_subset: !!bool false                             # use a sub-set list of variables to process, as defined by 'VAR_SUBSET_LIST'
     var_subset_list: '' 
@@ -51,8 +51,11 @@ cmor:
     # choose here the mapping created with cli_db.py based on the actual model output
     master_map: "input_files/master_cm000a.csv"
     grid_file: "input_files/grids.csv"
+    # use official cmip6 tables for CMIP6 mode
+    #cmip_tables: "input_files/cmip6-cmor-tables/Tables/"
+    cmip_tables: "input_files/custom_mode_cmor-tables/Tables/"
     history_data: ''
-    _control_vocabulary_file: "CMIP6_CV.json"
+    _control_vocabulary_file: "ACDD_CV.json"
     _cmip6_option: CMIP6
   # Additional NCI information:
     project: w40                             # NCI project to charge compute; $PROJECT = your default project

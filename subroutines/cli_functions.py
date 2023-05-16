@@ -83,6 +83,7 @@ def find_files(ctx, app_log):
     app_log.info(ctx.obj['cmip_table'])
     tmp = ctx.obj['infile'].split()
     file_touse = tmp[0]
+    print(f'file to use: {file_touse}')
     #if there are two different files used make a list of extra access files
     if len(tmp)>1:
         extra_files = glob.glob(tmp[1])
@@ -92,32 +93,6 @@ def find_files(ctx, app_log):
     #set normal set of files
     all_files = glob.glob(file_touse)
     all_files.sort()
-    #hack to remove files not in time range
-    tmp = []
-    for fn in all_files:
-        if os.path.basename(fn).startswith('ice'):
-            #tstamp=int(os.path.basename(fn).split('.')[1][0:3])
-            tstamp = int(re.search("\d{4}",os.path.basename(fn)).group())
-        elif os.path.basename(fn).startswith('ocean'):
-            #tstamp=int(os.path.basename(fn).split('.')[1][3:6])
-            tstamp = int(re.search("\d{4}",os.path.basename(fn)).group())
-        else:
-            if ctx.obj['access_version'].find('CM2') != -1:
-                tstamp = int(os.path.basename(fn).split('.')[1][2:6])
-            elif ctx.obj['access_version'].find('ESM') != -1:
-                tstamp = int(os.path.basename(fn).split('.')[1][3:7])
-            else:
-                raise Exception('E: ACCESS_version not identified')
-        if ctx.obj['tstart'] <= tstamp and tstamp <= ctx.obj['tend']:
-            tmp.append(fn)
-    all_files = tmp
-    if extra_files != None:
-        tmp = []
-        for fn in extra_files:
-            tstamp = int(re.search("\d{4}",fn).group())
-            if ctx.obj['tstart'] <= tstamp and tstamp <= ctx.obj['tend']:
-                tmp.append(fn)
-        extra_files = tmp
     return all_files, extra_files
 
 
@@ -128,7 +103,9 @@ def check_var_in_file(all_files, varname, app_log):
     found = False
     while i < len(all_files):
         try:
+            print(varname)
             ds = xr.open_dataset(all_files[i], decode_times=False)
+            print(ds)
             #see if the variable is in the file
             var = ds[varname]
             found = True
@@ -211,8 +188,13 @@ def check_timestamp(ctx, all_files, app_log):
        eventually it would make sense to make sure all files generated are consistent in naming
     """
     inrange_files = []
-    realm = ctx.obj['realm']
+    #PP currently not defined
+    #realm = ctx.obj['realm']
+    # hack to get through
+    realm='atmos'
     app_log.info("checking files timestamp ...")
+    tstart = ctx.obj['tstart'].replace('-','')
+    tend = ctx.obj['tend'].replace('-','')
     #if we are using a time invariant parameter, just use a file with vin
     if ctx.obj['cmip_table'].find('fx') != -1:
         inrange_files = [all_files[0]]
@@ -255,7 +237,7 @@ def check_timestamp(ctx, all_files, app_log):
                     tstamp += '01'
             # get first and last values as date string
             app_log.debug(f"tstamp for {inf}: {tstamp}")
-            if ctx.obj['tstart'] <= int(tstamp) <= ctx.obj['tend']:
+            if tstart <= tstamp <= tend:
                 inrange_files.append(infile)
     return inrange_files
 
@@ -748,30 +730,34 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log):
     # SG: I had to add this so that the bounds were taken from the Xarray dataset
     # I think this whole function needs to be re-written. There definitely doesn't need
     # to be a difference between variables that need a claulation and those that don't
-    elif 'bounds' in keys and changed_bnds:
-        dim_val_bnds = ds[axis.bounds].values
-        app_log.info("using dimension bounds")
-        if 'time' in cmor_name:
-            dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'])
-    #elif edges in keys and not changed_bnds:
-        #dim_val_bnds = ds[axis.edges].values
-        #app_log.info("using dimension edges as bounds")
+    #PP temporarily commenting this to force recalculation of boundaries if
+    # calculation as potnetially axis have changed
+    # but also to capture errors in rest of the function
+    #elif 'bounds' in keys and changed_bnds:
+    #    dim_val_bnds = ds[axis.bounds].values
+    #    app_log.info("using dimension bounds")
+    #    if 'time' in cmor_name:
+    #        dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'])
+    elif 'edges' in keys and not changed_bnds:
+        dim_val_bnds = ds[axis.edges].values
+        app_log.info("using dimension edges as bounds")
     else:
         app_log.info(f"No bounds for {dim} - creating default bounds")
         # if time check we have units and convert dates to floats
         if 'time' in cmor_name:
-            axis_val = cftime.date2num(axis, units=ctx.obj['reference_date'])
+            ax_val = cftime.date2num(axis, units=ctx.obj['reference_date'])
         else:
-            axis_val = axis.values
+            ax_val = axis.values
         try:
-            min_vals = (axis + axis.shift(1))/2
-            min_vals[0] = 1.5*axis[0] - 0.5*axis[1]
-            max_vals = min_vals.shift(-1)
-            max_vals[-1] = 1.5*axis[-1] - 0.5*axis[-2]
+            #PP using roll this way without specifying axis assume axis is 1D
+            min_val = (ax_val + np.roll(ax_val, 1))/2
+            min_val[0] = 1.5*ax_val[0] - 0.5*ax_val[1]
+            max_val = np.roll(min_val, -1)
+            max_val[-1] = 1.5*ax_val[-1] - 0.5*ax_val[-2]
         except Exception as e:
             app_log.warning(f"dodgy bounds for dimension: {dim}")
             app_log.error(f"error: {e}")
-        dim_val_bnds = np.column_stack((min_vals, max_vals))
+        dim_val_bnds = np.column_stack((min_val, max_val))
     # Take into account type of axis
     # as we are often concatenating along time axis and bnds are considered variables
     # they will also be concatenated along time axis and we need only 1st timestep

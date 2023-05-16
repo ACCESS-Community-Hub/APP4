@@ -29,7 +29,8 @@ import glob
 import json
 import stat
 import xarray as xr
-from datetime import datetime
+from datetime import datetime, date
+from collections import Counter
 
 
 def config_log(debug):
@@ -39,10 +40,11 @@ def config_log(debug):
     # set a formatter to manage the output format of our handler
     formatter = logging.Formatter('%(asctime)s; %(message)s',"%Y-%m-%d %H:%M:%S")
     # set the level for the logger, has to be logging.LEVEL not a string
-    # until we do so cleflog doesn't have a level and inherits the root logger level:WARNING
-    level = logging.WARNING
+    level = logging.INFO
+    flevel = logging.WARNING
     if debug:
         level = logging.DEBUG
+        flevel = logging.DEBUG
     logger.setLevel(level)
 
     # add a handler to send WARNING level messages to console
@@ -54,14 +56,14 @@ def config_log(debug):
     # add a handler to send INFO level messages to file
     # the messagges will be appended to the same file
     # create a new log file every month
-    day = datetime.now().strftime("%Y%m%d")
+    day = date.today().strftime("%Y%m%d")
     logname = '/g/data/ua8/Working/packages/APP4/logs/dbapp4_log_' + day + '.txt'
     flog = logging.FileHandler(logname)
     try:
         os.chmod(logname, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO);
     except OSError:
         pass
-    flog.setLevel(logging.INFO)
+    flog.setLevel(flevel)
     flog.setFormatter(formatter)
     logger.addHandler(flog)
     # return the logger object
@@ -88,15 +90,16 @@ def mapping_sql():
                 cmip_var TEXT,
                 input_vars TEXT,
                 calculation TEXT,
-	        dimensions TEXT,
                 units TEXT,
+	        dimensions TEXT,
                 frequency TEXT,
                 realm TEXT,
+                cell_methods TEXT,
                 positive TEXT,
                 model TEXT,
                 notes TEXT,
                 origin TEXT,
-                PRIMARY KEY (cmip_var, frequency, realm, model)
+                PRIMARY KEY (cmip_var, input_vars, frequency, realm, model)
                 ) WITHOUT ROWID;""")
     return sql
 
@@ -141,9 +144,9 @@ def map_update_sql():
         SQL style string updating mapping table
     """
     sql = """INSERT OR IGNORE INTO mapping (cmip_var,
-        input_vars, calculation, dimensions, units,
-        frequency, realm, positive, model,
-        notes, origin) values (?,?,?,?,?,?,?,?,?,?,?)"""
+        input_vars, calculation, units, dimensions,
+        frequency, realm, cell_methods, positive, model,
+        notes, origin) values (?,?,?,?,?,?,?,?,?,?,?,?)"""
     return sql
 
 
@@ -223,7 +226,7 @@ def query(conn, sql, tup, first=True):
             result = c.fetchone()
         else:
             result = [ x for x in c.fetchall() ]
-        columns = [description[0] for description in c.description]
+        #columns = [description[0] for description in c.description]
         return result
 
 
@@ -239,7 +242,7 @@ def get_cmipname(conn, varname, db_log):
     """Queries mapping table for cmip name given variable name as output
        by the model
     """
-    sql = f"SELECT name FROM mapping WHERE input_vars='{varname}' and calculation=''" 
+    sql = f"SELECT cmip_var FROM mapping WHERE input_vars='{varname}' and calculation=''" 
     results = query(conn, sql,(), first=False)
     cmip_name = list(set(x[0] for x in results)) 
     if len(cmip_name) > 1:
@@ -248,6 +251,67 @@ def get_cmipname(conn, varname, db_log):
     elif len(cmip_name) == 0:
         cmip_name = ['']
     return cmip_name[0]
+
+def cmor_table_header(name, realm, frequency):
+    """
+    """
+    today = date.today()
+    interval = {'dec': "3650.0", 'yr': "365.0", 'mon': "30.0",
+                'day': "1.0", '6hr': "0.25", '3hr': "0.125",
+                '1hr': "0.041667", '10min': "0.006944", 'fx': "0.0"}
+    header = {
+        "data_specs_version": "01.00.33",
+        "cmor_version": "3.5",
+        "table_id": f"Table {name}",
+        "realm": realm,
+        "table_date": today.strftime("%d %B %Y"),
+        "missing_value": "1e20",
+        "int_missing_value": "-999",
+        "product": "model-output",
+        "approx_interval": interval[frequency],
+        "generic_levels": "",
+        "mip_era": "",
+        "Conventions": "CF-1.7 ACDD1.3"
+    }
+    return header
+
+
+def write_cmor_table(var_list, name, db_log):
+    """
+    """
+    realms = [v[2] for v in var_list]
+    setr = set(realms)
+    if len(setr) > 1:
+        realm = Counter(realms).most_common(1)[0][0]
+        db_log.info(f"More than one realms found for variables: {setr}")
+        db_log.info(f"Using: {realm}")
+    else:
+        realm = realms[0]
+    freqs = [v[1] for v in var_list]
+    setf = set(freqs)
+    if len(setf) > 1:
+        frequency = Counter(freqs).most_common(1)[0][0]
+        db_log.info(f"More than one freqs found for variables: {setf}")
+        db_log.info(f"Using: {frequency}")
+    else:
+        frequency = freqs[0]
+    header = cmor_table_header(name, realm, frequency)
+    out = {"Header": header, "variable_entry": []}
+    keys = ["frequency", "modeling_realm",
+            "standard_name", "units",
+            "cell_methods", "cell_measures",
+            "long_name", "comment", "dimensions",
+            "out_name", "type", "positive",
+            "valid_min", "valid_max",
+            "ok_min_mean_abs", "ok_max_mean_abs"] 
+    var_dict = {}
+    for v in var_list:
+        var_dict[v[0]] = dict(zip(keys, v[1:]))
+    out["variable_entry"] = var_dict
+    jfile = f"CMIP6_{name}.json"
+    with open(jfile, 'w') as f:
+        json.dump(out, f, indent=4)
+    return
 
 
 def delete_record(db, table, col, val, db_log):
@@ -311,15 +375,14 @@ def write_varlist(conn, indir, startdate, db_log):
         pattern_list = list_files(indir, f"{fpattern}*", db_log)
         nfiles = len(pattern_list) 
         db_log.debug(f"File pattern: {fpattern}")
-        #realm = [x for x in ['/atmos/', '/ocean/', '/ice/'] if x in fpath][0]
-        realm = [x for x in ['/atm/', '/ocn/', '/ice/'] if x in fpath][0]
+        realm = [x for x in ['/atmos/', '/ocean/', '/ice/'] if x in fpath][0]
+        #realm = [x for x in ['/atm/', '/ocn/', '/ice/'] if x in fpath][0]
         realm = realm[1:-1]
         db_log.debug(realm)
         frequency = 'NA'
-        if realm == 'atm':
+        if realm == 'atmos':
             frequency = fbits[-1].replace(".nc","")
-        elif realm == 'ocn':
-            print(fbits)
+        elif realm == 'ocean':
             # if I found scalar or monthly in any of fbits 
             if any(x in fname for x in ['scalar', 'monthly']):
                 frequency = 'mon'
@@ -334,19 +397,24 @@ def write_varlist(conn, indir, startdate, db_log):
         fcsv = open(f"{fpattern}.csv", 'w')
         fwriter = csv.writer(fcsv, delimiter=',')
         fwriter.writerow(["name", "cmip_var", "units", "dimensions",
-                          "frequency", "realm", "type", "size", "nfiles",
-                          "file_name", "long_name", "standard_name"])
+                          "frequency", "realm", "cell_methods", "dtype",
+                          "size", "nsteps", "file_name", "long_name",
+                          "standard_name"])
         ds = xr.open_dataset(fpath, use_cftime=True)
         coords = [c for c in ds.coords] + ['latitude_longitude']
         for vname in ds.variables:
             if vname not in coords and all(x not in vname for x in ['_bnds','_bounds']):
                 v = ds[vname]
+                # get size in bytes of grid for 1 timestep and number of timesteps
+                vsize = v[0,:].nbytes
+                nsteps = nfiles * v.shape[0]
                 # try to retrieve cmip name
                 cmip_var = get_cmipname(conn, vname, db_log)
                 attrs = v.attrs
                 line = [v.name, cmip_var, attrs.get('units', ""),
-                        " ".join(v.dims), frequency, realm, v.dtype,
-                        v.nbytes, nfiles, fpattern,
+                        " ".join(v.dims), frequency, realm, 
+                        attrs.get('cell_methods', ""), 
+                        v.dtype, vsize, nsteps, fpattern,
                         attrs.get('long_name', ""), 
                         attrs.get('standard_name', "")]
                 fwriter.writerow(line)
@@ -357,9 +425,6 @@ def write_varlist(conn, indir, startdate, db_log):
 
 def read_map_app4(fname):
     """Reads APP4 style mapping """
-    # new order
-    # cmip_var, input_vars, calculation, dimensions, units,frequency, realm, positive, model,
-    # origin, notes
     # old order
     #cmip_var,definable,input_vars,calculation,units,axes_mod,positive,ACCESS_ver[CM2/ESM/both],realm,notes
     var_list = []
@@ -371,14 +436,13 @@ def read_map_app4(fname):
                 continue
             else:
                 version = row[7].replace('ESM', 'ESM1.5')
-                version = row[7].replace('CM2', 'CM2.0')
-                newrow = [row[0], row[2], row[3], '', row[4], '',
-                          row[8], row[6], version, 'app4', row[9]]
-                # if version both append two rows one for ESM1.5 one for CM2.0
+                newrow = [row[0], row[2], row[3], row[4], '', '',
+                          row[8], '', row[6], version, row[9], 'app4']
+                # if version both append two rows one for ESM1.5 one for CM2
                 if version == 'both':
-                    newrow[8] = 'CM2.0'
+                    newrow[9] = 'CM2'
                     var_list.append(newrow)
-                    newrow[8] = 'ESM1.5'
+                    newrow[9] = 'ESM1.5'
                 var_list.append(newrow)
     return var_list
 
@@ -387,9 +451,13 @@ def read_map(fname, alias):
     """Reads complete mapping csv file and extract info necessary to create new records
        for the mapping table in access.db
     Fields from file:
-    cmip_var,input_vars,calculation,dimensions,units,frequency,realm,positive,access_ver,long_name,standard_name,filename
+    cmip_var, input_vars, calculation, units, dimensions, frequency,
+    realm, cell_methods, positive, access_ver, vtype, size, nsteps,
+    filename, long_name, standard_name
     Fields in table:
-    cmip_var,input_vars,calculation,dimensions,units,frequency,realm,positive, model, origin, notes
+    cmip_var, input_vars, calculation, units, dimensions, frequency,
+    realm, cell_methods, positive, model, notes, origin 
+    NB model and access_ver are often the same but access_ver should eventually use a CV
     """
     var_list = []
     with open(fname, 'r') as csvfile:
@@ -399,45 +467,118 @@ def read_map(fname, alias):
             if row[0][0] == "#":
                 continue
             else:
-                if row[10] != '':
-                    notes = row[10]
+                if row[15] != '':
+                    notes = row[15]
                 else:
-                    notes = row[9]
+                    notes = row[14]
                 if alias == '':
-                    alias = row[11]
-                var_list.append(row[:9] + [alias, notes])
+                    alias = row[13]
+                var_list.append(row[:10] + [notes, alias])
     return var_list
 
 
-def write_map_template(vars_list, different, pot_vars, columns, alias, version, db_log):
+def parse_vars(conn, rows, db_log):
+    """Returns records of variables to include in template master file,
+    a list of all stash variables + frequency available in model output
+    and a list of variables already defined in db
+    """
+    vars_list = []
+    stash_vars = []
+    already = []
+    # get list of variables already in db
+    # eventually we should be strict for the moment we might want to capture as much as possible
+    #sql = f"SELECT * FROM mapping where access_ver='{access_version}'"
+    sql = f"SELECT cmip_var,input_vars, frequency, realm FROM mapping"
+    results = query(conn, sql,(), first=False)
+    # create a list of dict of {(input_vars, realm): cmip-var} from mapping
+    existing_vars = {(x[1], x[3]): x[0] for x in results}
+    db_log.debug(f"Variables already in db: {existing_vars}")
+    for row in rows:
+        # if row commented skip
+        if row[0][0] == "#" or row[0] == 'name':
+            continue
+        # build tuple with cmip_var,input_vars, frequency, realm
+        else:
+            #varid = (row[1],row[0],row[4],row[5], access_version)
+            varid = (row[0],row[5])
+        if varid in existing_vars.keys():
+            # if row doesn't have existing cmip name add it
+            if row[1] not in existing_vars.values():
+                row[1] = existing_vars[varid] 
+            already.append(row[1])
+            db_log.debug(f"{row[1]} already defined in db")
+        vars_list.append(row)
+        stash_vars.append(f"{row[0]}-{row[4]}")
+    db_log.info(f"Already cmip var: {[x for x in already]}")
+    return vars_list, stash_vars, already
+
+
+def potential_vars(conn, rows, stash_vars, db_log):
+    """
+    """
+    pot_vars = set()
+    pot_varnames = set()
+    for row in rows:
+        sql = f'SELECT * FROM mapping WHERE input_vars like "%{row[0]}%"'
+        results = query(conn, sql,(), first=False)
+        for r in results:
+            # if we are calculating something
+            if r[2] != '':
+                allinput = r[1].split(" ")
+                if all(f"{x}-{row[4]}" in stash_vars for x in allinput):
+                    # add var type, size, nsteps and filename info
+                    line = list(r) + row[7:11]
+                    # add dimensions iand frequency from the file
+                    line[4] = row[3]
+                    line[5] = row[4]
+                    # This was checking all the input_vars dims etc so maybe not useful
+                    #if line[4:6] != r[4:6]:
+                    #    db_log.info(f"Mapping frequency and dims for var: {row[1]}, are different")
+                    #    db_log.info(f"{r[4:6]}")
+                    pot_vars.add(tuple(line))
+                    pot_varnames.add(r[0])
+    return pot_vars, pot_varnames
+
+
+def write_map_template(vars_list, different, pot_vars, alias, version, db_log):
     """Write mapping csv file template based on list of variables to define 
+
+    Input varlist file order:
+    name, cmip_var, units, dimensions, frequency, realm, cell_methods, vtype,
+    size, nsteps, filename, long_name, standard_name
+    Mapping db order:
+    cmip_var, input_vars, calculation, units, dimensions, frequency, realm,
+    cell_methods, positive, model, notes, origin 
+        for pot vars + vtype, size, nsteps, filename
+    Final template order:
+    cmip_var, input_vars, calculation, units, dimensions, frequency, realm,
+    cell_methods, positive, access_ver, vtype, size, nsteps, filename,
+    long_name, standard_name
     """
     with open(f"master_{alias}.csv", 'w') as fcsv:
         fwriter = csv.writer(fcsv, delimiter=',')
-        #fwriter.writerow(columns[1:])
         header = ['cmip_var', 'input_vars', 'calculation', 'units',
-                  'dimensions', 'frequency', 'realm', 'positive',
-                  'access_ver', 'long_name', 'standard_name', 'filename'] 
-        #fwriter.writerow(columns[1:]+['dimensions', 'frequency', 'realm', 'standard_name', 'long_name', 'filename'])
+                  'dimensions', 'frequency', 'realm', 'cell_methods',
+                  'positive', 'access_ver', 'vtype', 'size', 'nsteps',
+                  'filename', 'long_name', 'standard_name'] 
         fwriter.writerow(header)
         # add to template variables that can be defined
+        # if cmip_var (1) empty then use original var name
         for var in vars_list[1:]:
             if var[1] == '':
                 var[1] = var[0]
-            line = [var[1], var[0], '', var[2], '', version] + var[3:]
+            line = [var[1], var[0], ''] + var[2:7] + [ '', version] + var[7:]
+            fwriter.writerow(line)
+        fwriter.writerow(["# these are variables that can be potentially calculated. Use with caution!",
+                          '','','','','','','','','','','','','','',''])
+        for var in pot_vars:
+            line = list(var[:9]) 
+            line = line + [version] + list(var[12:16]) + [ '', '']
             fwriter.writerow(line)
         # add variables which presents more than one to calculate them
-        fwriter.writerow(["# these are variables that are defined with different inputs",'','','','','','','','',''])
+        fwriter.writerow(["# these are variables that are defined with different inputs",
+            '','','','','','','','','','','','','','',''])
         for var in different:
-            if var[1] == '':
-                var[1] = var[0]
-            #line = [var[1], var[0], '', var[2], '', version] + var[3:]
-            #fwriter.writerow(line)
+            fwriter.writerow([var])
         # add variables which can only be calculated: be careful that calculation is correct
-        fwriter.writerow(["# these are variables that can be potentially calculated. Use with caution!",
-                          '','','','','','','','',''])
-        for var in pot_vars:
-            print(var)
-            line = [var[1], var[0], '', var[2], '', version] + list(var[3:])
-            fwriter.writerow(line)
         fcsv.close()

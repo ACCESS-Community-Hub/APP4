@@ -149,17 +149,14 @@ def find_matches(cdict, table, cmorname, realm, freq, cfname,
                 row = '#'
             if row[0].startswith('#'):
                 pass
-            elif (row[0] == cmorname) and ((row[7] == cdict['access_version'])
-                    or (row[7] == 'both')):
+            elif row[0] == cmorname and row[7] == cdict['access_version']:
                 ## catch zonal vars here
                 cmipvar = row[0]
-                definable = row[1]
-                access_vars = row[2]
-                calculation = row[3]
+                access_vars = row[1]
+                calculation = row[2]
                 if ',' in calculation:
                     calculation = f'"{calculation}"'
                 units = row[4]
-                axes_modifier = row[5]
                 positive = row[6]
                 realm2 = row[8].split()[0]
                 varnotes = row[9]
@@ -261,7 +258,7 @@ def setup_env(config):
     cdict['appdir'] = cdict['appdir'].replace('/subroutines','')
     cdict['master_map'] = f"{cdict['appdir']}/{cdict['master_map']}"
     cdict['grid_file'] = f"{cdict['appdir']}/{cdict['grid_file']}"
-    # we probably don't need this??? just transfer to custom_appp.yaml
+    # we probably don't need this??? just transfer to custom_app.yaml
     # dreq file is the only field that wasn't yet present!
     #cdict['exps_table'] = f"{cdict['appdir']}/input_files/experiments.csv" 
     # Output subdirectories
@@ -588,6 +585,7 @@ def master_setup(conn):
             source_id text,
             grid_label text,
             access_version text,
+            json_file_path text,
             reference_date integer,
             version text,
             primary key(local_exp_id,experiment_id,variable_id,cmip_table,realization_idx,initialization_idx,physics_idx,forcing_idx,tstart))''')
@@ -706,6 +704,17 @@ def write_job(cdict):
     with open(fpath, 'w') as f:
         f.write(template)
     return cdict
+
+
+def create_cv_json(exp, appdir, attrs):
+    """
+    """
+    fname = f"{appdir}/input_files/json/{exp}.json"
+    json_data = json.dumps(attrs, indent = 4, sort_keys = True)
+    with open(fname, 'w') as f:
+        f.write(json_data)
+    f.close()
+    return fname
 
 
 def edit_cv_json(json_cv, attrs):
@@ -870,6 +879,7 @@ def populate(conn, config):
     opts['exp_start'] = config['cmor']['start_date'] 
     opts['exp_end'] = config['cmor']['end_date']
     opts['access_version'] = config['cmor']['access_version']
+    opts['json_file_path'] = config['cmor']['json_file_path'] 
     opts['cmip_exp_id'] = config['attrs']['experiment_id'] 
     print(f"found local experiment: {opts['local_exp_id']}")
     populate_unlimited(cursor, config['cmor'], opts)
@@ -889,16 +899,24 @@ def addRow(values, cursor):
     """Add a row to the file_master database table
        one row specifies the information to produce one output cmip5 file
     """
-    print(values)
     try:
         cursor.execute('''insert into file_master
-            (experiment_id,realization_idx,initialization_idx,physics_idx,forcing_idx,infile,outpath,file_name,vin,variable_id,cmip_table,
-            frequency,tstart,tend,status,file_size,local_exp_id,calculation,axes_modifier,in_units,positive,
-            timeshot,years,var_notes,cfname,activity_id,institution_id,source_id,grid_label,access_version,reference_date,version)
+            (experiment_id,realization_idx,initialization_idx,
+            physics_idx,forcing_idx,infile,outpath,file_name,vin,
+            variable_id,cmip_table,frequency,tstart,tend,status,
+            file_size,local_exp_id,calculation,axes_modifier,
+            in_units,positive,timeshot,years,var_notes,cfname,
+            activity_id,institution_id,source_id,grid_label,
+            access_version,json_file_path,reference_date,version)
         values
-            (:experiment_id,:realization_idx,:initialization_idx,:physics_idx,:forcing_idx,:infile,:outpath,:file_name,:vin,:variable_id,:cmip_table,
-            :frequency,:tstart,:tend,:status,:file_size,:local_exp_id,:calculation,:axes_modifier,:in_units,:positive,
-            :timeshot,:years,:var_notes,:cfname,:activity_id,:institution_id,:source_id,:grid_label,:access_version,:reference_date,:version)''', values)
+            (:experiment_id,:realization_idx,:initialization_idx,
+            :physics_idx,:forcing_idx,:infile,:outpath,:file_name,:vin,
+            :variable_id,:cmip_table,:frequency,:tstart,:tend,:status,
+            :file_size,:local_exp_id,:calculation,:axes_modifier,
+            :in_units,:positive,:timeshot,:years,:var_notes,:cfname,
+            :activity_id,:institution_id,:source_id,:grid_label,
+            :access_version,:json_file_path,:reference_date,:version)''',
+            values)
     except sqlite3.IntegrityError as e:
         print(f"Row already exists:\n{e}")
     except Exception as e:
@@ -1013,10 +1031,8 @@ def populateRows(rows, cdict, opts, cursor):
         try:
             [a,b] = champ[4].split()
             opts['infile'] = f"{opts['local_exp_dir']}/{a} {opts['local_exp_dir']}/{b}"
-            print("all good to here")
         except:
             opts['infile'] = f"{opts['local_exp_dir']}/{champ[4]}"
-        print(opts['infile'])
         opts['calculation'] = champ[5]
         opts['in_units'] = champ[6]
         opts['axes_modifier'] = champ[7]
@@ -1091,9 +1107,17 @@ def main():
     config = setup_env(config)
     cdict = config['cmor']
     cleanup(config)
-    json_cv = f"{cdict['appdir']}/input_files/custom_mode_cmor-tables/Tables/CMIP6_CV.json"
-    #PP do we ened this??
+    json_cv = f"{cdict['cmip_tables']}/{cdict['_control_vocabulary_file']}"
     edit_cv_json(json_cv, config['attrs'])
+    #PP do we ened this??
+    #PP apparently we do need a file like that because of CMOR but maybe not all the same attributes
+    #PP here I'm creating one on the fly with the attributes frm custo_app.yaml
+    # then if necessary we can add edit-cv when needed for non custom runs
+    #fname = create_cv_json(cdict['exp'], cdict['appdir'], config['attrs'])
+    fname = f"{cdict['appdir']}/input_files/json/cm000.json"
+    cdict['json_file_path'] = fname
+    #cdict['json_file_path'] = json_cv
+    #if cdict['mode'] == 'cmip6':
     # mapping
     cdict = dreq_map(cdict)
     #database_manager
