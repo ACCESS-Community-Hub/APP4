@@ -249,7 +249,7 @@
             "ok_max_mean_abs": ""
         },
         "sifllatstop": {
-            "frequency": "1hr",
+            "frequency": "6hr",
             "modeling_realm": "seaIce",
             "standard_name": "surface_upward_latent_heat_flux",
             "units": "W m-2",
@@ -265,6 +265,6 @@
             "valid_max": "",
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
-        },
+        }
     }
 }

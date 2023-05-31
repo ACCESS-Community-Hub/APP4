@@ -25,14 +25,16 @@ cmor:
     # select one of: [CM2, ESM1.5, OM2[-025], AUS2200]
     access_version: AUS2200 
     # reference date for time units (set as 'default' to use start_date)
-    reference_year: default              
+    reference_date: default              
     # previously output_path/file_template
-    path_template: "{experiment_id}/{version}/{cmip_table}/"
-    file_template: "{variable_id}_{source_id}_{experiment_id}_{cmip_table}_{date_range}"
+    path_template: "{local_exp_id}/{version}/{cmip_table}/"
+    file_template: "{variable_id}_{source_id}_{local_exp_id}_{cmip_table}_{date_range}"
+    # maximum file size in MB: this is meant as uncompressed, compression might reduce it by 50%
+    max_size: 8192 
     # Variables to CMORise: 
     # CMIP6 table/variable to process; default is 'all'. Or create a file listing variables to process (VAR_SUBSET[_LIST]).
-    table_to_process: A6hr
-    variable_to_process: cllow
+    tables: AUS2200_A6hr
+    variable_to_process: cllow_mean
     # subdaily selection options - select one of: [true, false, only]
     subdaily: !!str false
     var_subset: !!bool false
@@ -48,8 +50,8 @@ cmor:
     master_map: "input_files/master_aus2200.csv"
     grid_file: "input_files/grids.csv"
     # use official cmip6 tables for CMIP6 mode
-    #cmip_tables: "input_files/cmip6-cmor-tables/Tables/"
-    cmip_tables: "input_files/custom_mode_cmor-tables/Tables/"
+    #tables_path: "input_files/cmip6-cmor-tables/Tables/"
+    tables_path: "input_files/custom_mode_cmor-tables/Tables/"
     history_data: ''
     _control_vocabulary_file: "ACDD_CV.json"
     _cmip6_option: CMIP6
@@ -81,13 +83,14 @@ attrs:
     title: "AUS2200 UM amip simulation of 2022 Brisbane floods"
     # Use to provide a short description of the experiment. It will be written to file as "summary" 
     # exp_description:
-    exp_description: "A limited area model study of the entire Australian continent at 2.2 km resolution, using the UM atmospheric model. BARRA reanalysis data was used to provide intial and boundary conditions. The study covers the time period of 2022-02-22 to 2022-03-7 including high rainfall events" $1
+    exp_description: "A limited area model study of the entire Australian continent at 2.2 km resolution, using the UM atmospheric model. BARRA reanalysis data was used to provide intial and boundary conditions. The study covers the time period of 2022-02-22 to 2022-03-7 including high rainfall events"
     product_version: v1.0
     date_created: "2023-05-12"
+    source_id: 'AUS2200'
     # AUS2200 description
     source: "UM v12.2 ECMWF BARRA reanalysis fields used as forcings"
     # ACCESS-CM2 description
-    source: "ACCESS-CM2 (2019): aerosol: UKCA-GLOMAP-mode, atmos: MetUM-HadGEM3-GA7.1 (N96; 192 x 144 longitude/latitude; 85 levels; top level 85 km), atmosChem: none, land: CABLE2.5, landIce: none, ocean: ACCESS-OM2 (GFDL-MOM5, tripolar primarily 1deg; 360 x 300 longitude/latitude; 50 levels; top grid cell 0-10 m), ocnBgchem: none, seaIce: CICE5.1.2 (same grid as ocean)"
+    #source: "ACCESS-CM2 (2019): aerosol: UKCA-GLOMAP-mode, atmos: MetUM-HadGEM3-GA7.1 (N96; 192 x 144 longitude/latitude; 85 levels; top level 85 km), atmosChem: none, land: CABLE2.5, landIce: none, ocean: ACCESS-OM2 (GFDL-MOM5, tripolar primarily 1deg; 360 x 300 longitude/latitude; 50 levels; top grid cell 0-10 m), ocnBgchem: none, seaIce: CICE5.1.2 (same grid as ocean)"
     # ACCESS-ESM1.5 description
     #source: "ACCESS-ESM1.5 (2019): aerosol: CLASSIC (v1.0), atmos: HadGAM2 (r1.1, N96; 192 x 145 longitude/latitude; 38 levels; top level 39255 m), atmosChem: none, land: CABLE2.4, landIce: none, ocean: ACCESS-OM2 (MOM5, tripolar primarily 1deg; 360 x 300 longitude/latitude; 50 levels; top grid cell 0-10 m), ocnBgchem: WOMBAT (same grid as ocean), seaIce: CICE4.1 (same grid as ocean)"
     license: "https://creativecommons.org/licenses/by/4.0/"

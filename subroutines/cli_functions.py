@@ -83,7 +83,6 @@ def find_files(ctx, app_log):
     app_log.info(ctx.obj['cmip_table'])
     tmp = ctx.obj['infile'].split()
     file_touse = tmp[0]
-    print(f'file to use: {file_touse}')
     #if there are two different files used make a list of extra access files
     if len(tmp)>1:
         extra_files = glob.glob(tmp[1])
@@ -103,9 +102,7 @@ def check_var_in_file(all_files, varname, app_log):
     found = False
     while i < len(all_files):
         try:
-            print(varname)
             ds = xr.open_dataset(all_files[i], decode_times=False)
-            print(ds)
             #see if the variable is in the file
             var = ds[varname]
             found = True
@@ -134,50 +131,22 @@ def get_time_dim(ctx, ds, app_log):
     time_dimension = None
     varname = [ctx.obj['vin'][0]]
     #    
-    try:
-        if  ('dropT' in ctx.obj['axes_modifier']) and ('fx' in ctx.obj['cmip_table']):
-            #try to find and set the correct time axis:
-            app_log.debug(f" check time var dims: {ds[varname].dims}")
-            for var_dim in ds[varname].dims:
-                if 'time' in var_dim or ds[var_dim].axis == 'T':
-                    time_dimension = var_dim
-                    app_log.debug(f"first attempt to tdim: {time_dimension}")
-    except:
-        #use the default time dimension 'time'
-        pass 
-    if 'tMonOverride' in ctx.obj['axes_modifier']:
-        #if we want to override dodgey units in the input files
-        print("overriding time axis...")
-        refString = "days since {r:04d}-01-01".format(r=ctx.obj['reference_date'])
-        #time_dimension=None    
-        inrange_files = all_files
-        startyear = ctx.obj['tstart']
-        endyear = ctx.obj['tend']
-    elif 'fx' in ctx.obj['cmip_table']:
+    app_log.debug(f" check time var dims: {ds[varname].dims}")
+    if 'fx' in ctx.obj['cmip_table']:
         print("fx variable, no time axis")
         refString = f"days since {ctx.obj['reference_date'][:4]}-01-01"
         time_dimension = None    
+        units = None
         inrange_files = all_files
     else:
-        try:
-            # changing this behaviour!
-            app_log.debug(f" check time var dims: {ds[varname].dims}")
-            for var_dim in ds[varname].dims:
-                if 'time' in var_dim or ds[var_dim].axis == 'T':
-                    time_dimension = var_dim
-                    units = ds[var_dim].units
-                    app_log.debug(f"first attempt to tdim: {time_dimension}")
-            #
-            #refdate is the "reference date" used as an arbitray 0 point for dates. Common values for
-            #refdate are 1 (0001-01-01) and 719 163 (1970-01-01), but other values are possible.
-            #We cannot handle negative reference dates (ie. BC dates); maybe we will encounter these
-            #in some climate runs?
-            #
-            app_log.info(f"time var is: {time_dimension}")
-            app_log.info(f"Reference time is: {units}")
-        except:
-            pass
-        del ds 
+        for var_dim in ds[varname].dims:
+            if 'time' in var_dim or ds[var_dim].axis == 'T':
+                time_dimension = var_dim
+                units = ds[var_dim].units
+                app_log.debug(f"first attempt to tdim: {time_dimension}")
+    app_log.info(f"time var is: {time_dimension}")
+    app_log.info(f"Reference time is: {units}")
+    del ds 
     return time_dimension, units
 
 
@@ -334,6 +303,8 @@ def check_axis(ctx, ds, inrange_files, ancil_path, app_log):
 def get_cmorname(ctx, axis_name, z_len=None):
     """Get time cmor name based on timeshot option
     """
+    #PP temporary patch to run this until we removed all axes-modifiers
+    ctx.obj['axes_modifier'] = []
     if axis_name == 't':
         timeshot = ctx.obj['timeshot']
         if 'mean' in timeshot:
@@ -538,6 +509,8 @@ def set_plev(ctx, data_vals, app_log):
     return
 
 
+#PP this should eventually just be generated directly by defining the dimension using the same terms 
+# in related calculation 
 @click.pass_context
 def pseudo_axis():
     """coordinates with axis_identifier other than X,Y,Z,T
@@ -566,6 +539,8 @@ def pseudo_axis():
     return cmor_name, p_vals, p_len
 
 
+#PP this should eventually just be generated directly by defining the dimension using the same terms 
+# in calculation for meridional overturning
 def create_axis(name, table, app_log):
     """
     """
@@ -670,6 +645,8 @@ def get_axis_dim(ctx, var, app_log):
     j_axis = None
     i_axis = None    
     p_axis = None    
+    # add special extra axis: basin, oline, siline
+    e_axis = None
     # Check variable dimensions
     dims = var.dims
     app_log.info(f"list of dimensions: {dims}")
@@ -701,12 +678,14 @@ def get_axis_dim(ctx, var, app_log):
             elif 'pseudo' in dim.axis:
                 p_axis = axis
                 #p_axis.attrs['axis'] = 'pseudo' #??
+            elif dim in ['basin', 'oline', 'siline']:
+                e_axis = dim
             else:
                 #axis_name = 'unknown'
                 print(f"Unknown axis: {axis_name}")
-    return t_axis, z_axis, j_axis, i_axis, p_axis
+    return t_axis, z_axis, j_axis, i_axis, p_axis, e_axis
 
-# SG: need to have a chat about this function...
+
 @click.pass_context
 def get_bounds(ctx, ds, axis, cmor_name, app_log):
     """Returns bounds for input dimension, if bounds are not available
@@ -727,17 +706,6 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log):
         app_log.info("using dimension bounds")
         if 'time' in cmor_name:
             dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'])
-    # SG: I had to add this so that the bounds were taken from the Xarray dataset
-    # I think this whole function needs to be re-written. There definitely doesn't need
-    # to be a difference between variables that need a claulation and those that don't
-    #PP temporarily commenting this to force recalculation of boundaries if
-    # calculation as potnetially axis have changed
-    # but also to capture errors in rest of the function
-    #elif 'bounds' in keys and changed_bnds:
-    #    dim_val_bnds = ds[axis.bounds].values
-    #    app_log.info("using dimension bounds")
-    #    if 'time' in cmor_name:
-    #        dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'])
     elif 'edges' in keys and not changed_bnds:
         dim_val_bnds = ds[axis.edges].values
         app_log.info("using dimension edges as bounds")
@@ -879,67 +847,9 @@ def axm_mon2yr(ctx, invar, dsin, variable_id, app_log):
         data = calculateVals(dsin, ctx.obj['vin'], ctx.obj['calculation'])
     vshape = np.shape(data)
     app_log.debug(vshape)
-        #PP don't need this block
-        #for year in range(startyear,endyear+1):
-        #    print(f"processing year {year}")
-        #    count = 0
-        #    vsum = np.ma.zeros(vshape[1:],dtype=np.float32)
-        #    for input_file in inrange_files:
-        #        if 'tMonOverride' in opts['axes_modifier']:
-        #            print("reading date info from file name")
-        #            if os.path.basename(input_file).startswith('ocean'):
-        #                yearstamp = int(os.path.basename(input_file).split('.')[1][3:7])
-        #            else:
-        #                if opts['access_version'].find('CM2') != -1:
-        #                    yearstamp = int(os.path.basename(input_file).split('.')[1][2:6])
-        #                elif opts['access_version'].find('ESM') != -1:
-        #                    yearstamp = int(os.path.basename(input_file).split('.')[1][3:7])
-        #            access_file = xr.open_dataset(f'{input_file}')
-        #            t = access_file[opts['vin'][0]].getTime()
-        #            datelist = t.asComponentTime()
-        #            if yearstamp == year:
-        #                yearinside=True
-        #            else:
-        #                yearinside = False
-        #        else:
-        #            print('reading date info from time dimension')
-        #           access_file = xr.open_dataset(f'{input_file}')
-        #            t = access_file[opts['vin'][0]].getTime()
-        #            datelist = t.asComponentTime()
-        #            yearinside = False
-        #            for date in datelist:
-        #                if date.year == year: yearinside=True
-        #        #try: print year, yearstamp, yearinside, input_file
-        #        #except: print year, yearinside, input_file
-        #        if yearinside:
-        #            print(f"found data in file {input_file}")
-        #            for index, d in enumerate(datelist[:]):
-        #                if (d.year == year) or 'tMonOverride' in opts['axes_modifier']:
-        #                    if opts['calculation'] == '':
-        #                        data_vals = access_file[opts['vin'][0]][:]
-        #                    else:
-        #                        data_vals = calculateVals((access_file,),opts['vin'],opts['calculation'])
-        #                    try: 
-        #                        data_vals = data_vals.filled(in_missing)
-        #                    except: 
-        #                        pass
-        #                    print(f"shape: {np.shape(data_vals)}")
-        #                    print(f"time index: {index}, date: {d}")
-        #                    try: 
-        #                        vsum += data_vals[index,:,:]
-        #                        count += 1
-        #                    except: 
-        #                        vsum += data_vals[index,:,:,:]
-        #                        count += 1
-        #        access_file.close()
     vyr = data.groupby('year').mean()
-        #    if count == 12:
-        #        vyr = vsum / 12
     app_log.info("writing with cmor...")
     cmor.write(variable_id, vyr.values, ntimes_passed=1)
-        #    else:
-        #        print(count)
-        #        raise Exception(f'WARNING: annual data contains {count} months of data')    
     return
 
 
@@ -1016,6 +926,7 @@ def normal_case(ctx, dsin, tdim, in_missing, app_log):
     if ctx.obj['calculation'] == '':
         array = dsin[ctx.obj['vin'][0]][:]
         app_log.debug(f"{array}")
+        print(array)
     else:
         var = []
         app_log.info("Adding variables to var list")
@@ -1030,19 +941,20 @@ def normal_case(ctx, dsin, tdim, in_missing, app_log):
 
         # Now try to perform the required calculation
         try:
-            calc = eval(ctx.obj['calculation'])
+            array = eval(ctx.obj['calculation'])
         except Exception as e:
             app_log.error(f"error evaluating calculation, {ctx.obj['calculation']}: {e}")
             raise
 
-        #convert mask to missing values
-        #PP why mask???
-        #SG: Yeh not sure this is needed.
-        array = calc.fillna(in_missing)
-        app_log.debug(f"{array}")
-        
-        # temporarily ignore this exception
-        #if 'depth100' in ctx.obj['axes_modifier']:
-        #   data_vals = depth100(data_vals[:,9,:,:], data_vals[:,10,:,:])
+    #convert mask to missing values
+    #PP why mask???
+    #SG: Yeh not sure this is needed.
+    print(in_missing)
+    array = array.fillna(in_missing)
+    app_log.debug(f"{array}")
+     
+    #PP temporarily ignore this exception
+    #if 'depth100' in ctx.obj['axes_modifier']:
+    #   data_vals = depth100(data_vals[:,9,:,:], data_vals[:,10,:,:])
 
     return array

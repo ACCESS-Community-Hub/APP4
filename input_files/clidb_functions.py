@@ -375,9 +375,11 @@ def write_varlist(conn, indir, startdate, db_log):
         pattern_list = list_files(indir, f"{fpattern}*", db_log)
         nfiles = len(pattern_list) 
         db_log.debug(f"File pattern: {fpattern}")
-        realm = [x for x in ['/atmos/', '/ocean/', '/ice/'] if x in fpath][0]
-        #realm = [x for x in ['/atm/', '/ocn/', '/ice/'] if x in fpath][0]
+        #realm = [x for x in ['/atmos/', '/ocean/', '/ice/'] if x in fpath][0]
+        realm = [x for x in ['/atm/', '/ocn/', '/ice/'] if x in fpath][0]
         realm = realm[1:-1]
+        if realm == 'atm':
+            realm = 'atmos'
         db_log.debug(realm)
         frequency = 'NA'
         if realm == 'atmos':
@@ -528,7 +530,7 @@ def potential_vars(conn, rows, stash_vars, db_log):
                 if all(f"{x}-{row[4]}" in stash_vars for x in allinput):
                     # add var type, size, nsteps and filename info
                     line = list(r) + row[7:11]
-                    # add dimensions iand frequency from the file
+                    # add dimensions and frequency from the file
                     line[4] = row[3]
                     line[5] = row[4]
                     # This was checking all the input_vars dims etc so maybe not useful
@@ -567,13 +569,14 @@ def write_map_template(vars_list, different, pot_vars, alias, version, db_log):
         for var in vars_list[1:]:
             if var[1] == '':
                 var[1] = var[0]
-            line = [var[1], var[0], ''] + var[2:7] + [ '', version] + var[7:]
+            #line = [var[1], var[0], ''] + var[2:7] + [ '', version] + var[7:]
+            line = [var[1], var[0], None] + var[2:7] + [ None, version] + var[7:]
             fwriter.writerow(line)
         fwriter.writerow(["# these are variables that can be potentially calculated. Use with caution!",
                           '','','','','','','','','','','','','','',''])
         for var in pot_vars:
             line = list(var[:9]) 
-            line = line + [version] + list(var[12:16]) + [ '', '']
+            line = line + [version] + list(var[12:16]) + [ None, None]
             fwriter.writerow(line)
         # add variables which presents more than one to calculate them
         fwriter.writerow(["# these are variables that are defined with different inputs",
