@@ -1,0 +1,28 @@
+################################################################
+#
+# Settings for land use
+# These have been placed here from app_functions.py
+
+land:
+    cmip6: ['primary_and_secondary_land',
+            'pastures',
+            'crops',
+            'urban']
+
+    cable: ['Evergreen_Needleleaf',
+            'Evergreen_Broadleaf',
+            'Deciduous_Needleleaf',
+            'Deciduous_Broadleaf',
+            'Shrub',
+            'C3_grass',
+            'C4_grass',
+            'Tundra',
+            'C3_crop',
+            'C4_crop',
+            'Wetland',
+            '',
+            '',
+            'Barren',
+            'Urban',
+            'Lakes',
+            'Ice'] 

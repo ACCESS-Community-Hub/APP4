@@ -724,7 +724,6 @@ def get_axis_dim(ctx, var, app_log):
                 print(f"Unknown axis: {axis_name}")
     return t_axis, z_axis, j_axis, i_axis, p_axis
 
-# SG: need to have a chat about this function...
 @click.pass_context
 def get_bounds(ctx, ds, axis, cmor_name, app_log):
     """Returns bounds for input dimension, if bounds are not available
@@ -745,33 +744,26 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log):
         app_log.info("using dimension bounds")
         if 'time' in cmor_name:
             dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'])
-    # SG: I had to add this so that the bounds were taken from the Xarray dataset
-    # I think this whole function needs to be re-written. There definitely doesn't need
-    # to be a difference between variables that need a claulation and those that don't
-    elif 'bounds' in keys and changed_bnds:
-        dim_val_bnds = ds[axis.bounds].values
-        app_log.info("using dimension bounds")
-        if 'time' in cmor_name:
-            dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'])
-    #elif edges in keys and not changed_bnds:
-        #dim_val_bnds = ds[axis.edges].values
-        #app_log.info("using dimension edges as bounds")
+    elif 'edges' in keys and not changed_bnds:
+        dim_val_bnds = ds[axis.edges].values
+        app_log.info("using dimension edges as bounds")
     else:
         app_log.info(f"No bounds for {dim} - creating default bounds")
         # if time check we have units and convert dates to floats
         if 'time' in cmor_name:
-            axis_val = cftime.date2num(axis, units=ctx.obj['reference_date'])
+            ax_val = cftime.date2num(axis, units=ctx.obj['reference_date'])
         else:
-            axis_val = axis.values
+            ax_val = axis.values
         try:
-            min_vals = (axis + axis.shift(1))/2
-            min_vals[0] = 1.5*axis[0] - 0.5*axis[1]
-            max_vals = min_vals.shift(-1)
-            max_vals[-1] = 1.5*axis[-1] - 0.5*axis[-2]
+            #PP using roll this way without specifying axis assume axis is 1D
+            min_val = (ax_val + np.roll(ax_val, 1))/2
+            min_val[0] = 1.5*ax_val[0] - 0.5*ax_val[1]
+            max_val = np.roll(min_val, -1)
+            max_val[-1] = 1.5*ax_val[-1] - 0.5*ax_val[-2]
         except Exception as e:
             app_log.warning(f"dodgy bounds for dimension: {dim}")
             app_log.error(f"error: {e}")
-        dim_val_bnds = np.column_stack((min_vals, max_vals))
+        dim_val_bnds = np.column_stack((min_val, max_val))
     # Take into account type of axis
     # as we are often concatenating along time axis and bnds are considered variables
     # they will also be concatenated along time axis and we need only 1st timestep
