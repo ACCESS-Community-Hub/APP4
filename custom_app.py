@@ -54,7 +54,7 @@ from datetime import datetime, timedelta
 
 
 def write_variable_map(outpath, table, matches):
-    """
+    """Write variables mapping to json file
     """
     with open(f"{outpath}/{table}.json", 'w') as fjson:
         json.dump(matches, fjson, indent=2)
@@ -109,8 +109,31 @@ def determine_dimension(freq, dimensions, timeshot, realm, table, skip):
     return dimension
 
 
-def find_match2(table, var, realm, frequency, varlist):
-    """
+def find_matches(table, var, realm, frequency, varlist):
+    """Finds variable matching constraints given by table and config
+    settings and returns a dictionary with the variable specifications. 
+    NB. if an exact match (cmor name, realm, frequency is not found) 
+    will try to find same cmor name and realm but different frequency.
+
+    Parameters
+    ----------
+    table : str
+        Variable table 
+    var : str
+        Variable cmor/cmip style name to match
+    realm : str
+        Variable realm to match
+    frequency : str
+        Variable frequency to match
+    varlist : list
+        List of variables, each represented by a dictionary with mappings
+        used to find a match to "var" passed 
+
+    Returns
+    -------
+    match : dict
+        Dictionary containing matched variable specifications
+        or None if not matches
     """
     near_matches = []
     found = False
@@ -133,7 +156,7 @@ def find_match2(table, var, realm, frequency, varlist):
         elif v['cmip_var'] == var and v['realm'] == realm:
             near_matches.append(v)
     if not found:
-        v = check_best_match(near_matches, frequency, table)
+        v = check_best_match(near_matches, frequency)
         if v is not None:
             match = v
             found = True
@@ -147,9 +170,24 @@ def find_match2(table, var, realm, frequency, varlist):
     return match
 
 
-def check_best_match(varlist, frequency, table):
+def check_best_match(varlist, frequency):
     """If variable is present in file at different frequencies,
-       find the one with higher frequency nearest to desired frequency.
+    finds the one with higher frequency nearest to desired frequency.
+    Adds to variable resample calculation.
+
+    Parameters
+    ----------
+    varlist : list
+        Subset of variables with same realm and cmor name but different
+        frequency
+    frequency : str
+        Variable frequency to match
+
+    Returns
+    -------
+    var : dict
+        Dictionary containing matched variable specifications
+        or None if not matches
     """
     var = None
     found = False
@@ -167,34 +205,6 @@ def check_best_match(varlist, frequency, table):
         if found:
             break
     return var
-
-
-#PP not sure if we still need this for list of variables coming form dreq
-def find_matches(cdict, table, cmorname, realm, freq, cfname,
-                 years, dimensions):
-    matches = [] 
-    if 'Pt' in freq:
-        timeshot = 'inst'
-        freq = str(freq)[:-2]
-    elif freq == 'monC':
-        timeshot = 'clim'
-        freq = 'mon'
-    else:
-        timeshot = 'mean'
-    with open(cdict['master_map'],'r') as g:
-        champ_reader = csv.DictReader(g)
-        varlist = list(champ_reader)
-    for v in var_list:
-        if v['cmip_var'].startswith('#'):
-            pass
-        elif v['cmip_var'] == cmorname and v['version'] == cdict['access_version']:
-            v['file_structure'] = f"/{v['realm']}/{v['filename']}*.nc"
-            v['timeshot'] = timeshot
-            v['years'] = years
-            v['cfname'] = cfname
-            matches.append(v)
-    g.close()
-    return matches
 
 
 def read_yaml(fname):
@@ -228,6 +238,9 @@ def write_yaml(data, fname='exp_config.yaml'):
 
 def setup_env(config):
     """Substitute setup_env.sh
+
+    Returns
+    -------
     """
     # how are these 2 used???
     #PP this could be done better!!
@@ -323,6 +336,9 @@ def check_path(path):
 
 def find_custom_tables(cdict):
     """Assumes second part of table names is unique
+
+    Returns
+    -------
     """
     tables = []
     path = cdict['tables_path']
@@ -337,6 +353,9 @@ def find_custom_tables(cdict):
 #PP part of using dreq need to double check e verything
 def find_cmip_tables(dreq):
     """
+
+    Returns
+    -------
     """
     tables=[]
     with open(dreq, 'r') as f:
@@ -355,6 +374,8 @@ def find_cmip_tables(dreq):
 
 
 def check_file(fname):
+    """Check if file exists, if not stop execution
+    """
     if os.path.exists(fname):
         print(f"found file '{fname}'")
     else:
@@ -362,6 +383,9 @@ def check_file(fname):
 
 
 def check_output_directory(path):
+    """Check if path contains older mapping files,if yes
+    it removes them
+    """
     if len(glob.glob(f"{path}/*.csv")) == 0:
         print(f"variable map directory: '{path}'")
     else:
@@ -372,6 +396,9 @@ def check_output_directory(path):
 
 #PP part of dreq not needed otherwise
 def reallocate_years(years, reference_date):
+    """Reallocate years based on dreq years 
+    Not sure what it does need to ask Chloe
+    """
     reference_date = int(reference_date[:4])
     if reference_date < 1850:
         years = [year-1850+reference_date for year in years]
@@ -381,7 +408,24 @@ def reallocate_years(years, reference_date):
 
 
 def fix_years(years, tstart, tend):
-    """Call this only if years != 'all'
+    """Update start and end date for experiment based on dreq
+    constraints for years. It is called only if dreq and dreq_years are True
+
+    Parameters
+    ----------
+    years : list
+        List of years from dreq file
+    tstart: str
+        Date of experiment start as defined in config
+    tend: str
+        Date of experiment end as defined in config
+
+    Returns
+    -------
+    tstart: str
+        Updated date of experiment start
+    tend: str
+        Updated date of experiment end
     """
     if tstart >= years[0]:
         pass
@@ -398,12 +442,24 @@ def fix_years(years, tstart, tend):
     return tstart, tend
 
 
-
 def read_dreq_vars2(cdict, table, activity_id):
-    """
-    Modified so we only return a list of variables that fits table and activity/experiment-id + years
-    then we check if these are present in masters as we would with any list and take into acocunt years if they are!
-    MIP table       Priority        Long name       units   description     comment Variable Name   CF Standard Name        cell_methods    positive        type    dimensions      CMOR Name       modeling_realm  frequency       cell_measures   prov    provNote        rowIndex        UID     vid     stid    Structure Title valid_min       valid_max       ok_min_mean_abs ok_max_mean_abs MIPs (requesting)       MIPs (by experiment)    Number of Years Slice Type      Years   Grid
+    """Reads dreq variables file and returns a list of variables included in
+    activity_id and experiment_id, also return dreq_years list
+
+    Parameters
+    ----------
+    cdict : dict
+        Dictionary with post-processing config 
+    table : str
+        CMIP table
+    activity_id: str
+        CMIP activity_id
+
+    Returns
+    -------
+    dreq_variables : dict
+        Dictionary where keys are cmor name of selected variables and
+        values are corresponding dreq years
     """
     with open(cdict['dreq'], 'r') as f:
         reader = csv.reader(f, delimiter='\t')
@@ -438,59 +494,10 @@ def read_dreq_vars2(cdict, table, activity_id):
     return dreq_variables
 
 
-#PP part of dreq not needed otherwise
-def read_dreq_vars(cdict, table):
-    """
-    MIP table       Priority        Long name       units   description     comment Variable Name   CF Standard Name        cell_methods    positive        type    dimensions      CMOR Name       modeling_realm  frequency       cell_measures   prov    provNote        rowIndex        UID     vid     stid    Structure Title valid_min       valid_max       ok_min_mean_abs ok_max_mean_abs MIPs (requesting)       MIPs (by experiment)    Number of Years Slice Type      Years   Grid
-    """
-    with open(cdict['dreq'], 'r') as f:
-        reader = csv.reader(f, delimiter='\t')
-        dreq_variables = []
-        for row in reader:
-            try:
-                if (row[0] == table) and (row[12] != ''):
-                    dimensions = row[11]
-                    cmorname = row[12]
-                    freq = row[14]
-                    cfname = row[7]
-                    realms = row[13]
-                    try:
-                        realm = realms.split()[0]
-                    except:
-                        realm = 'uncertain'
-                    try:
-                        if 'range' in row[31]:
-                            years = reallocate_years(
-                                    eval(row[31]), cdict['reference_date'])
-                            years = f'"{years}"'
-                        elif 'All' in row[31]:
-                            years = 'all'
-                        else:
-                            try:
-                                years = ast.literal_eval(row[31])
-                                years = reallocate_years(years, cdict['reference_date'])
-                                years = f'"{years}"'
-                            except:
-                                years = 'all'
-                    except:
-                        years = 'all'
-                    if (cdict['mode'] == 'custom') or not cdict['dreq_years']:
-                        years = 'all'
-                    if cdict['variable_to_process'].lower() == 'all':
-                        dreq_variables.append([cmorname, realm, freq,
-                                          cfname, years, dimensions])
-                    else:
-                        if cmorname == cdict['variable_to_process']:
-                            dreq_variables.append([cmorname, realm,
-                                    freq, cfname, years, dimensions])
-            except:
-                pass
-    f.close()
-    return dreq_variables
-
-
 def create_variable_map(cdict, ftable, masters, activity_id=None):
-    """
+    """Create a mapping file for this specific experiment based on 
+    model ouptut mappings, variables listed in table/s passed by config.
+
     """
     matches = []
     #PP open table json files and get variable list
@@ -518,7 +525,7 @@ def create_variable_map(cdict, ftable, masters, activity_id=None):
         years = 'all'
         if cdict['force_dreq'] and var in all_dreq:
             years = dreq_years[var]
-        match = find_match2(ftable, var, realm, frequency, masters)
+        match = find_matches(ftable, var, realm, frequency, masters)
         if match is not None:
             match['years'] = years
             matches.append(match)
@@ -766,7 +773,19 @@ def create_cv_json(exp, appdir, attrs):
 # PP not sure I need this unless users doesn't pass one but then you're stuck
 # at passing all cmip args so i think is better to choose a standard and stick to it!
 def edit_cv_json(json_cv, attrs):
-    """Temporarily copied as it is in custom_json-editor
+    """Edit the CMIP6 CV json file to include extra activity_ids and
+    experiment_ids, so they can be recognised by CMOR when following 
+    CMIP6 standards.
+
+    Parameters
+    ----------
+    json_cv : str
+        Path of CV json file to edit
+    attrs: dict
+        Dictionary with attributes defined for experiment
+
+    Returns
+    -------
     """
     activity_id = attrs['activity_id']
     experiment_id = attrs['experiment_id']
@@ -812,6 +831,9 @@ def edit_cv_json(json_cv, attrs):
 def add_exp(version):
     """Do i need this? Probably not most of this has been added to custom_app.yaml,
        so all the info is together
+
+    Returns
+    -------
     """
     if version == 'ESM':
         json_exp = 'input_files/json/default_esm.json'
@@ -824,6 +846,16 @@ def add_exp(version):
 
 #PP I have the feeling that pupulate/ppulate_unlimtied etc might be joined into one?
 def populate(conn, config):
+    """
+    Parameters
+    ----------
+    conn : str
+        Path of CV json file to edit
+    config: 
+
+    Returns
+    -------
+    """
     #defaults
     #config['cmor']['status'] = 'unprocessed'
     #get experiment information
@@ -850,6 +882,17 @@ def populate(conn, config):
 
 #populate the database for variables that are requested for all times for all experiments
 def populate_unlimited(cursor, cdict, opts):
+    """
+    Parameters
+    ----------
+    json_cv : str
+        Path of CV json file to edit
+    attrs: dict
+        Dictionary with attributes defined for experiment
+
+    Returns
+    -------
+    """
     #monthly, daily unlimited except cable or moses specific diagnostics
     rows = []
     tables = glob.glob(f"{cdict['variable_maps']}/*.json")
@@ -863,6 +906,9 @@ def populate_unlimited(cursor, cdict, opts):
 def addRow(values, cursor):
     """Add a row to the file_master database table
        one row specifies the information to produce one output cmip5 file
+
+    Returns
+    -------
     """
     try:
         cursor.execute('''insert into file_master
@@ -888,6 +934,9 @@ def addRow(values, cursor):
 
 def check_calculation(opts, insize):
     """
+
+    Returns
+    -------
     """
     # transport/transects/tiles should reduce size
     # volume,any vertical sum
@@ -901,6 +950,16 @@ def check_calculation(opts, insize):
 def computeFileSize(cdict, opts, grid_size, frequency):
     """Calculate an estimated output file size (in megabytes)
        and the interval to use to satisfy max_size decided by user
+
+    Parameters
+    ----------
+    json_cv : str
+        Path of CV json file to edit
+    attrs: dict
+        Dictionary with attributes defined for experiment
+
+    Returns
+    -------
     """
     nstep_day = {'10min': 1440, '1hr': 24, '3hr': 8, '6hr':4, 'day':1,
              '10day': 0.1, 'mon': 1/30, 'yr': 1/365, 'dec': 1/3650}
@@ -940,6 +999,18 @@ def computeFileSize(cdict, opts, grid_size, frequency):
 def buildFileName(cdict, opts):
     """
     finish is the last day covered by file as datetime object
+    Parameters
+    ----------
+    json_cv : str
+        Path of CV json file to edit
+    attrs: dict
+        Dictionary with attributes defined for experiment
+
+    Returns
+    -------
+
+    Returns
+    -------
     """
     date = opts['version']
     tString = ''
@@ -960,6 +1031,20 @@ def buildFileName(cdict, opts):
 
 
 def populateRows(rows, cdict, opts, cursor):
+    """
+    Parameters
+    ----------
+    json_cv : str
+        Path of CV json file to edit
+    attrs: dict
+        Dictionary with attributes defined for experiment
+
+    Returns
+    -------
+
+    Returns
+    -------
+    """
     tableToFreq = read_yaml(f"input_files/table2freq.yaml")
     for champ in rows:
         #from champions table:
@@ -1006,6 +1091,9 @@ def populateRows(rows, cdict, opts, cursor):
 
 def count_rows(conn):
     """Return number of files to process
+
+    Returns
+    -------
     """
     cursor=conn.cursor()
     #cursor.execute(f"select * from file_master where status=='unprocessed' and local_exp_id=='{exptoprocess}'")
@@ -1017,6 +1105,9 @@ def count_rows(conn):
 
 def sum_file_sizes(conn):
     """Return estimate of total size of files to process
+
+    Returns
+    -------
     """
     cursor=conn.cursor()
     cursor.execute('select file_size from file_master')
@@ -1028,6 +1119,16 @@ def sum_file_sizes(conn):
 
 
 def main():
+    """Main section: 
+    * takes one argument the config yaml file with list of settings
+      and attributes to add to files
+    * set up paths and config dictionaries
+    * updates CV json file if necessary
+    * select variables and corresponding mappings based on table
+      and constraints passed in config file
+    * create/update database file_master table to list files to create
+    * write job executable file and submit to queue 
+    """
     config_file = sys.argv[1]
     # first read config passed by user
     config = read_yaml(config_file)
@@ -1036,8 +1137,6 @@ def main():
     cdict = config['cmor']
     cleanup(config)
     json_cv = f"{cdict['tables_path']}/{cdict['_control_vocabulary_file']}"
-    #PP do we ened this??
-    #PP apparently we do need a file like that because of CMOR but maybe not all the same attributes
     #PP here I'm creating one on the fly with the attributes frm custo_app.yaml
     # then if necessary we can add edit-cv when needed for non custom runs
     #fname = create_cv_json(cdict['exp'], cdict['appdir'], config['attrs'])
@@ -1046,7 +1145,6 @@ def main():
     cdict['json_file_path'] = fname
     #cdict['json_file_path'] = json_cv
     if cdict['mode'] == 'cmip6':
-        print(json_cv)
         edit_cv_json(json_cv, config['attrs'])
         cdict = dreq_map(cdict, config['attrs']['activity_id'])
     else:
@@ -1059,7 +1157,6 @@ def main():
     #setup database tables
     master_setup(conn)
     populate(conn, config)
-    print('past populate')
     #PP this can be totally done directly in cli.py, if it needs doing at all!
     #create_database_updater()
     nrows = count_rows(conn)

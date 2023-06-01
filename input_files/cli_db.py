@@ -86,7 +86,7 @@ def check_cmor(ctx, dbname):
     ----------
     ctx : obj
         Click context object
-    dbname: str
+    dbname : str
         Database name (default is access.db)
     """
     db_log = ctx.obj['log']
@@ -109,6 +109,7 @@ def check_cmor(ctx, dbname):
     db_log.info("Variables not yet defined in cmorvar table:")
     for v in missing:
         db_log.info(f"{v}")
+    return
 
 
 @dbapp.command(name='table')
@@ -124,7 +125,7 @@ def cmor_table(ctx, dbname, fname, alias):
     ----------
     ctx : obj
         Click context object
-    dbname: str
+    dbname : str
         Database name (default is access.db)
     """
     db_log = ctx.obj['log']
@@ -166,6 +167,7 @@ def cmor_table(ctx, dbname, fname, alias):
                     db_log.warning(f"Variable {v[0]} number of dims orig/table are different: {v[4]}/{record[9]}")
                 var_list.append(definition)
     write_cmor_table(var_list, alias, db_log)
+    return
 
 
 @dbapp.command(name='cmor')
@@ -175,19 +177,17 @@ def update_cmor(ctx, dbname, fname, alias):
     """Open/create database and create/update cmorvar table. Table is 
     populated with data passed via input json file.
 
-
     Parameters
     ----------
     ctx : obj
         Click context object
-    dbname: str
+    dbname : str
         Database name (default is access.db)
-    fname: str
+    fname : str
         Name of json input file with records to add
-    alias: str
+    alias : str
         Indicates origin of records to add, if None json filename
         base is used instead
-        
 
     Returns
     -------
@@ -248,25 +248,22 @@ def list_var(ctx, dbname, fname, alias, access_version):
        mapping database. Then attempt to create a template file with specific 
        mapping based on model output itself
 
-
     Parameters
     ----------
     ctx : obj
         Click context object
-    dbname: str
+    dbname : str
         Database name (default is access.db)
-    fname: str
+    fname : str
         Name of csv input file with records to add
-    alias: str
+    alias : str
         Indicates origin of records to add, if None csv filename
         base is used instead
-    access_version: str
+    access_version : str
         Version of ACCESS model used to generate variables
-
 
     Returns
     -------
-
     """
     db_log = ctx.obj['log']
     if alias is None:
@@ -289,6 +286,7 @@ def list_var(ctx, dbname, fname, alias, access_version):
     # prepare template
     different = []
     write_map_template(vars_list, different, pot_vars, alias, access_version, db_log)
+    return
 
 
 @dbapp.command(name='map')
@@ -298,6 +296,21 @@ def update_map(ctx, dbname, fname, alias):
     """Open database and create/update populating with rows
        mapping file passed as input
        alias indicates origin: if old style use 'app4'
+
+    Parameters
+    ----------
+    ctx : obj
+        Click context object
+    dbname : str
+        Database name (default is access.db)
+    fname : str
+        Name of csv input file with mapping records
+    alias : str
+        Indicates origin of records to add, if None csv filename
+        base is used instead
+
+    Returns
+    -------
     """
     db_log = ctx.obj['log']
     # connect to db, this will create one if not existing
@@ -317,6 +330,7 @@ def update_map(ctx, dbname, fname, alias):
         var_list = read_map(fname, alias)
     # update mapping table
     update_db(conn, 'mapping', var_list, db_log)
+    return
 
 
 @dbapp.command(name='varlist')
@@ -331,11 +345,27 @@ def model_vars(ctx, indir, startdate, dbname):
     """Read variables from model output
        opens one file for each kind, save variable list as csv file
        alias is not used so far
+
+    Parameters
+    ----------
+    ctx : obj
+        Click context object
+    indir : str
+        Path for model output files
+    startdate : str
+        Date or other string to match to individuate one file per type
+    dbname : str
+        Database name (default is access.db)
+
+    Returns
+    -------
     """
     db_log = ctx.obj['log']
     # connect to db, this will create one if not existing
     conn = db_connect(dbname, db_log)
     write_varlist(conn, indir, startdate, db_log)
+    return
+
 
 if __name__ == "__main__":
     dbapp()
