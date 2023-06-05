@@ -1,0 +1,26 @@
+################################################################
+#
+# Settings for Transport lines
+# These have been placed here from app_functions.py
+
+lines:
+      sea_lines: ['barents_opening',
+                  'bering_strait',
+                  'canadian_archipelago',
+                  'denmark_strait',
+                  'drake_passage',
+                  'english_channel',
+                  'pacific_equatorial_undercurrent',
+                  'faroe_scotland_channel',
+                  'florida_bahamas_strait',
+                  'fram_strait',
+                  'iceland_faroe_channel',
+                  'indonesian_throughflow',
+                  'mozambique_channel',
+                  'taiwan_luzon_straits',
+                  'windward_passage']
+      ice_lines: ['fram_strait',
+                  'canadian_archipelago',
+                  'barents_opening',
+                  'bering_strait']
+      gridfile: "cice_grid_20101208.nc"
