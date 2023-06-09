@@ -23,23 +23,23 @@ cmor:
     # a startdate in the name at least the year
     # if not all input files need to be opened for each variable to work out
     # which ones to use!
-    start_date: 09500101                        
-    end_date: 09501231                        
+    start_date: "09500101"                        
+    end_date: "09501231"                        
     # select one of: [CM2, ESM, OM2[-025]]
     access_version: CM2 
     # reference date for time units (set as 'default' to use START_YEAR)
+    #reference_date: "0950-01-01"              
     reference_date: default              
-    # previously output_path/file_template
-    path_template: "{source_id}/{experiment_id}/{cmip_table}/{variable_id}/{grid_label}/{version}/"
-    file_template: "{variable_id}_{source_id}_{experiment_id}_{cmip_table}_{date_range}"
+    #path_template: "{source_id}/{experiment_id}/{table_id}/{variable_id}/{grid_label}/{version}/"
+    #file_template: "{variable_id}_{source_id}_{experiment_id}_{table_id}_{date_range}"
     # official CMIP6
-    #path_template: "<activity_id><source_id><experiment_id><variant_label><table><variable_id><grid_label><version>"
-    #file_template: "<variable_id><table><source_id><experiment_id><variant_label><grid_label>"
+    path_template: "{activity_id}/{source_id}/{experiment_id}/{variant_label}/{table_id}/{variable_id}/{grid_label}/{version}/"
+    file_template: "{variable_id}_{table_id}_{source_id}_{experiment_id}_{variant_label}_{grid_label}"
     # maximum file size in MB: this is meant as uncompressed, compression might reduce it by 50%
     max_size: 8192
     # Variables to CMORise: 
     # CMIP6 table/variable to process; default is 'all'. Or create a file listing variables to process (VAR_SUBSET[_LIST]).
-    tables: CMIP6_day                        # CMIP6 table to process. Default is 'all'
+    tables: CMIP6_Amon                        # CMIP6 table to process. Default is 'all'
     variable_to_process: tas                      # CMIP6 variable to process. Default is 'all'
     subdaily: !!str false                               # subdaily selection options - select one of: [true, false, only]
     var_subset: !!bool false                             # use a sub-set list of variables to process, as defined by 'VAR_SUBSET_LIST'
@@ -54,13 +54,16 @@ cmor:
     master_map: "input_files/master_cm000.csv"
     grid_file: "input_files/grids.csv"
     # use official cmip6 tables for CMIP6 mode
-    #tables_path: "input_files/cmip6-cmor-tables/Tables/"
-    tables_path: "input_files/custom_mode_cmor-tables/Tables/"
+    tables_path: "input_files/cmip6-cmor-tables/Tables"
+    #tables_path: "input_files/custom_mode_cmor-tables/Tables"
     history_data: ''
+    # DO NOT REMOVE OR ALTER this if you don't what what ypu're doing :-)
     _control_vocabulary_file: "CMIP6_CV.json"
     _cmip6_option: CMIP6
+    _AXIS_ENTRY_FILE: CMIP6_coordinate.json
+    _FORMULA_VAR_FILE: CMIP6_formula_terms.json 
   # Additional NCI information:
-    project: w40                             # NCI project to charge compute; $PROJECT = your default project
+    project: ui47                             # NCI project to charge compute; $PROJECT = your default project
 
  # this defined based on scratch/project/user
  # possibly we should define it only if user wants to choose different one
@@ -82,23 +85,21 @@ attrs:
     # if following ACDD this is 
     contact: zoe.gillet@unsw.edu.au                
     # CMIP attribute refer to CMIP6 CV
-    institution_id: UNSW         
-    # ACDD/CMIP attribute
-    institution: "University of New South Wales"
-    # ACDD attribute
-    organisation: "Centre of excellence for Climate Extremes"
-    license: "https://creativecommons.org/licenses/by/4.0/"
+    institution_id: CSIRO-ARCCSS
+    institution: "CSIRO (Commonwealth Scientific and Industrial Research Organisation, Aspendale, Victoria 3195, Australia), ARCCSS (Australian Research Council Centre of Excellence for Climate System Science)"
     # use this license for CMIP6
-    #license: "CMIP6 model data produced by CSIRO is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License (https://creativecommons.org/licenses/). Consult https://pcmdi.llnl.gov/CMIP6/TermsOfUse for terms of use governing CMIP6 output, including citation requirements and proper acknowledgment.  Further information about this data, including some limitations, can be found via the further_info_url (recorded as a global attribute in this file). The data producers and data providers make no warranty, either express or implied, including, but not limited to, warranties of merchantability and fitness for a particular purpose. All liabilities arising from the supply of the information (including any liability arising in negligence) are excluded to the fullest extent permitted by law."
+    license: "CMIP6 model data produced by CSIRO is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License (https://creativecommons.org/licenses/). Consult https://pcmdi.llnl.gov/CMIP6/TermsOfUse for terms of use governing CMIP6 output, including citation requirements and proper acknowledgment.  Further information about this data, including some limitations, can be found via the further_info_url (recorded as a global attribute in this file). The data producers and data providers make no warranty, either express or implied, including, but not limited to, warranties of merchantability and fitness for a particular purpose. All liabilities arising from the supply of the information (including any liability arising in negligence) are excluded to the fullest extent permitted by law."
     # Please provide a short description of the experiment. For those created from the p73 archive, it's ok to just link to the Archive Wiki.
     exp_description: "CSIRO ACCESS-CM2 model output prepared for Pacemaker piControl experiment"
     # All following attributes are requried by CMIP6, some of them don't have meaning outside of CMIP6 context
     experiment_id: piControl                   # standard experiment name (e.g. piControl)
     activity_id: CMIP                     # activity/MIP name (e.g. CMIP)
+    mip_era: CMIP6
     realization_index: 1                          # "r1"[i1p1f1] (e.g. 1)
     initialization_index: 1                       # [r1]"i1"[p1f1] (e.g. 1)
     physics_index: 1                              # [r1i1]"p1"[f1] (e.g. 1)
     forcing_index: 1                              # [r1i1p1]"f1" (e.g. 1)
+    variant_label: r1i1p1f1
     source_type: AOGCM                           
     source_id: ACCESS-CM2
     # ACDD also
@@ -110,18 +111,32 @@ attrs:
     run_variant: "forcing: GHG, Oz, SA, Sl, Vl, BC, OC, (GHG = CO2, N2O, CH4, CFC11, CFC12, CFC113, HCFC22, HFC125, HFC134a)"
     calendar: "proleptic_gregorian"
     grid: "native atmosphere N96 grid (144x192 latxlon)"
-    grid_label:                   "gn"
-    nominal_resolution:           "250 km"
+    grid_label: "gn"
+    nominal_resolution: "250 km"
     # ACDD also
-    version:                      "v20220426"
-    branch_time_in_child: 0D0
+    version: "v20220426"
     # Parent experiment details:
     # if parent=false, all parent fields are automatically set to "no parent". If true, defined values are used.
     #
     parent: !!bool false 
-    parent_experiment_id:               # experiment name of the parent (e.g. piControl-spinup)
+    parent_experiment_id: none               # experiment name of the parent (e.g. piControl-spinup)
     parent_activity_id:                       # activity/MIP name of the parent (e.g. CMIP)
     parent_mip_era:                       # activity/MIP name of the parent (e.g. CMIP)
+    parent_source_id:
     parent_time_units:     # time units of the parent (e.g. "days since 0001-01-01")
-    branch_time_in_parent:                     # internal time of the parent at which the branching occured (e.g. 0D0)
     parent_variant_label:                 # variable label of the parent (e.g. r1i1p1f1)
+    # internal time of the child at which the branching occured (e.g. 0D0)
+    branch_time_in_child: 0D0
+    # internal time of the parent at which the branching occured (e.g. 0D0)
+    branch_time_in_parent: 0D0    
+    branch_method: standard
+    sub_experiment: none
+    sub_experiment_id: none
+    #CMOR will add a tracking_id if you want to define a prefix add here
+    tracking_id_prefix:
+    # DO NOT REMOVE OR ALTER this if you don't know what you're doing :-)
+    Conventions: "CF-1.7 CMIP-6.2" 
+    _control_vocabulary_file: "CMIP6_CV.json"
+    _cmip6_option: CMIP6
+    _AXIS_ENTRY_FILE: CMIP6_coordinate.json
+    _FORMULA_VAR_FILE: CMIP6_formula_terms.json 

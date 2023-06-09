@@ -77,50 +77,47 @@ def find_files(ctx, app_log):
     Sort the filenames, assuming that the sorted filenames will
     be in chronological order because there is usually some sort of date
     and/or time information in the filename.
+    Check that all needed variable are in file, otherwise add extra file pattern
     """
     
     app_log.info(f"input file structure: {ctx.obj['infile']}")
-    app_log.info(ctx.obj['cmip_table'])
-    tmp = ctx.obj['infile'].split()
-    file_touse = tmp[0]
-    #if there are two different files used make a list of extra access files
-    if len(tmp)>1:
-        extra_files = glob.glob(tmp[1])
-        extra_files.sort()
-    else:
-        extra_files = None
+    invars = ctx.obj['vin']
+    patterns = ctx.obj['infile'].split()
     #set normal set of files
-    all_files = glob.glob(file_touse)
-    all_files.sort()
-    return all_files, extra_files
-
-
-def check_var_in_file(all_files, varname, app_log):
-    """Find file with first element of 'vin'
-    """
+    files = []
+    for i,p in enumerate(patterns):
+        files.append(glob.glob(p))
+        files[i].sort()
+    #if there are more than one variable make sure there are more files or all vars in same file
+    missing = invars.copy()
     i = 0
-    found = False
-    while i < len(all_files):
-        try:
-            ds = xr.open_dataset(all_files[i], decode_times=False)
-            #see if the variable is in the file
-            var = ds[varname]
-            found = True
-            break
-        except:
-            #try next file
-            del ds
-            i+=1
-            continue
-    if found:
-        app_log.info(f"using file: {all_files[i]}")
-    else:
-        raise Exception(f"Error! Variable missing from files: {varname}")
-    try:
-        app_log.info(f"variable '{varname}' has units in ACCESS file: {var.units}")
-    except:
-        app_log.info(f"variable '{varname}' has no units listed in ACCESS file")
-    return ds 
+    var_path = {}
+    while len(missing) > 0 and i <= len(patterns):
+        f = files[i][0]
+        missing, found = check_vars_in_file(missing, f, app_log)
+        if len(found) > 0:
+            for v in found:
+                var_path[v] = patterns[i]
+        i+=1
+    # if we couldn't find a variables check other files in same directory
+    if len(missing) > 0:
+        app_log.error(f"Input vars: {missing} not in files {ctx.obj['infile']}")
+    elif len(invars) > 1 and len(patterns) > 1: 
+        new_infile = ''
+        for v in input_vars:
+            new_infile +=  f" {var_path[v]}"
+        ctx.obj['infile']= new_infile
+    return files, ctx
+
+
+def check_vars_in_file(invars, fname, app_log):
+    """Check that all variables needed for calculation are in file
+    else return extra filenames
+    """
+    ds = xr.open_dataset(fname, decode_times=False)
+    tofind = [v for v in invars if v not in ds.variables]
+    found = [v for v in invars if v not in tofind]
+    return tofind, found
 
 
 @click.pass_context
@@ -132,7 +129,7 @@ def get_time_dim(ctx, ds, app_log):
     varname = [ctx.obj['vin'][0]]
     #    
     app_log.debug(f" check time var dims: {ds[varname].dims}")
-    if 'fx' in ctx.obj['cmip_table']:
+    if 'fx' in ctx.obj['table']:
         print("fx variable, no time axis")
         refString = f"days since {ctx.obj['reference_date'][:4]}-01-01"
         time_dimension = None    
@@ -157,15 +154,12 @@ def check_timestamp(ctx, all_files, app_log):
        eventually it would make sense to make sure all files generated are consistent in naming
     """
     inrange_files = []
-    #PP currently not defined
-    #realm = ctx.obj['realm']
-    # hack to get through
-    realm='atmos'
+    realm = ctx.obj['realm']
     app_log.info("checking files timestamp ...")
     tstart = ctx.obj['tstart'].replace('-','')
     tend = ctx.obj['tend'].replace('-','')
     #if we are using a time invariant parameter, just use a file with vin
-    if ctx.obj['cmip_table'].find('fx') != -1:
+    if ctx.obj['table'].find('fx') != -1:
         inrange_files = [all_files[0]]
     else:
         for infile in all_files:
@@ -222,7 +216,7 @@ def check_in_range(ctx, all_files, tdim, app_log):
     app_log.info(f"time dimension: {tdim}")
     sys.stdout.flush()
     #if we are using a time invariant parameter, just use a file with vin
-    if ctx.obj['cmip_table'].find('fx') != -1:
+    if ctx.obj['table'].find('fx') != -1:
         inrange_files = [all_files[0]]
     else:
         for input_file in all_files:
@@ -233,7 +227,8 @@ def check_in_range(ctx, all_files, tdim, app_log):
                 tmax = ds[tdim][-1].dt.strftime('%Y%m%d')
                 app_log.debug(f"tmax from time dim: {tmax}")
                 app_log.debug(f"tend from opts: {ctx.obj['tend']}")
-                if int(tmin) > ctx.obj['tend'] or int(tmax) < ctx.obj['tstart']:
+                #if int(tmin) > ctx.obj['tend'] or int(tmax) < ctx.obj['tstart']:
+                if tmin > ctx.obj['tend'] or tmax < ctx.obj['tstart']:
                     inrange_files.append(input_file)
                 del ds
             except Exception as e:
@@ -462,7 +457,7 @@ def set_plev(ctx, data_vals, app_log):
                     else: 
                         raise Exception(f"Z levels do not match known levels {dim}")
                 elif dim.find('pressure') != -1:
-                    print(ctx.obj['cmip_table'])
+                    print(ctx.obj['table'])
                     print(f"dim = {dim}")
                     #atmospheric pressure levels:
                     if z_len == 8:
@@ -495,7 +490,7 @@ def set_plev(ctx, data_vals, app_log):
                         lev_name = 'sdepth'
                 else:
                     raise Exception(f"Unknown z axis {dim}")
-                if ctx.obj['cmip_table'] == 'CMIP6_6hrLev' and lev_name.find('hybrid_height') == -1:
+                if ctx.obj['table'] == 'CMIP6_6hrLev' and lev_name.find('hybrid_height') == -1:
                     raise Exception('Variable on pressure levels instead of model levels. Exiting')
                 print(f"lev_name = {lev_name}")
                 cmor.set_table(tables[1])
@@ -512,8 +507,9 @@ def set_plev(ctx, data_vals, app_log):
 #PP this should eventually just be generated directly by defining the dimension using the same terms 
 # in related calculation 
 @click.pass_context
-def pseudo_axis():
+def pseudo_axis(axis):
     """coordinates with axis_identifier other than X,Y,Z,T
+    PP not sure if axis can be used to remove axes_mod
     """
     cmor_name = None
     p_vals = None
@@ -851,36 +847,6 @@ def axm_mon2yr(ctx, invar, dsin, variable_id, app_log):
     app_log.info("writing with cmor...")
     cmor.write(variable_id, vyr.values, ntimes_passed=1)
     return
-
-
-@click.pass_context
-def calc_a10daypt(ctx, dsin, time_dimension, variable_id, app_log):
-    """This can be eliminated as I oved first two lines before normal case
-    """
-    app_log.info('ONLY 1st, 11th, 21st days to be used')
-    dsinsel = dsin.where(dsin[time_dimension].dt.day.isin([1, 11, 21]), drop=True)
-    a10_datavals = dsinsel[ctx.obj['vin']]
-    if ctx.obj['calculation'] != '':
-        app_log.info("calculating...")
-        a10_datavals = calculateVals(dsinsel, ctx.obj['vin'], ctx.obj['calculation'])
-    try:
-        array = array.fill(in_missing)
-    except:
-        #if values aren't in a masked array
-        pass 
-    #app_log.info("writing with cmor...")
-    #try:
-    #    if time_dimension != None:
-            #assuming time is the first dimension
-    #        app_log.info(a10_datavals.shape)
-    #        cmor.write(variable_id, a10_datavals.values,
-    #            ntimes_passed=a10_datavals.shape[0])
-    #    else:
-    #        cmor.write(variable_id, a10_datavals.values, ntimes_passed=0)
-    #except Exception as e:
-    #    app_log.error(f"E: Unable to write the CMOR variable to file {e}")
-    #    raise
-    return array
 
 
 @click.pass_context

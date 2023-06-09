@@ -24,7 +24,7 @@ PP - datetime assumes Gregorian calendar
 PP - complete restructure: now cli.py with cli_functions.py include functionality of both app.py and app_wrapper.py
      to run 
      python cli.py wrapper
-     I'm not yet sure if click is bets use here, currently not using the args either (except for debug) but I'm leaving them in just in case
+     I'm not yet sure if click is best used here, currently not using the args either (except for debug) but I'm leaving them in just in case
      Still using pool, app_bulk() contains most of the all app() function, however I generate many "subfunctions" mostly in cli_functions.py to avoid having a huge one. What stayed here is the cmor settings and writing
      using xarray to open all files, passing sometimes dataset sometime variables this is surely not consistent yet with app_functions
      
@@ -47,6 +47,7 @@ import numpy as np
 import xarray as xr
 import cftime
 import cmor
+from itertools import repeat
 from app_functions import *
 from cli_functions import *
 
@@ -65,57 +66,6 @@ def app_catch():
         click.echo('ERROR: %s'%e)
         debug_logger.exception(e)
         sys.exit(1)
-
-
-def app_args(f):
-    """Define APP4 click arguments
-    """
-    #potentially we can load vocabularies to check that arguments passed are sensible
-    #vocab = load_vocabularies('CMIP5')
-    constraints = [
-        click.option('--mode', default='cmip6', show_default=True,
-            type=click.Choice(['CMIP6', 'CCMI2022', 'custom']),
-            help='CMIP6, CCMI2022, or custom mode'),
-        click.option('--infile', '-i', type=str, 
-            default='/short/p73/tph548/test_data/test_data.nc',
-                    help='Input file to process', show_default=True),
-        click.option('--tstart', type=int,
-            help='Start time for data to process (units: years)'),
-        click.option('--tend', type=int,
-            help='End time for data to process (units: years)'),
-        click.option('--vin', multiple=True,
-            help='Name of the input variable to process'),
-        click.option('--vcmip', default='tos',
-            help='Name of the CMIP-5 variable', show_default=True),
-        click.option('--cmip_table_path', default='./cmip-cmor-tables/Tables',
-            help='Path to the directory where the CMIP tables are stored',
-            show_default=True),
-        click.option('--frequency', default='mon',
-            help='requested frequency of variable', show_default=True),
-        click.option('--cmip_table', default='CMIP6_Amon',
-            help='Name of CMIP table to load', show_default=True),
-#        click.option('--version_number', default='unassigned',
-#            help='ACCESS version number', show_default=True),
-        click.option('--in_units',
-            help='Units of input variable, by default read from the units attribute'),
-        click.option('--calculation', default='',
-            help='Calculation deriving the data values for the cmip '+
-                 'variable from the input variables', show_default=True),
-        click.option('--positive', default='', type=click.Choice(['up', 'down']),
-            help='string defining whether the variable has the positive attribute'),
-        click.option('--notes', default='',
-            help='notes to be inserted directly into the netcdf file metadata'),
-        click.option('--json_file_path', default='./input_file/access_cmip6.json',
-            help='Path to cmor json file', show_default=True),
-        click.option('--access_version', default='CM2', type=click.Choice(['ESM', 'CM2']),
-            help='ACCESS version currently only CM2 or ESM', show_default=True),
-        click.option('--reference_date', default='0001', show_default=True,
-            help='The internally-consistent date(year) that the experiment began'),
-        click.option('--exp_description', default='cmip6 standard experiment',
-            help='Description of the experiment setup', show_default=True)]
-    for c in reversed(constraints):
-        f = c(f)
-    return f
 
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
@@ -160,7 +110,6 @@ def app_wrapper(ctx):
     #fetch rows
     try:
        rows = cursor.fetchall()
-       print(f"total rows: {rows}")
     except:
        print("no more rows to process")
     conn.commit()
@@ -189,7 +138,6 @@ def app_bulk(ctx, app_log):
     #
     #Define the dataset.
     #
-    #json_file = ctx.obj['json_file_path']
     cmor.dataset_json(ctx.obj['json_file_path'])
     #
     for k,v in ctx.obj['attrs'].items():
@@ -200,33 +148,29 @@ def app_bulk(ctx, app_log):
     #
     tables = []
     tables.append(cmor.load_table(f"{ctx.obj['tables_path']}/CMIP6_grids.json"))
-    tables.append(cmor.load_table(f"{ctx.obj['tables_path']}/{ctx.obj['cmip_table']}.json"))
+    tables.append(cmor.load_table(f"{ctx.obj['tables_path']}/{ctx.obj['table']}.json"))
     #
-    #PP SEPARATE FUNCTION
-    all_files, extra_files = find_files(app_log)
+    #PP This now checks that input variables are available from listed paths if not stop execution
+    # if they are all avai;able re-write infile as a sequence corresponding to invars
+    all_files, ctx = find_files(app_log)
 
     # PP FUNCTION END return all_files, extra_files
-    app_log.info(f"access files from: {os.path.basename(all_files[0])}" +
-                 f"to {os.path.basename(all_files[-1])}")
-    app_log.info(f"first file: {all_files[0]}")
-    #
-    #PP FUNCTION check var in files
-    #find file with first element of input variable (vin) 
-    # this should be obvious maybe we could instead check if all variables in file if calculation requires several
-    #PP? Load the first ACCESS NetCDF data file, and get the required information about the dimensions and so on.
-    ds = check_var_in_file(all_files, ctx.obj['vin'][0], app_log)
+    app_log.info(f"access files from: {os.path.basename(all_files[0][0])}" +
+                 f"to {os.path.basename(all_files[0][-1])}")
+    app_log.info(f"first file: {all_files[0][0]}")
     #
     #PP create time_axis function
     # PP in my opinion this can be fully skipped, but as a start I will move it to a function
+    ds = xr.open_dataset(all_files[0][0], decode_times=False)
     time_dimension, inref_time = get_time_dim(ds, app_log)
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
     # First try to do so based on timestamp on file, if this fails
     # open files and read time axis
     try:
-        inrange_files = check_timestamp(all_files, app_log) 
+        inrange_files = check_timestamp(all_files[0], app_log) 
     except:
-        inrange_files = check_in_range(all_files, time_dimension, app_log) 
+        inrange_files = check_in_range(all_files[0], time_dimension, app_log) 
     #check if the requested range is covered
     if inrange_files == []:
         app_log.warning("no data exists in the requested time range")
@@ -246,9 +190,10 @@ def app_bulk(ctx, app_log):
     sys.stdout.flush()
     #
     #PP start from standard case and add modification when possible to cover other cases 
-    if 'A10dayPt' in ctx.obj['cmip_table']:
+    if 'A10dayPt' in ctx.obj['table']:
         app_log.info('ONLY 1st, 11th, 21st days to be used')
-        dsin = dsin.where(dsin[time_dimension].dt.day.isin([1, 11, 21]), drop=True)
+        dsin = dsin.where(dsin[time_dimension].dt.day.isin([1, 11, 21]),
+                          drop=True)
     
     # Perform the calculation:
     try:
@@ -271,7 +216,7 @@ def app_bulk(ctx, app_log):
     axis_ids = []
     if t_axis is not None:
         cmor_tName = get_cmorname('t')
-        ctx.obj['reference_date'] = f"days since {ctx.obj['reference_date']}-01-01"
+        ctx.obj['reference_date'] = f"days since {ctx.obj['reference_date']}"
         # this is getting more complciated, if calculation hasn't chnage dims
         # we can simply get original bnds from dsin but if calculation has changed dims we cannot assume that's ok
         # temporarily I will check in get_bounds that calculation='' otherwise we force recalculating bounds
@@ -300,7 +245,7 @@ def app_bulk(ctx, app_log):
             zfactor_b_id, zfactor_orog_id = hybrid_axis(lev_name, app_log)
     if j_axis is None or i_axis.ndim == 2:
            #cmor.set_table(tables[0])
-           j_axis_id = cmor.axis(table=table[0],
+           j_axis_id = cmor.axis(table=tables[0],
                table_entry='j_index',
                units='1',
                coord_vals=np.arange(len(dim_values)))
@@ -319,7 +264,7 @@ def app_bulk(ctx, app_log):
     #    n_grid_pts = n_grid_pts * len(j_axis)
     if i_axis is None or i_axis.ndim == 2:
         setgrid = True
-        i_axis_id = cmor.axis(table=table[0],
+        i_axis_id = cmor.axis(table=tables[0],
              table_entry='i_index',
              units='1',
              coord_vals=np.arange(len(i_axis)))
@@ -350,7 +295,7 @@ def app_bulk(ctx, app_log):
 
     #If we are on a non-cartesian grid, Define the spatial grid
     if setgrid:
-        grid_id = create_grid(i_axis_id, i_axis, j_axis_id, j_axis, tables[0], app_log)
+        grid_id = define_grid(i_axis_id, i_axis, j_axis_id, j_axis, tables[0], app_log)
     #PP need to find a different way to make this happens
     #create oline, siline, basin axis
     #for axm in ['oline', 'siline', 'basin']:
@@ -378,26 +323,21 @@ def app_bulk(ctx, app_log):
     except Exception as e:
         app_log.error(f"E: Unable to define the CMOR variable {e}")
         raise
-    try:
-        app_log.info('writing...')
-        if time_dimension != None:
-            app_log.info(f"Variable shape is {out_var.shape}")
-            cmor.write(variable_id, out_var.values,
+    app_log.info('writing...')
+    # ntimes passed is optional but we might need it if time dimension is not time
+    if time_dimension != None:
+        app_log.info(f"Variable shape is {out_var.shape}")
+        status = cmor.write(variable_id, out_var.values,
                 ntimes_passed=out_var[time_dimension].size)
-        else:
-            cmor.write(variable_id, out_var.values, ntimes_passed=0)
-
-    except Exception as e:
+    else:
+        status = cmor.write(variable_id, out_var.values, ntimes_passed=0)
+    if status != 0:
         app_log.error(f"E: Unable to write the CMOR variable to file {e}")
     #
     #Close the CMOR file.
     #
     app_log.info(f"finished writing @ {timetime.time()-start_time}")
-    try:
-        path = cmor.close(variable_id, file_name=True)
-    except:
-        app_log.error("E: We should not be here!")
-        raise
+    path = cmor.close(variable_id, file_name=True)
     return path
 
 #
@@ -426,12 +366,13 @@ def process_row(ctx, row):
         ctx.obj[k] = v
         print(f"{k}= {v}")
     #
+    sys.stdout.flush()
     try:
         #Do the processing:
         #
         expected_file = row['file_name']
         successlists = ctx.obj['success_lists']
-        var_msg = f"{row['cmip_table']},{row['variable_id']},{row['tstart']},{row['tend']}"
+        var_msg = f"{row['table']},{row['variable_id']},{row['tstart']},{row['tend']}"
         #if file doesn't already exist (and we're not overriding), run the app
         if ctx.obj['override'] or not os.path.exists(expected_file):
             #
@@ -461,9 +402,9 @@ def process_row(ctx, row):
                 insuccesslist = 0
                 with open(f"{successlists}/{ctx.obj['exp']}_success.csv",'a+') as c:
                     reader = csv.reader(c, delimiter=',')
-                    for row in reader:
-                        if (row[0] == row['table'] and row[1] == row['variable_id'] and
-                            row[2] == row['tstart'] and row[3] == row['tend']):
+                    for line in reader:
+                        if (line[0] == row['table'] and line[1] == row['variable_id'] and
+                            line[2] == row['tstart'] and line[3] == row['tend']):
                             insuccesslist = 1
                         else: 
                             pass
@@ -490,7 +431,7 @@ def process_row(ctx, row):
                     #plot variable
                     #try:
                     #    if plot:
-                    #        plotVar(outpath,ret,cmip_table,vcmip,source_id,experiment_id)
+                    #        plotVar(outpath,ret,table,vcmip,source_id,experiment_id)
                     #except: 
                     #    msg = f"{msg},plot_fail: "
                     #    traceback.print_exc()
@@ -519,7 +460,7 @@ def process_row(ctx, row):
         with open(f"{successlists}/{ctx.obj['exp']}_failed.csv",'a+') as c:
             reader = csv.reader(c, delimiter=',')
             for line in reader:
-                if (line[0] == row['variable_id'] and line[1] == row['cmip_table']
+                if (line[0] == row['variable_id'] and line[1] == row['table']
                     and line[2] == row['tstart'] and line[3] == row['tend']):
                     infailedlist = 1
                 else:
@@ -543,14 +484,14 @@ def process_row(ctx, row):
 def process_experiment(ctx, row):
     record = {}
     header = ['infile', 'outpath', 'file_name', 'vin', 'variable_id',
-              'cmip_table', 'frequency', 'timeshot', 'tstart', 'tend',
-              'status', 'file_size', 'local_exp_id', 'calculation',
-              'in_units', 'positive', 'cfname', 'source_id',
-              'access_version', 'json_file_path', 'reference_date',
-              'version']  
+              'table', 'frequency', 'realm', 'timeshot', 'tstart',
+              'tend', 'status', 'file_size', 'local_exp_id',
+              'calculation', 'resample', 'in_units', 'positive',
+              'cfname', 'source_id', 'access_version', 'json_file_path',
+              'reference_date', 'version']  
     for i,val in enumerate(header):
         record[val] = row[i]
-    table = record['cmip_table'].split('_')[1]
+    table = record['table'].split('_')[1]
     varlogfile = (f"{ctx.obj['var_logs']}/varlog_{table}"
                  + f"_{record['variable_id']}_{record['tstart']}-"
                  + f"{record['tend']}.txt")
@@ -565,9 +506,12 @@ def process_experiment(ctx, row):
     return msg
 
 
-def pool_handler(rows, ncpus):
+@click.pass_context
+def pool_handler(ctx, rows, ncpus):
     p = mp.Pool(ncpus)
-    results = p.imap_unordered(process_experiment,((row) for row in rows))
+    #args = zip(rows, repeat(ctx.obj['var_logs']))
+    #results = p.imap_unordered(process_experiment,((row) for row in rows))
+    results = p.imap_unordered(process_experiment, rows)
     p.close()
     p.join()
     return results

@@ -245,6 +245,7 @@ class IceTransportCalculations():
         else: 
             raise Exception('ERROR: Transport across a line needs to be calculated for a single value of i or j')
 
+
     def lineTransports(self, tx_trans, ty_trans):
         """
         Calculates the mass transports across the ocn straits.
@@ -440,6 +441,7 @@ class IceTransportCalculations():
 
         return transports
     
+
     def icelineTransports(self, ice_thickness, velx, vely):
         """
         Calculates the ice mass transport across the straits
@@ -467,6 +469,7 @@ class IceTransportCalculations():
 
         return transports
 
+
     def snowlineTransports(self, snow_thickness, velx, vely):
         """
         Calculates the Snow mass transport across the straits
@@ -492,6 +495,7 @@ class IceTransportCalculations():
         transports = self.fill_transports(tx_trans, ty_trans)
 
         return transports
+
 
     def icearealineTransports(self, ice_fraction, velx, vely):
         """
@@ -519,6 +523,7 @@ class IceTransportCalculations():
 
         return transports
     
+
     def msftbarot(self, psiu, tx_trans):
         """
         Calculates the drake trans

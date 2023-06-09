@@ -61,54 +61,6 @@ def write_variable_map(outpath, table, matches):
     fjson.close()
 
 
-#PP probably we don't need this anymore!
-def determine_dimension(freq, dimensions, timeshot, realm, table, skip):
-    """
-    """
-    UM_realms, MOM_realms, CICE_realms = define_realms()
-    if skip:
-        dimension = ''
-    elif (freq == 'fx') or (dimensions.find('time') == -1):
-        dimension = 'fx'
-    elif (timeshot == 'clim') or (dimensions.find('time2') != -1):
-        dimension = 'clim'
-    elif len(dimensions.split()) == 1:
-        dimension = 'scalar'
-    elif dimensions.find('alev') != -1:
-        if realm in UM_realms:
-            dimension = '3Dalev'
-        else:
-            raise Exception('E: realm not identified')
-    elif dimensions.find('plev') != -1:
-        if realm in UM_realms:
-            dimension = '3Datmos'
-        else:
-            raise Exception('E: realm not identified')
-    elif dimensions.find('olev') != -1:
-        if realm in MOM_realms:
-            dimension = '3Docean'
-        else:
-            raise Exception('E: realm not identified')
-    elif dimensions.find('sdepth') != -1:
-        if realm in UM_realms:
-            if dimensions.find('sdepth1') != -1:
-                dimension = '2Datmos'
-            else:
-                dimension = '3Datmos'
-        else:
-            raise Exception('E: realm not identified')
-    else:
-        if realm in UM_realms:
-            dimension = '2Datmos'
-        elif realm in MOM_realms:
-            dimension = '2Docean'
-        elif realm in CICE_realms:
-            dimension = '2Dseaice'
-        else:
-            raise Exception('E: no dimension identified')
-    return dimension
-
-
 def find_matches(table, var, realm, frequency, varlist):
     """Finds variable matching constraints given by table and config
     settings and returns a dictionary with the variable specifications. 
@@ -163,6 +115,7 @@ def find_matches(table, var, realm, frequency, varlist):
         else:
             print(f"could not find match for {table}-{var}-{frequency}")
     if found:
+        match['resample'] = v.get('resample', '')
         match['timeshot'] = timeshot
         match['table'] = table
         #match['file_structure'] = f"/{match['realm']}/{match['filename']}*.nc"
@@ -173,7 +126,7 @@ def find_matches(table, var, realm, frequency, varlist):
 def check_best_match(varlist, frequency):
     """If variable is present in file at different frequencies,
     finds the one with higher frequency nearest to desired frequency.
-    Adds to variable resample calculation.
+    Adds frequency to variable resample field.
 
     Parameters
     ----------
@@ -197,8 +150,7 @@ def check_best_match(varlist, frequency):
     for frq in resample_order[freq_idx+1:]:
         for v in varlist:
             if v['frequency'] == frq:
-                #v['frequency'] = frequency
-                v['calculation'] += f",time_resample({frequency})"
+                v['resample'] = f"{frequency}"
                 found = True
                 var = v
                 break
@@ -237,55 +189,59 @@ def write_yaml(data, fname='exp_config.yaml'):
 
 
 def setup_env(config):
-    """Substitute setup_env.sh
+    """Sets up the configuration dictionary based on config file input
+
+    Parameters
+    ----------
+    config : dict(dict)
+        Dictionary including 'cmor' settings and attributes for experiment
 
     Returns
     -------
+    config : dict(dict)
+        Updated dictionary including 'cmor' settings and attributes for experiment
     """
-    # how are these 2 used???
-    #PP this could be done better!!
     cdict = config['cmor']
-    #output_loc and main are the same previously also outdir
+    #output_loc and main are the same previously also outpath
     if cdict['maindir'] == 'default':
         cdict['maindir'] = f"/scratch/{cdict['project']}/{os.getenv('USER')}/APP5_output"
     #PP not sure it ever get used
-    cdict['outdir'] = f"{cdict['maindir']}/APP_job_files/{cdict['exp']}"
+    cdict['outpath'] = f"{cdict['maindir']}/APP_job_files/{cdict['exp']}"
     # just making sure that custom_py is not in subroutines
     cdict['appdir'] = cdict['appdir'].replace('/subroutines','')
     cdict['master_map'] = f"{cdict['appdir']}/{cdict['master_map']}"
     cdict['grid_file'] = f"{cdict['appdir']}/{cdict['grid_file']}"
+    cdict['tables_path'] = f"{cdict['appdir']}/{cdict['tables_path']}"
     # we probably don't need this??? just transfer to custom_app.yaml
     # dreq file is the only field that wasn't yet present!
     #cdict['exps_table'] = f"{cdict['appdir']}/input_files/experiments.csv" 
     # Output subdirectories
-    cdict['variable_maps'] = f"{cdict['outdir']}/variable_maps"
-    cdict['success_lists'] = f"{cdict['outdir']}/success_lists"
-    cdict['cmor_logs'] = f"{cdict['outdir']}/cmor_logs"
-    cdict['var_logs'] = f"{cdict['outdir']}/variable_logs"
-    cdict['app_logs'] = f"{cdict['outdir']}/app_logs"
+    cdict['variable_maps'] = f"{cdict['outpath']}/variable_maps"
+    cdict['success_lists'] = f"{cdict['outpath']}/success_lists"
+    cdict['cmor_logs'] = f"{cdict['outpath']}/cmor_logs"
+    cdict['var_logs'] = f"{cdict['outpath']}/variable_logs"
+    cdict['app_logs'] = f"{cdict['outpath']}/app_logs"
     # Output files
-    cdict['app_job'] = f"{cdict['outdir']}/app_job.sh"
-    cdict['job_output'] =f"{cdict['outdir']}/job_output.OU"
-    cdict['database'] = f"{cdict['outdir']}/app5.db"
+    cdict['app_job'] = f"{cdict['outpath']}/app_job.sh"
+    cdict['job_output'] =f"{cdict['outpath']}/job_output.OU"
+    cdict['database'] = f"{cdict['outpath']}/app5.db"
     # reference_date
     if cdict['reference_date'] == 'default':
-        cdict['reference_date'] = cdict['start_date']
+        cdict['reference_date'] = f"{cdict['start_date'][:4]}-{cdict['start_date'][4:6]}-{cdict['start_date'][6:8]}"
+        print('should be here')
+        print(cdict['reference_date'])
     config['cmor'] = cdict
+    # if parent False set parent attrs to 'no parent'
+    print(config['attrs']['parent'])
+    if config['attrs']['parent'] is False:
+        p_attrs = [k for k in config['attrs'].keys() if 'parent' in k]
+        for k in p_attrs:
+            config['attrs'][k] = 'no parent'
     return config
 
 
 #PP might not need this anymore
-# unless is need to process dreq
-def define_realms():
-    """
-    """
-    UM_realms = ['atmos','land','aerosol','atmosChem','landIce']
-    MOM_realms = ['ocean','ocnBgchem']
-    CICE_realms = ['seaIce']
-    return UM_realms, MOM_realms, CICE_realms
-
-
-#PP might not need this anymore
+#PP currently used by check_tables 
 # unless is need to process dreq
 def define_tables():
     """
@@ -299,9 +255,9 @@ def define_tables():
     CMIP_tables = UM_tables + MOM_tables + CICE_tables
     return CMIP_tables 
 
-
+#PP not sure we really need this either
 def check_table(tables):
-    """
+    """Check if list of tables are defined in CMIP/custom tables
     """
     CMIP_tables = define_tables()
     if tables in CMIP_tables:
@@ -311,18 +267,24 @@ def check_table(tables):
     else:
         sys.exit(f"table '{tables}' not in CMIP_tables list. "+
                 "Check spelling of table, or CMIP_tables list in '{os.path.basename(__file__)}'")
+    return
 
 
 def check_output_directory(path):
+    """Check if mapping directory exists and remove pre-existing files 
+    """
     if len(glob.glob(f"{path}/*.csv")) == 0:
         print(f"variable map directory: '{path}'")
     else:
         for fname in glob.glob(f"{path}/*.csv"):
             os.remove(fname)
         print(f"variable maps deleted from directory '{path}'")
+    return
 
 
 def check_path(path):
+    """Check if path exists, if not creates it
+    """
     if os.path.exists(path):
         print(f"found directory '{path}'")
     else:
@@ -332,13 +294,11 @@ def check_path(path):
         except OSError as e:
             sys.exit(f"failed to create directory '{path}';" +
                      "please create manually. \nexiting.")
+    return
 
 
 def find_custom_tables(cdict):
-    """Assumes second part of table names is unique
-
-    Returns
-    -------
+    """Returns list of tables files in custom table path
     """
     tables = []
     path = cdict['tables_path']
@@ -380,6 +340,7 @@ def check_file(fname):
         print(f"found file '{fname}'")
     else:
         sys.exit(f"file '{fname}' does not exist!")
+    return
 
 
 def check_output_directory(path):
@@ -392,6 +353,7 @@ def check_output_directory(path):
         for fname in glob.glob(f"{path}/*.csv"):
             os.remove(fname)
         print(f"variable maps deleted from directory '{path}'")
+    return
 
 
 #PP part of dreq not needed otherwise
@@ -442,7 +404,7 @@ def fix_years(years, tstart, tend):
     return tstart, tend
 
 
-def read_dreq_vars2(cdict, table, activity_id):
+def read_dreq_vars2(cdict, table_id, activity_id):
     """Reads dreq variables file and returns a list of variables included in
     activity_id and experiment_id, also return dreq_years list
 
@@ -450,8 +412,8 @@ def read_dreq_vars2(cdict, table, activity_id):
     ----------
     cdict : dict
         Dictionary with post-processing config 
-    table : str
-        CMIP table
+    table_id : str
+        CMIP table id
     activity_id: str
         CMIP activity_id
 
@@ -465,7 +427,7 @@ def read_dreq_vars2(cdict, table, activity_id):
         reader = csv.reader(f, delimiter='\t')
         dreq_variables = {} 
         for row in reader:
-            if (row[0] == table) and (row[12] not in ['', 'CMOR Name']):
+            if (row[0] == table_id) and (row[12] not in ['', 'CMOR Name']):
                 cmorname = row[12]
                 mips = row[28].split(',')
                 if activity_id not in mips:
@@ -494,16 +456,21 @@ def read_dreq_vars2(cdict, table, activity_id):
     return dreq_variables
 
 
-def create_variable_map(cdict, ftable, masters, activity_id=None):
+def create_variable_map(cdict, table, masters, activity_id=None):
     """Create a mapping file for this specific experiment based on 
     model ouptut mappings, variables listed in table/s passed by config.
 
+    Parameters
+    ----------
+
+    Returns
+    -------
     """
     matches = []
     #PP open table json files and get variable list
     #fpath = glob.glob(f"{cdict['tables_path']}/*_{table}.json")
-    fpath = f"{cdict['tables_path']}/{ftable}.json"
-    table = ftable.split('_')[1]
+    fpath = f"{cdict['tables_path']}/{table}.json"
+    table_id = table.split('_')[1]
     with open(fpath, 'r') as fj:
          vardict = json.load(fj)
     row_dict = vardict['variable_entry']
@@ -513,7 +480,7 @@ def create_variable_map(cdict, ftable, masters, activity_id=None):
     if cdict['variable_to_process'] != 'all':
         select = [cdict['variable_to_process']]
     if cdict['force_dreq'] is True:
-        dreq_years = read_dreq_vars2(cdict, table, activity_id)
+        dreq_years = read_dreq_vars2(cdict, table_id, activity_id)
         all_dreq = [v for v in dreq_years.keys()]
         select = set(select).intersection(all_dreq) 
     for name,row in row_dict.items():
@@ -525,14 +492,15 @@ def create_variable_map(cdict, ftable, masters, activity_id=None):
         years = 'all'
         if cdict['force_dreq'] and var in all_dreq:
             years = dreq_years[var]
-        match = find_matches(ftable, var, realm, frequency, masters)
+        match = find_matches(table, var, realm, frequency, masters)
         if match is not None:
             match['years'] = years
             matches.append(match)
     if matches == []:
-        print(f"{ftable}:  no matching variables found")
+        print(f"{table}:  no matching variables found")
     else:
-        write_variable_map(cdict['variable_maps'], ftable, matches)
+        write_variable_map(cdict['variable_maps'], table, matches)
+    return
 
 
 #PP this is where dreq process start it can probably be simplified
@@ -568,8 +536,6 @@ def dreq_map(cdict, activity_id=None):
         access_version = cdict['access_version']
         start_year = int(cdict['start_date'])
         end_year = int(cdict['end_date'])
-        #PP should I check that is 8 long? ie.e with YYYYDDMM
-        cdict['reference_date'] = cdict['start_date']
     #
     priority_vars=[]
     # look slike yaml file would be better!!
@@ -616,19 +582,21 @@ def dreq_map(cdict, activity_id=None):
 
 #PP still creating a file_master table what to store in it might change!
 def master_setup(conn):
-    cursor=conn.cursor()
+    """Sets up file_master table in database
+    """
+    cursor = conn.cursor()
     #cursor.execute('drop table if exists file_master')
     #Create the file_master table
-    # PP this is a mix of attributes that could be taken from yaml file and file specific settings that needs to be derived from master file
     try:
-        cursor.execute( '''create table if not exists file_master(
+        cursor.execute('''create table if not exists file_master(
             infile text,
             outpath text,
             file_name text,
             vin text,
             variable_id text,
-            cmip_table text,
+            ctable text,
             frequency text,
+            realm text,
             timeshot text,
             tstart integer,
             tend integer,
@@ -636,27 +604,29 @@ def master_setup(conn):
             file_size real,
             local_exp_id text,
             calculation text,
+            resample text,
             in_units text,
             positive text,
             cfname text,
             source_id text,
             access_version text,
             json_file_path text,
-            reference_date integer,
+            reference_date text,
             version text,
-            primary key(local_exp_id,variable_id,cmip_table,tstart,version))''')
+            primary key(local_exp_id,variable_id,ctable,tstart,version))''')
     except Exception as e:
         print("Unable to create the APP file_master table.\n {e}")
         raise e
     conn.commit()
+    return
 
 
 def cleanup(config):
-    """Substitute cleanup.sh
+    """Prepare output directories and removes pre-existing ones
     """
     # check if output path already exists
     cdict = config['cmor']
-    outpath = cdict['outdir']
+    outpath = cdict['outpath']
     if os.path.exists(outpath):
         answer = input(f"Output directory '{outpath}' exists.\n"+
                        "Delete and continue? [Y,n]\n")
@@ -688,9 +658,14 @@ def cleanup(config):
 
 
 def define_template(cdict, flag, nrows):
-    """
+    """Defines job file template
     not setting contact and I'm sure I don't need the other envs either!
     CONTACT={cdict['contact']}
+
+    Parameters
+    ----------
+    cdict : dict
+        Dictonary with cmor settings for experiment
     """
     template = f"""#!/bin/bash
 #PBS -P {cdict['project']} 
@@ -719,7 +694,7 @@ MODE={cdict['mode']}
 # main
 python {cdict['appdir']}/subroutines/cli.py --debug -i {cdict['exp']}_config.yaml wrapper 
 # post
-#python {cdict['outdir']}/database_updater.py
+#python {cdict['outpath']}/database_updater.py
 sort {cdict['success_lists']}/{cdict['exp']}_success.csv \
     > {cdict['success_lists']}/{cdict['exp']}_success_sorted.csv
 mv {cdict['success_lists']}/{cdict['exp']}_success_sorted.csv \
@@ -750,7 +725,7 @@ def write_job(cdict, nrows):
     if cdict['nmem'] >= 1470: 
         cdict['nmem'] = 1470
     print(f"number of files to create: {nrows}")
-    print(f"number of cpus to to be used: {cdict['ncpus']}")
+    print(f"number of cpus to be used: {cdict['ncpus']}")
     print(f"total amount of memory to be used: {cdict['nmem']}GB")
     fpath = cdict['app_job']
     template = define_template(cdict, flag, nrows)
@@ -759,20 +734,67 @@ def write_job(cdict, nrows):
     return cdict
 
 
-def create_cv_json(exp, appdir, attrs):
+def create_exp_json(config, json_cv):
+    """Create a json file as expected by CMOR to describe the dataset
+    and passed the main global attributes.
+
+    Parameters
+    ----------
+    config : dict(dict)
+        Dictionary with both cmor settings and attributes defined for experiment
+    json_cv : str
+        Path of CV json file to edit
+
+    Returns
+    -------
+    fname : str
+        Name of created experiment json file
     """
-    """
-    fname = f"{appdir}/input_files/json/{exp}.json"
-    json_data = json.dumps(attrs, indent = 4, sort_keys = True)
+    # outpath empty, calendar not there
+    # template outpath etc different use <> instead of {}
+    cdict = config['cmor']
+    attrs = config['attrs']
+    # read required attributes from cv file
+    with open(json_cv, 'r') as f:
+        json_cv_dict=json.load(f, object_pairs_hook=OrderedDict)
+    f.close()
+    required = json_cv_dict['CV']['required_global_attributes']
+    # add attributes for path and file template to required
+    tmp_str = (cdict['path_template'].replace('}/{','/') 
+               + cdict['file_template'].replace('}_{','/'))
+    attrs_template = tmp_str.replace('}','').replace('{','').split('/') 
+    required.extend( set(attrs_template))
+    # these are probably needed by cmor
+    required.extend(['_cmip6_option', '_control_vocabulary_file',
+        '_AXIS_ENTRY_FILE', '_FORMULA_VAR_FILE', 'outpath'] )
+    # create global attributes dict to save
+    glob_attrs = {}
+    attrs_keys = [k for k in attrs.keys()]
+    for k in required:
+        if k in attrs_keys:
+            glob_attrs[k] = attrs[k]
+        else:
+            glob_attrs[k] = cdict.get(k, '')
+    # replace {} _ and / in output templates
+    glob_attrs['output_path_template'] = cdict['path_template'].replace('{','<').replace('}','>').replace('/','')
+    glob_attrs['output_file_template'] = cdict['file_template'].replace('}_{','><').replace('}','>').replace('{','<')
+    #glob_attrs['table_id'] = cdict['table']
+    if cdict['mode'] == 'cmip6':
+        glob_attrs['experiment'] = attrs['experiment_id']
+    else:
+        glob_attrs['experiment'] = cdict.get('exp','')
+    # write glob_attrs dict to json file
+    fname = f"{cdict['outpath']}/{cdict['exp']}.json"
+    # parent attrs don't seem to be included should I add them manually?
+    # at least for mode = cmip6
+    json_data = json.dumps(glob_attrs, indent = 4, sort_keys = True, default = str)
     with open(fname, 'w') as f:
         f.write(json_data)
     f.close()
     return fname
 
 
-# PP not sure I need this unless users doesn't pass one but then you're stuck
-# at passing all cmip args so i think is better to choose a standard and stick to it!
-def edit_cv_json(json_cv, attrs):
+def edit_json_cv(json_cv, attrs):
     """Edit the CMIP6 CV json file to include extra activity_ids and
     experiment_ids, so they can be recognised by CMOR when following 
     CMIP6 standards.
@@ -791,7 +813,7 @@ def edit_cv_json(json_cv, attrs):
     experiment_id = attrs['experiment_id']
 
     with open(json_cv, 'r') as f:
-        json_cv_dict=json.load(f, object_pairs_hook=OrderedDict)
+        json_cv_dict = json.load(f, object_pairs_hook=OrderedDict)
     f.close()
 
     if activity_id not in json_cv_dict['CV']['activity_id']:
@@ -828,30 +850,17 @@ def edit_cv_json(json_cv, attrs):
     return
 
 
-def add_exp(version):
-    """Do i need this? Probably not most of this has been added to custom_app.yaml,
-       so all the info is together
-
-    Returns
-    -------
-    """
-    if version == 'ESM':
-        json_exp = 'input_files/json/default_esm.json'
-    elif version == 'CM2':
-        json_exp = 'input_files/json/default_cm2.json'
-    # add content parent_id relaiz. etc to content of this file
-    #read file first create function
-    exp_dict = read_json()
-    return
-
 #PP I have the feeling that pupulate/ppulate_unlimtied etc might be joined into one?
 def populate(conn, config):
-    """
+    """Populate file_master db table, this will be used by app to
+    process all files
+
     Parameters
     ----------
-    conn : str
-        Path of CV json file to edit
-    config: 
+    conn : obj 
+        DB connection object
+    config : dict(dict) 
+        Dictionary including 'cmor' settings and attributes for experiment
 
     Returns
     -------
@@ -861,7 +870,7 @@ def populate(conn, config):
     #get experiment information
     opts = {}
     opts['status'] = 'unprocessed'
-    opts['outpath'] = config['cmor']['outdir']
+    opts['outpath'] = config['cmor']['outpath']
     config['attrs']['version'] = config['attrs'].get('version', datetime.today().strftime('%Y%m%d'))
     #Experiment Details:
     for k,v in config['attrs'].items():
@@ -876,52 +885,43 @@ def populate(conn, config):
     opts['json_file_path'] = config['cmor']['json_file_path'] 
     print(f"found local experiment: {opts['local_exp_id']}")
     cursor = conn.cursor()
-    populate_unlimited(cursor, config['cmor'], opts)
-    conn.commit()
-
-
-#populate the database for variables that are requested for all times for all experiments
-def populate_unlimited(cursor, cdict, opts):
-    """
-    Parameters
-    ----------
-    json_cv : str
-        Path of CV json file to edit
-    attrs: dict
-        Dictionary with attributes defined for experiment
-
-    Returns
-    -------
-    """
     #monthly, daily unlimited except cable or moses specific diagnostics
     rows = []
-    tables = glob.glob(f"{cdict['variable_maps']}/*.json")
+    tables = glob.glob(f"{config['cmor']['variable_maps']}/*.json")
     for table in tables:
         with open(table, 'r') as fjson:
             data = json.load(fjson)
         rows.extend(data)
-    populateRows(rows, cdict, opts, cursor)
+    populate_rows(rows, config['cmor'], opts, cursor)
+    conn.commit()
+    return
 
 
-def addRow(values, cursor):
+def add_row(values, cursor):
     """Add a row to the file_master database table
        one row specifies the information to produce one output cmip5 file
 
+    Parameters
+    ----------
+    values : list
+        Path of CV json file to edit
+    cursor : obj 
+        Dictionary with attributes defined for experiment
     Returns
     -------
     """
     try:
         cursor.execute('''insert into file_master
             (infile, outpath, file_name, vin, variable_id,
-            cmip_table, frequency, timeshot, tstart, tend,
+            ctable, frequency, realm, timeshot, tstart, tend,
             status, file_size, local_exp_id, calculation,
-            in_units, positive, cfname, source_id,
-            access_version, json_file_path,reference_date, version)
+            resample, in_units, positive, cfname, source_id,
+            access_version, json_file_path, reference_date, version)
         values
             (:infile, :outpath, :file_name, :vin, :variable_id,
-            :cmip_table, :frequency, :timeshot, :tstart, :tend,
+            :table, :frequency, :realm, :timeshot, :tstart, :tend,
             :status, :file_size, :local_exp_id, :calculation,
-            :in_units, :positive, :cfname, :source_id,
+            :resample, :in_units, :positive, :cfname, :source_id,
             :access_version, :json_file_path, :reference_date,
             :version)''',
             values)
@@ -996,21 +996,22 @@ def computeFileSize(cdict, opts, grid_size, frequency):
 
 #PP I super simplified this not sure there's much point in trying to double guess final name
 # it might be enough to make sure dates are correct?
-def buildFileName(cdict, opts):
-    """
-    finish is the last day covered by file as datetime object
+def build_filename(cdict, opts):
+    """Builds name for file to be created based on template in config
+    NB we are using and approximations for dates
+    not including here exact hour
+
     Parameters
     ----------
-    json_cv : str
-        Path of CV json file to edit
-    attrs: dict
-        Dictionary with attributes defined for experiment
+    cdict : dict
+        Dictonary with cmor settings for experiment
+    opts : dict
+        Dictionary with attributes for a specific variable
 
     Returns
     -------
-
-    Returns
-    -------
+    fname : str
+        Name for file to be created
     """
     date = opts['version']
     tString = ''
@@ -1025,22 +1026,26 @@ def buildFileName(cdict, opts):
     else:
         opts['date_range'] = ""
     #P use path_template and file_template instead
-    template = f"{cdict['outdir']}/{cdict['path_template']}{cdict['file_template']}"
-    file_name = template.format(**opts) 
-    return file_name
+    template = (f"{cdict['outpath']}/{cdict['path_template']}"
+               + f"{cdict['file_template']}")
+    fname = template.format(**opts) 
+    return fname
 
 
-def populateRows(rows, cdict, opts, cursor):
-    """
+def populate_rows(rows, cdict, opts, cursor):
+    """Populates file_master table, with values from config and mapping.
+    Works out how many files to generate based on grid size. 
+
     Parameters
     ----------
-    json_cv : str
-        Path of CV json file to edit
-    attrs: dict
-        Dictionary with attributes defined for experiment
-
-    Returns
-    -------
+    rows : list(dict)
+        List of dictionaries where each item represents one file to create
+    cdict : dict
+        Dictonary with cmor settings for experiment
+    opts : dict
+        Dictionary with attributes of specific variable to update
+    cursor : obj
+        Cursor of db connection object
 
     Returns
     -------
@@ -1048,10 +1053,12 @@ def populateRows(rows, cdict, opts, cursor):
     tableToFreq = read_yaml(f"input_files/table2freq.yaml")
     for champ in rows:
         #from champions table:
-        table = champ['table'].split('_')[1]
-        frequency = tableToFreq[table]
+        table_id = champ['table'].split('_')[1]
+        frequency = tableToFreq[table_id]
         opts['frequency'] = frequency
-        opts['cmip_table'] = champ['table']
+        opts['realm'] = champ['realm']
+        opts['table'] = champ['table']
+        opts['table_id'] = table_id
         opts['variable_id'] = champ['cmip_var'] # cmip_var
         opts['vin'] = champ['input_vars'] # access_vars
         paths = champ['file_structure'].split() 
@@ -1059,55 +1066,47 @@ def populateRows(rows, cdict, opts, cursor):
         for x in paths:
             opts['infile'] += f"{opts['local_exp_dir']}/{x} "
         opts['calculation'] = champ['calculation']
+        opts['resample'] = champ['resample']
         opts['in_units'] = champ['units']
         opts['positive'] = champ['positive']
         opts['timeshot'] = champ['timeshot']
-        #opts['var_notes'] = champ[11]
         opts['cfname'] = champ['standard_name']
-        #dimension = champ['dimensions']
         exp_start = opts['exp_start']
         exp_end = opts['exp_end']
         if champ['years'] != 'all' and cdict['dreq_years']:
             exp_start, exp_time = fix_years(champ['years'], exp_start, exp_end) 
             if exp_start is None:
                 print("Years requested for variable are outside specified"
-                     f"period: {table}, {var}, {match['tstart']}, {match['tend']}")
+                     f"period: {table_id}, {var}, {match['tstart']}, {match['tend']}")
                 continue
         time= datetime.strptime(str(exp_start), '%Y%m%d').date()
         finish = datetime.strptime(str(exp_end), '%Y%m%d').date()
         interval, opts['file_size'] = computeFileSize(cdict, opts, champ['size'], champ['frequency'])
-        #PP resume from here and chnage again the file creation!
-        #TODO add in check that there is only one value
         #loop over times
         while (time < finish):
             delta = eval(f"timedelta({interval})")
             newtime = min(time+delta, finish)
             opts['tstart'] = time
             opts['tend'] = newtime
-            opts['file_name'] = buildFileName(cdict, opts)
-            rowid = addRow(opts, cursor)
+            opts['file_name'] = build_filename(cdict, opts)
+            rowid = add_row(opts, cursor)
             time = newtime
+    return
 
 
-def count_rows(conn):
-    """Return number of files to process
-
-    Returns
-    -------
+def count_rows(conn, exp):
+    """Returns number of files to process
     """
     cursor=conn.cursor()
-    #cursor.execute(f"select * from file_master where status=='unprocessed' and local_exp_id=='{exptoprocess}'")
-    cursor.execute(f"select * from file_master")
+    cursor.execute(f"select * from file_master where status=='unprocessed' and local_exp_id=='{exp}'")
+    #cursor.execute(f"select * from file_master")
     rows = cursor.fetchall()
     print(f"Number of rows in file_master: {len(rows)}")
     return len(rows)
 
 
 def sum_file_sizes(conn):
-    """Return estimate of total size of files to process
-
-    Returns
-    -------
+    """Returns estimate of total size of files to process
     """
     cursor=conn.cursor()
     cursor.execute('select file_size from file_master')
@@ -1115,7 +1114,8 @@ def sum_file_sizes(conn):
     size=0.0
     for s in sizeList:
         size += float(s[0])
-    return size/1024.
+    size = size/1024.
+    return size
 
 
 def main():
@@ -1137,15 +1137,11 @@ def main():
     cdict = config['cmor']
     cleanup(config)
     json_cv = f"{cdict['tables_path']}/{cdict['_control_vocabulary_file']}"
-    #PP here I'm creating one on the fly with the attributes frm custo_app.yaml
-    # then if necessary we can add edit-cv when needed for non custom runs
-    #fname = create_cv_json(cdict['exp'], cdict['appdir'], config['attrs'])
-    #PP do I need this in cli.py?
-    fname = f"{cdict['appdir']}/input_files/json/cm000.json"
+    fname = create_exp_json(config, json_cv)
     cdict['json_file_path'] = fname
     #cdict['json_file_path'] = json_cv
     if cdict['mode'] == 'cmip6':
-        edit_cv_json(json_cv, config['attrs'])
+        edit_json_cv(json_cv, config['attrs'])
         cdict = dreq_map(cdict, config['attrs']['activity_id'])
     else:
         cdict = dreq_map(cdict)
@@ -1159,7 +1155,7 @@ def main():
     populate(conn, config)
     #PP this can be totally done directly in cli.py, if it needs doing at all!
     #create_database_updater()
-    nrows = count_rows(conn)
+    nrows = count_rows(conn, cdict['exp'])
     tot_size = sum_file_sizes(conn)
     print(f"max total file size is: {tot_size} GB")
     #write app_job.sh

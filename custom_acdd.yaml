@@ -26,9 +26,8 @@ cmor:
     access_version: AUS2200 
     # reference date for time units (set as 'default' to use start_date)
     reference_date: default              
-    # previously output_path/file_template
-    path_template: "{local_exp_id}/{version}/{cmip_table}/"
-    file_template: "{variable_id}_{source_id}_{local_exp_id}_{cmip_table}_{date_range}"
+    path_template: "{local_exp_id}/{version}/{table_id}/"
+    file_template: "{variable_id}_{source_id}_{local_exp_id}_{table_id}_{date_range}"
     # maximum file size in MB: this is meant as uncompressed, compression might reduce it by 50%
     max_size: 8192 
     # Variables to CMORise: 
@@ -54,7 +53,7 @@ cmor:
     tables_path: "input_files/custom_mode_cmor-tables/Tables/"
     history_data: ''
     _control_vocabulary_file: "ACDD_CV.json"
-    _cmip6_option: CMIP6
+    _cmip6_option: ACDD 
   # Additional NCI information:
     # NCI project to charge compute; $PROJECT = your default project
     # NCI queue to use; hugemem is recommended
@@ -146,3 +145,5 @@ attrs:
     # time at which child branch off parent experiment in parent reference time units
     #branch_time_in_parent: 0D0                  
     #parent_variant_label: r1i1p1f1       
+    # CMOR will add a tracking_id if you want to define a prefix add here
+    tracking_id_prefix: 
