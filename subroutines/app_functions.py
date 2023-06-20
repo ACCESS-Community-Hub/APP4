@@ -50,6 +50,54 @@ p_0 = 100000.0
 R_e = 6.378E+06
 #-----------------------------------
 
+@click.pass_context
+def calculateVals(ctx, access_file, varNames, calculation):
+    '''
+    Function to call the calculation defined in the 'calculation' string in the database
+    '''
+    #PP WE need to take into account that we are using xarray now
+    #PP first we should review if we need to get dimensions, that would depend on the 
+    #PP calculation as defined in this file, however if we need to do so
+    #PP get dimensions from variable.dims 
+    #PP another possibility is to pass a list of dimensions in mapping file 
+    #PP or even better being specific in calculation on what the dimension name is
+    #Set array for coordinates if used by calculation
+    if 'times' in calculation:
+        times = access_file[varNames[0]].getTime()
+    if 'depth' in calculation:
+        depth = access_file[0][varNames[0]].getAxis(1)
+    else:
+        pass
+    if calculation.find('lat')!=-1:
+        lat = access_file[0][varNames[0]].getLatitude()
+    else:
+        pass
+    if calculation.find('lon')!=-1:
+        lon = access_file[0][varNames[0]].getLatitude()
+    else:
+        pass
+
+    # Loop through the var names that have been pssed into the function
+    # And save to the empty var list.
+    var = []
+    for v in varNames:
+        print(f'variable[{varNames.index(v)}] = {v}')
+        try: 
+            #extract variable out of file
+            var.append(access_file[0][v][:])
+        except Exception as e:
+            print(f'Error appending variable, {v}: {e}')
+            raise
+
+    # Now try to perform the required calculation
+    try:
+        calc = eval(calculation)
+    except Exception as e:
+        print(f'error evaluating calculation, {calculation}: {e}')
+        raise
+
+    return calc
+
 def meridionalOverturning(transList,typ,om2='1'):
     '''
     Calculate the y_overturning mass stream function

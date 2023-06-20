@@ -1,0 +1,3 @@
+The MIP tables are used to organise the variables. Each variable in a MIP table must have a unique output name (defined by the label of the var record associated with each CMORvar record). The structure of the MIP tables has evolved as the request has expanded from CMIP3 through CMIP5 to CMIP6. The naming convention for the CMIP6 tables is described on the WIP MIP Tables in the CMIP6 Data Request page.
+
+

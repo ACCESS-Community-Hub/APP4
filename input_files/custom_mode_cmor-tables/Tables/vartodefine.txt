@@ -1,0 +1,38 @@
+clmed_mean Y
+lmask
+cllow Y
+clhigh Y
+pralsprof Y
+hfls_mean
+amdry
+refl1km
+prlsns_mean
+refl
+clmaxro
+storm Y
+etot_mean
+amwet
+tauu_mean
+hfss_mean
+z0
+reflmax Y
+theta Y
+refl1km_mean
+ua10m Y
+pralsns Y
+va10m Y
+tauv_mean
+nflash Y
+pralsns_mean
+es_tot
+pralsprof_mean
+rinum
+clwvol Y
+clivol Y
+clhigh_mean Y`
+tke
+clmed Y
+wgsmax
+cllow_mean Y
+prlsprof_mean
+rho

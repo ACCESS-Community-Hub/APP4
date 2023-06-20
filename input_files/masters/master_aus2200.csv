@@ -1,0 +1,208 @@
+cmip_var,input_vars,calculation,units,dimensions,frequency,realm,positive,access_ver,vtype,size,nfiles,filename,long_name,standard_name
+ts,fld_s00i024,,K,time_0 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pvera000,SURFACE TEMPERATURE AFTER TIMESTEP,surface_temperature
+zmla,fld_s00i025,,m,time_1 lat lon,6h,atm,,AUS2200,float32,44096000,65,umnsaa_pvera000,BOUNDARY LAYER DEPTH AFTER TIMESTEP,atmosphere_boundary_layer_thickness
+lmask,fld_s00i030,,1,time_2 lat lon,6h,atm,,AUS2200,float64,44096000,65,umnsaa_pvera000,LAND MASK (No halo) (LAND=TRUE),land_binary_mask
+siconca,fld_s00i031,,1,time lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,FRAC OF SEA ICE IN SEA AFTER TSTEP,sea_ice_area_fraction
+orog,fld_s00i033,,m,time_2 lat lon,6h,atm,,AUS2200,float32,22048000,65,umnsaa_pvera000,OROGRAPHY (/STRAT LOWER BC),surface_altitude
+ps,fld_s00i409,,Pa,time_1 lat lon,6h,atm,,AUS2200,float32,44096000,65,umnsaa_pvera000,SURFACE PRESSURE AFTER TIMESTEP,surface_air_pressure
+rss,fld_s01i202,,W m-2,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pvera000,NET DOWN SURFACE SW FLUX: CORRECTED,surface_net_downward_shortwave_flux
+rlut,fld_s01i205,,W m-2,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pvera000,OUTGOING SW RAD FLUX (TOA):CORRECTED,toa_outgoing_shortwave_flux
+rsdt,fld_s01i207,,W m-2,time lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,INCOMING SW RAD FLUX (TOA): ALL TSS,toa_incoming_shortwave_flux
+rsut,fld_s01i208,,W m-2,time_4 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,OUTGOING SW RAD FLUX (TOA),toa_outgoing_shortwave_flux
+rsds,fld_s01i235,,W m-2,time_4 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,TOTAL DOWNWARD SURFACE SW FLUX,surface_downwelling_shortwave_flux_in_air
+rls,fld_s02i201,,W m-2,time_4 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,NET DOWN SURFACE LW RAD FLUX,surface_net_downward_longwave_flux
+rlut,fld_s02i205,,W m-2,time_4 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,OUTGOING LW RAD FLUX (TOA),toa_outgoing_longwave_flux
+rlds,fld_s02i207,,W m-2,time_4 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,DOWNWARD LW RAD FLUX: SURFACE,surface_downwelling_longwave_flux_in_air
+hfss,fld_s03i217,,W m-2,time lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,SURFACE SENSIBLE HEAT FLUX     W/M2,surface_upward_sensible_heat_flux
+ua10m,fld_s03i225,,m s-1,time_3 lat_0 lon_0,6h,atm,,AUS2200,float32,154408800,65,umnsaa_pvera000,10 METRE WIND U-COMP         B GRID,eastward_wind
+va10m,fld_s03i226,,m s-1,time_3 lat_0 lon_0,6h,atm,,AUS2200,float32,154408800,65,umnsaa_pvera000,10 METRE WIND V-COMP         B GRID,northward_wind
+hfls,fld_s03i234,,W m-2,time lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,SURFACE LATENT HEAT FLUX        W/M2,surface_upward_latent_heat_flux
+tas,fld_s03i236,,K,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pvera000,TEMPERATURE AT 1.5M,air_temperature
+hurs,fld_s03i245,,%,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pvera000,RELATIVE HUMIDITY AT 1.5M,relative_humidity
+fld_s03i248,fld_s03i248,,1,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pvera000,FOG FRACTION AT 1.5 M,fog_area_fraction
+tdps,fld_s03i250,,K,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pvera000,DEWPOINT AT 1.5M (K),dew_point_temperature
+fld_s03i253,fld_s03i253,,,time lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,PROBABILITY OF VIS LESS THAN 5 KM,
+fld_s03i281,fld_s03i281,,m,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pvera000,VIS AT 1.5M  (incl precip)         M,visibility_in_air
+fld_s03i304,fld_s03i304,,m,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pvera000,Turbulent mixing height after boundary layer,
+fld_s03i310,fld_s03i310,,1,time lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,Cumulus capped boundary layer indicator,
+wgsmax,fld_s03i463_max,,m s-1,time_5 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pvera000,WIND GUST,wind_speed_of_gust
+refl1km,fld_s04i112,,dBZ,time lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,radar_reflectivity_due_to_all_hydrometeors_at_1km_altitude,
+refl1km_mean,fld_s04i112_0,,dBZ,time_0 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,radar_reflectivity_due_to_all_hydrometeors_at_1km_altitude,
+prals,fld_s04i201,,kg m-2,time_1 lat lon,6h,atm,,AUS2200,float32,22048000,65,umnsaa_pverb000,LARGE SCALE RAIN AMOUNT     KG/M2/TS,stratiform_rainfall_amount
+prals_mean,fld_s04i201_0,,kg m-2,dim0 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,LARGE SCALE RAIN AMOUNT     KG/M2/TS,stratiform_rainfall_amount
+snwls,fld_s04i202,,kg m-2,time_1 lat lon,6h,atm,,AUS2200,float32,22048000,65,umnsaa_pverb000,LARGE SCALE SNOW AMOUNT     KG/M2/TS,stratiform_snowfall_amount
+snwls_mean,fld_s04i202_0,,kg m-2,dim0 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,LARGE SCALE SNOW AMOUNT     KG/M2/TS,stratiform_snowfall_amount
+prlsprof,fld_s04i203,,kg m-2 s-1,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pverb000,LARGE SCALE RAINFALL RATE    KG/M2/S,stratiform_rainfall_flux
+prlsprof_mean,fld_s04i203_0,,kg m-2 s-1,time_0 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,LARGE SCALE RAINFALL RATE    KG/M2/S,stratiform_rainfall_flux
+prlsns,fld_s04i204,,kg m-2 s-1,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pverb000,LARGE SCALE SNOWFALL RATE    KG/M2/S,stratiform_snowfall_flux
+prlsns_mean,fld_s04i204_0,,kg m-2 s-1,time_0 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,LARGE SCALE SNOWFALL RATE    KG/M2/S,stratiform_snowfall_flux
+mrsol,fld_s08i223,,kg m-2,time_3 depth lat lon,6h,atm,,AUS2200,float32,617344000,65,umnsaa_pverb000,SOIL MOISTURE CONTENT IN A LAYER,mass_content_of_water_in_soil_layer
+tsl,fld_s08i225,,K,time_3 depth lat lon,6h,atm,,AUS2200,float32,617344000,65,umnsaa_pverb000,DEEP SOIL TEMP. AFTER HYDROLOGY DEGK,soil_temperature
+fld_s09i202,fld_s09i202,,,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pverb000,VERY LOW CLOUD AMOUNT,
+fld_s09i202_0,fld_s09i202_0,,,time_0 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,VERY LOW CLOUD AMOUNT,
+cllow,fld_s09i203,,1,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pverb000,LOW CLOUD AMOUNT,low_type_cloud_area_fraction
+cllow_mean,fld_s09i203_0,,1,time_0 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,LOW CLOUD AMOUNT,low_type_cloud_area_fraction
+clmed,fld_s09i204,,1,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pverb000,MEDIUM CLOUD AMOUNT,medium_type_cloud_area_fraction
+clmed_mean,fld_s09i204_0,,1,time_0 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,MEDIUM CLOUD AMOUNT,medium_type_cloud_area_fraction
+clhigh,fld_s09i205,,1,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pverb000,HIGH CLOUD AMOUNT,high_type_cloud_area_fraction
+clhigh_mean,fld_s09i205_0,,1,time_0 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,HIGH CLOUD AMOUNT,high_type_cloud_area_fraction
+fld_s09i210,fld_s09i210,,kft,time lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,cloud_base_altitude_assuming_only_consider_cloud_area_fraction_greater_than_2p5_oktas,
+clmaxro,fld_s09i217,,1,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pverb000,cloud_area_fraction_assuming_maximum_random_overlap,cloud_area_fraction
+fld_s09i218,fld_s09i218,,1,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pverb000,cloud_area_fraction_assuming_only_consider_surface_to_1000_feet_asl,
+fld_s09i233,fld_s09i233,,,time_3 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pverb000,CEILOMETER CLD AMT MAX/RANDOM OVERLP,
+fld_s15i142,fld_s15i142,,m s-1,time lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,W ON GEOMETRIC HEIGHT LEVELS,upward_air_velocity
+psl,fld_s16i222,,Pa,time_4 lat lon,6h,atm,,AUS2200,float32,154336000,65,umnsaa_pverb000,PRESSURE AT MEAN SEA LEVEL,air_pressure_at_sea_level
+nflash,fld_s21i104,,1,dim0 lat lon,6h,atm,,AUS2200,float32,132288000,65,umnsaa_pverb000,Number_of_lightning_flashes,
+amdry,fld_s30i403,,kg m-2,time_5 lat lon,6h,atm,,AUS2200,float32,66144000,65,umnsaa_pverb000,TOTAL COLUMN DRY MASS  RHO GRID,
+amwet,fld_s30i404,,kg m-2,time_5 lat lon,6h,atm,,AUS2200,float32,66144000,65,umnsaa_pverb000,TOTAL COLUMN WET MASS  RHO GRID,atmosphere_mass_per_unit_area
+lwp,fld_s30i405,,kg m-2,time_5 lat lon,6h,atm,,AUS2200,float32,66144000,65,umnsaa_pverb000,TOTAL COLUMN QCL  RHO GRID,atmosphere_cloud_liquid_water_content
+clivi,fld_s30i406,,kg m-2,time_5 lat lon,6h,atm,,AUS2200,float32,66144000,65,umnsaa_pverb000,TOTAL COLUMN QCF  RHO GRID,atmosphere_cloud_ice_content
+prw,fld_s30i461,,kg m-2,time_5 lat lon,6h,atm,,AUS2200,float32,66144000,65,umnsaa_pverb000,TOTAL COLUMN Q (WATER VAPOUR PATH),
+ua,fld_s15i201,,m s-1,time pressure lat lon,6h,atm,,AUS2200,float32,1058803200,65,umnsaa_pverc000,U WIND ON PRESSURE LEVELS    B GRID,eastward_wind
+va,fld_s15i202,,m s-1,time pressure lat lon,6h,atm,,AUS2200,float32,1058803200,65,umnsaa_pverc000,V WIND ON PRESSURE LEVELS    B GRID,northward_wind
+wa,fld_s15i242,,m s-1,time pressure lat_0 lon_0,6h,atm,,AUS2200,float32,1058304000,65,umnsaa_pverc000,W COMPNT (OF WIND) ON PRESSURE LEVS,upward_air_velocity
+wbptemp,fld_s16i205,,K,time pressure lat_0 lon_0,6h,atm,,AUS2200,float32,1058304000,65,umnsaa_pverc000,WET BULB POTENTIAL TEMPERATURE     K,wet_bulb_potential_temperature
+zg,fld_s16i202,,m,time pressure lat lon,6h,atm,,AUS2200,float32,1058304000,65,umnsaa_pverd000,GEOPOTENTIAL HEIGHT ON P LEV/P GRID,geopotential_height
+ta,fld_s16i203,,K,time pressure lat lon,6h,atm,,AUS2200,float32,1058304000,65,umnsaa_pverd000,TEMPERATURE ON P LEV/P GRID,air_temperature
+hur,fld_s16i204,,%,time pressure lat lon,6h,atm,,AUS2200,float32,1058304000,65,umnsaa_pverd000,RH WRT ICE ON P LEV/P GRID,relative_humidity
+cli,fld_s00i012,,kg kg-1,time model_theta_level_number lat lon,1h,atm,,AUS2200,float32,1543360000,384,umnsa_cldrad,QCF AFTER TIMESTEP,mass_fraction_of_cloud_ice_in_air
+clw,fld_s00i254,,kg kg-1,time model_theta_level_number lat lon,1h,atm,,AUS2200,float32,1543360000,384,umnsa_cldrad,QCL AFTER TIMESTEP,mass_fraction_of_cloud_liquid_water_in_air
+cl,fld_s00i265,,1,time model_theta_level_number lat lon,1h,atm,,AUS2200,float32,1543360000,384,umnsa_cldrad,AREA CLOUD FRACTION IN EACH LAYER,cloud_area_fraction_in_atmosphere_layer
+clwvol,fld_s00i267,,1,time model_theta_level_number lat lon,1h,atm,,AUS2200,float32,1543360000,384,umnsa_cldrad,liquid_cloud_volume_fraction_in_atmosphere_layer,
+clivol,fld_s00i268,,1,time model_theta_level_number lat lon,1h,atm,,AUS2200,float32,1543360000,384,umnsa_cldrad,ice_cloud_volume_fraction_in_atmosphere_layer,
+rainmxrat,fld_s00i272,,kg kg-1,time model_theta_level_number lat lon,1h,atm,,AUS2200,float32,1543360000,384,umnsa_cldrad,RAIN AFTER TIMESTEP,mass_fraction_of_rain_in_air
+grplmxrat,fld_s00i273,,kg kg-1,time model_theta_level_number lat lon,1h,atm,,AUS2200,float32,1543360000,384,umnsa_cldrad,GRAUPEL AFTER TIMESTEP,mass_fraction_of_graupel_in_air
+refl,fld_s04i118,,dBZ,time model_theta_level_number lat lon,1h,atm,,AUS2200,float32,1543360000,384,umnsa_cldrad,radar_reflectivity_due_to_all_hydrometeor_species,
+ua,fld_s00i002,,m s-1,time model_rho_level_number lat lon,1h,atm,,AUS2200,float32,1543360000,384,umnsa_mdl,U COMPNT OF WIND AFTER TIMESTEP,eastward_wind
+va,fld_s00i003,,m s-1,time model_rho_level_number lat_0 lon_0,1h,atm,,AUS2200,float32,1544088000,384,umnsa_mdl,V COMPNT OF WIND AFTER TIMESTEP,northward_wind
+theta,fld_s00i004,,K,time model_theta_level_number lat lon_0,1h,atm,,AUS2200,float32,1543360000,384,umnsa_mdl,THETA AFTER TIMESTEP,air_potential_temperature
+hus,fld_s00i010,,1,time model_theta_level_number lat lon_0,1h,atm,,AUS2200,float32,1543360000,384,umnsa_mdl,SPECIFIC HUMIDITY AFTER TIMESTEP,specific_humidity
+wa,fld_s00i150,,m s-1,time model_theta_level_number lat lon_0,1h,atm,,AUS2200,float32,1543360000,384,umnsa_mdl,W COMPNT OF WIND AFTER TIMESTEP,upward_air_velocity
+phalf,fld_s00i407,,Pa,time model_rho_level_number_0 lat lon_0,1h,atm,,AUS2200,float32,1565408000,384,umnsa_mdl,PRESSURE AT RHO LEVELS AFTER TS,air_pressure
+pfull,fld_s00i408,,Pa,time model_theta_level_number lat lon_0,1h,atm,,AUS2200,float32,1543360000,384,umnsa_mdl,PRESSURE AT THETA LEVELS AFTER TS,air_pressure
+rinum,fld_s03i468,,1,time model_theta_level_number_0 lat lon_0,1h,atm,,AUS2200,float32,992160000,384,umnsa_mdl,GRADIENT RICHARDSON NUMBER,
+tke,fld_s03i473,,m2 s-2,time model_theta_level_number_0 lat lon_0,1h,atm,,AUS2200,float32,992160000,384,umnsa_mdl,TURBULENT KINETIC ENERGY,
+zfull,fld_s15i101,,m,time_0 model_theta_level_number lat lon_0,1h,atm,,AUS2200,float32,1543360000,384,umnsa_mdl,H OF THETA MODEL LEVS FROM SEA LEVEL,height_above_reference_ellipsoid
+rho,fld_s15i102,,m,time_0 model_rho_level_number lat lon_0,1h,atm,,AUS2200,float32,1543360000,384,umnsa_mdl,H OF RHO MODEL LEVS FROM SEA LEVEL,height_above_reference_ellipsoid
+ta,fld_s16i004,,K,time model_theta_level_number lat lon_0,1h,atm,,AUS2200,float32,1543360000,384,umnsa_mdl,TEMPERATURE ON THETA LEVELS,air_temperature
+snw,fld_s00i023,,kg m-2,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,SNOW AMOUNT OVER LAND AFT TSTP KG/M2,surface_snow_amount
+zmla,fld_s00i025,,m,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,BOUNDARY LAYER DEPTH AFTER TIMESTEP,atmosphere_boundary_layer_thickness
+z0,fld_s00i026,,m,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,ROUGHNESS LENGTH AFTER TIMESTEP,surface_roughness_length
+lmask,fld_s00i030,,1,time_1 lat lon,1h,atm,,AUS2200,float64,44096000,384,umnsa_slv,LAND MASK (No halo) (LAND=TRUE),land_binary_mask
+siconca,fld_s00i031,,1,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,FRAC OF SEA ICE IN SEA AFTER TSTEP,sea_ice_area_fraction
+orog,fld_s00i033,,m,time_1 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,OROGRAPHY (/STRAT LOWER BC),surface_altitude
+rss,fld_s01i202,,W m-2,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,NET DOWN SURFACE SW FLUX: CORRECTED,surface_net_downward_shortwave_flux
+rsut,fld_s01i205,,W m-2,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,OUTGOING SW RAD FLUX (TOA):CORRECTED,toa_outgoing_shortwave_flux
+rsdt,fld_s01i207,,W m-2,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,INCOMING SW RAD FLUX (TOA): ALL TSS,toa_incoming_shortwave_flux
+fld_s01i215,fld_s01i215,,,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,DIRECT SURFACE SW FLUX : CORRECTED,
+rsdsdiff,fld_s01i216,,,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,DIFFUSE SURFACE SW FLUX : CORRECTED,
+rsds,fld_s01i235,,W m-2,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,TOTAL DOWNWARD SURFACE SW FLUX,surface_downwelling_shortwave_flux_in_air
+rls,fld_s02i201,,W m-2,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,NET DOWN SURFACE LW RAD FLUX,surface_net_downward_longwave_flux
+rlut,fld_s02i205,,W m-2,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,OUTGOING LW RAD FLUX (TOA),toa_outgoing_longwave_flux
+rlds,fld_s02i207,,W m-2,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,DOWNWARD LW RAD FLUX: SURFACE,surface_downwelling_longwave_flux_in_air
+uas,fld_s03i209,,m s-1,time_0 lat lon_0,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,10 METRE WIND U-COMP,eastward_wind
+vas,fld_s03i210,,m s-1,time_0 lat_0 lon,1h,atm,,AUS2200,float32,22058400,384,umnsa_slv,10 METRE WIND V-COMP,northward_wind
+hfss,fld_s03i217,,W m-2,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,SURFACE SENSIBLE HEAT FLUX     W/M2,surface_upward_sensible_heat_flux
+hfss_mean,fld_s03i217_0,,W m-2,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,SURFACE SENSIBLE HEAT FLUX     W/M2,surface_upward_sensible_heat_flux
+eow,fnld_s03i223,,kg m-2 s-1,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,SURFACE TOTAL MOISTURE FLUX  KG/M2/S,water_evaporation_flux
+etot_mean,fld_s03i223_0,,kg m-2 s-1,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,SURFACE TOTAL MOISTURE FLUX  KG/M2/S,water_evaporation_flux
+es_tot,fld_s03i229,,kg m-2,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,EVAP FROM SOIL SURF -AMOUNT KG/M2/TS,water_evaporation_flux_from_soil
+eow,fld_s03i232,,kg m-2 s-1,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,Evaporation flux from open sea,
+hfls,fld_s03i234,,W m-2,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,SURFACE LATENT HEAT FLUX        W/M2,surface_upward_latent_heat_flux
+hfls_mean,fld_s03i234_0,,W m-2,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,SURFACE LATENT HEAT FLUX        W/M2,surface_upward_latent_heat_flux
+tasmin,fld_s03i236_min,,K,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,TEMPERATURE AT 1.5M,air_temperature
+tas,fld_s03i236,,K,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,TEMPERATURE AT 1.5M,air_temperature
+tasmax,fld_s03i236_max,,K,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,TEMPERATURE AT 1.5M,air_temperature
+huss,fld_s03i237,,1,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,SPECIFIC HUMIDITY  AT 1.5M,specific_humidity
+fld_s03i247,fld_s03i247,,m,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,VISIBILITY AT 1.5M                 M,visibility_in_air
+fld_s03i248,fld_s03i248,,1,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,FOG FRACTION AT 1.5 M,fog_area_fraction
+tdps,fld_s03i250,,K,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,DEWPOINT AT 1.5M (K),dew_point_temperature
+fld_s03i253,fld_s03i253,,,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,PROBABILITY OF VIS LESS THAN 5 KM,
+fld_s03i281,fld_s03i281,,m,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,VIS AT 1.5M  (incl precip)         M,visibility_in_air
+fld_s03i282,fld_s03i282,,,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,PROB OF VIS < 1 KM (incl precip),
+fld_s03i283,fld_s03i283,,,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,PROB OF VIS < 5 KM (incl precip),
+fld_s03i284,fld_s03i284,,,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,VISIBILITY AT 1.5M IN LS PPTN      M,
+fld_s03i285,fld_s03i285,,,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,VISIBILITY AT 1.5M IN CONV PPTN    M,
+tauu,fld_s03i460,,Pa,time lat lon_0,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,X-COMP SURFACE BL STRESS,surface_downward_eastward_stress
+tauu_mean,fld_s03i460_0,,Pa,time_0 lat lon_0,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,X-COMP SURFACE BL STRESS,surface_downward_eastward_stress
+tauv,fld_s03i461,,Pa,time lat_0 lon,1h,atm,,AUS2200,float32,22058400,384,umnsa_slv,Y-COMP SURFACE BL STRESS,surface_downward_northward_stress
+tauv_mean,fld_s03i461_0,,Pa,time_0 lat_0 lon,1h,atm,,AUS2200,float32,22058400,384,umnsa_slv,Y-COMP SURFACE BL STRESS,surface_downward_northward_stress
+wsg,fld_s03i463,,m s-1,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,WIND GUST,wind_speed_of_gust
+fld_s03i465,fld_s03i465,,,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,EXPLICIT FRICTION VELOCITY,
+fld_s08i208,fld_s08i208,,kg m-2,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,SOIL MOISTURE CONTENT,mass_content_of_water_in_soil
+cw,fld_s08i209,,kg m-2,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,CANOPY WATER CONTENT,canopy_water_amount
+mrsol,fld_s08i223,,kg m-2,time depth lat lon,1h,atm,,AUS2200,float32,88192000,384,umnsa_slv,SOIL MOISTURE CONTENT IN A LAYER,mass_content_of_water_in_soil_layer
+tsl,fld_s08i225,,K,time depth lat lon,1h,atm,,AUS2200,float32,88192000,384,umnsa_slv,DEEP SOIL TEMP. AFTER HYDROLOGY DEGK,soil_temperature
+fld_s09i208,fld_s09i208,,kft,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,cloud_base_altitude_assuming_only_consider_cloud_area_fraction_greater_than_0p1_oktas,
+fld_s09i209,fld_s09i209,,kft,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,cloud_base_altitude_assuming_only_consider_cloud_area_fraction_greater_than_1p5_oktas,
+fld_s09i210,fld_s09i210,,kft,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,cloud_base_altitude_assuming_only_consider_cloud_area_fraction_greater_than_2p5_oktas,
+fld_s09i211,fld_s09i211,,kft,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,cloud_base_altitude_assuming_only_consider_cloud_area_fraction_greater_than_3p5_oktas,
+fld_s09i212,fld_s09i212,,kft,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,cloud_base_altitude_assuming_only_consider_cloud_area_fraction_greater_than_4p5_oktas,
+fld_s09i213,fld_s09i213,,kft,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,cloud_base_altitude_assuming_only_consider_cloud_area_fraction_greater_than_5p5_oktas,
+fld_s09i214,fld_s09i214,,kft,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,cloud_base_altitude_assuming_only_consider_cloud_area_fraction_greater_than_6p5_oktas,
+fld_s09i215,fld_s09i215,,kft,time lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,cloud_base_altitude_assuming_only_consider_cloud_area_fraction_greater_than_7p9_oktas,
+fld_s09i217,fld_s09i217,,1,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,cloud_area_fraction_assuming_maximum_random_overlap,cloud_area_fraction
+psl,fld_s16i222,,Pa,time_0 lat lon,1h,atm,,AUS2200,float32,22048000,384,umnsa_slv,PRESSURE AT MEAN SEA LEVEL,air_pressure_at_sea_level
+hus,fld_s00i010,,1,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,SPECIFIC HUMIDITY AFTER TIMESTEP,specific_humidity
+ts,fld_s00i024,,K,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,SURFACE TEMPERATURE AFTER TIMESTEP,surface_temperature
+zmla,fld_s00i025,,m,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,BOUNDARY LAYER DEPTH AFTER TIMESTEP,atmosphere_boundary_layer_thickness
+pfull,fld_s00i408,,Pa,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,PRESSURE AT THETA LEVELS AFTER TS,air_pressure
+ps,fld_s00i409,,Pa,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,SURFACE PRESSURE AFTER TIMESTEP,surface_air_pressure
+fld_s03i051,fld_s03i051,,,time pseudo_level lat lon,1h,atm,,AUS2200,float32,661440000,384,umnsa_spec,COMBINED RESIST. TO EVAP ON TILES,
+fld_s03i052,fld_s03i052,,,time pseudo_level lat lon,1h,atm,,AUS2200,float32,661440000,384,umnsa_spec,COEFFS RATIO FOR 1.5M T ON TILES,
+fld_s03i054,fld_s03i054,,,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,AERODYNAMIC RESISTANCE (S/M),
+uas,fld_s03i209,,m s-1,time lat lon_0,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,10 METRE WIND U-COMP,eastward_wind
+vas,fld_s03i210,,m s-1,time lat_0 lon,1h,atm,,AUS2200,float32,132350400,384,umnsa_spec,10 METRE WIND V-COMP,northward_wind
+tas,fld_s03i236,,K,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,TEMPERATURE AT 1.5M,air_temperature
+huss,fld_s03i237,,1,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,SPECIFIC HUMIDITY  AT 1.5M,specific_humidity
+tdps,fld_s03i250,,K,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,DEWPOINT AT 1.5M (K),dew_point_temperature
+fld_s03i335,fld_s03i335,,kg m-2 s-1,time pseudo_level lat lon,1h,atm,,AUS2200,float32,661440000,384,umnsa_spec,POTENTIAL EVAPORATION ON TILES,water_potential_evaporation_flux
+wsg,fld_s03i463,,m s-1,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,WIND GUST,wind_speed_of_gust
+wsgmax,fld_s03i463_max,,m s-1,time_0 lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,WIND GUST,wind_speed_of_gust
+reflmax,fld_s04i111,,dBZ,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,maximum_radar_reflectivity_in_the_grid_column_due_to_all_hydrometeors,
+prals,fld_s04i201,,kg m-2,time_0 lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,LARGE SCALE RAIN AMOUNT     KG/M2/TS,stratiform_rainfall_amount
+snwls,fld_s04i202,,kg m-2,time_0 lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,LARGE SCALE SNOW AMOUNT     KG/M2/TS,stratiform_snowfall_amount
+cllow,fld_s09i203,,1,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,LOW CLOUD AMOUNT,low_type_cloud_area_fraction
+clmed,fld_s09i204,,1,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,MEDIUM CLOUD AMOUNT,medium_type_cloud_area_fraction
+clhigh,fld_s09i205,,1,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,HIGH CLOUD AMOUNT,high_type_cloud_area_fraction
+clmaxro,fld_s09i217,,1,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,cloud_area_fraction_assuming_maximum_random_overlap,cloud_area_fraction
+psl,fld_s16i222,,Pa,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,PRESSURE AT MEAN SEA LEVEL,air_pressure_at_sea_level
+flashrate,fld_s21i100,,s-1,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,lightning_flash_rate,
+nstorm,fld_s21i101,,1,time lat lon,1h,atm,,AUS2200,float64,264576000,384,umnsa_spec,flag_for_location_of_storms,
+nflash,fld_s21i104,,1,time_0 lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,Number_of_lightning_flashes,
+amdry,fld_s30i403,,kg m-2,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,TOTAL COLUMN DRY MASS  RHO GRID,
+amwet,fld_s30i404,,kg m-2,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,TOTAL COLUMN WET MASS  RHO GRID,atmosphere_mass_per_unit_area
+lwp,fld_s30i405,,kg m-2,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,TOTAL COLUMN QCL  RHO GRID,atmosphere_cloud_liquid_water_content
+clivi,fld_s30i406,,kg m-2,time lat lon,1h,atm,,AUS2200,float32,132288000,384,umnsa_spec,TOTAL COLUMN QCF  RHO GRID,atmosphere_cloud_ice_content
+# these are variables that can be potentially calculated. Use with caution!,,,,,,,,,
+sifllwdtop,fld_s02i501 fld_s00i031,var[0]/var[1],,6h,atm,seaIce,down,AUS2200,float32,132288000,65,umnsaa_pvera000,,
+rsus,fld_s01i235 fld_s01i201,var[0]-var[1],,1h,atm,atmos,up,AUS2200,float32,22048000,384,umnsa_slv,,
+mrlso,fld_s08i223 fld_s08i229,(var[0]*var[1]).sum(1),,6h,atm,land,,AUS2200,float32,617344000,65,umnsaa_pverb000,,
+siflswdtop,fld_s01i501 fld_s00i031,var[0]/var[1],,6h,atm,seaIce,down,AUS2200,float32,132288000,65,umnsaa_pvera000,,
+siflswutop,fld_s01i503 fld_s00i031,var[0]/var[1],,1h,atm,seaIce,up,AUS2200,float32,22048000,384,umnsa_slv,,
+siflsenstop,fld_s03i533 fld_s00i031,var[0]/var[1],,6h,atm,seaIce,up,AUS2200,float32,132288000,65,umnsaa_pvera000,,
+rsus,fld_s01i235 fld_s01i201,var[0]-var[1],,6h,atm,atmos,up,AUS2200,float32,132288000,65,umnsaa_pvera000,,
+co2,fld_s00i252 fld_s00i408 fld_s30i301 lat lat_v,"(plevinterp(var[0],var[1],var[2],var[3],var[4])*28.97/44.01)",,1h,atm,aerosol,,AUS2200,float32,1543360000,384,umnsa_mdl,,
+sifllwdtop,fld_s02i501 fld_s00i031,var[0]/var[1],,1h,atm,seaIce,down,AUS2200,float32,22048000,384,umnsa_slv,,
+mrsfl,fld_s08i223 fld_s08i230,var[0]*var[1],,6h,atm,land,,AUS2200,float32,617344000,65,umnsaa_pverb000,,
+mrsll,fld_s08i223 fld_s08i229,var[0]*var[1],,6h,atm,land,,AUS2200,float32,617344000,65,umnsaa_pverb000,,
+siflswdtop,fld_s01i501 fld_s00i031,var[0]/var[1],,1h,atm,seaIce,down,AUS2200,float32,22048000,384,umnsa_slv,,
+sifllwutop,fld_s03i531 fld_s00i031,var[0]/var[1],,1h,atm,seaIce,up,AUS2200,float32,22048000,384,umnsa_slv,,
+co2,fld_s00i252 fld_s00i408 fld_s30i301 lat lat_v,"(plevinterp(var[0],var[1],var[2],var[3],var[4])*28.97/44.01)",,1h,atm,aerosol,,AUS2200,float32,132288000,384,umnsa_spec,,
+mrfso,fld_s08i223 fld_s08i230,(var[0]*var[1]).sum(1),,1h,atm,land landIce,,AUS2200,float32,88192000,384,umnsa_slv,,
+rlus,fld_s02i207 fld_s02i201 fld_s03i332 fld_s02i205,var[0]-var[1]+var[2]-var[3],,1h,atm,atmos,up,AUS2200,float32,22048000,384,umnsa_slv,,
+prw,fld_s30i404 fld_s30i403 fld_s30i405 fld_s30i406,var[0]-(var[1]+var[2]+var[3]),,6h,atm,atmos,,AUS2200,float32,66144000,65,umnsaa_pverb000,,
+siflswutop,fld_s01i503 fld_s00i031,var[0]/var[1],,6h,atm,seaIce,up,AUS2200,float32,132288000,65,umnsaa_pvera000,,
+sifllwutop,fld_s03i531 fld_s00i031,var[0]/var[1],,6h,atm,seaIce,up,AUS2200,float32,132288000,65,umnsaa_pvera000,,
+mrfso,fld_s08i223 fld_s08i230,(var[0]*var[1]).sum(1),,6h,atm,land landIce,,AUS2200,float32,617344000,65,umnsaa_pverb000,,
+rtmt,fld_s01i207 fld_s01i208 fld_s03i332,var[0]-var[1]-var[2],,1h,atm,atmos,,AUS2200,float32,22048000,384,umnsa_slv,,
+mrsfl,fld_s08i223 fld_s08i230,var[0]*var[1],,1h,atm,land,,AUS2200,float32,88192000,384,umnsa_slv,,
+mrlso,fld_s08i223 fld_s08i229,(var[0]*var[1]).sum(1),,1h,atm,land,,AUS2200,float32,88192000,384,umnsa_slv,,
+prw,fld_s30i404 fld_s30i403 fld_s30i405 fld_s30i406,var[0]-(var[1]+var[2]+var[3]),,1h,atm,atmos,,AUS2200,float32,132288000,384,umnsa_spec,,
+rtmt,fld_s01i207 fld_s01i208 fld_s03i332,var[0]-var[1]-var[2],,6h,atm,atmos,,AUS2200,float32,132288000,65,umnsaa_pvera000,,
+siflsenstop,fld_s03i533 fld_s00i031,var[0]/var[1],,1h,atm,seaIce,up,AUS2200,float32,22048000,384,umnsa_slv,,
+sifllatstop,fld_s03i234 fld_s00i031,"maskSeaIce(var[0],var[1])",,6h,atm,seaIce,up,AUS2200,float32,132288000,65,umnsaa_pvera000,,
+rlus,fld_s02i207 fld_s02i201 fld_s03i332 fld_s02i205,var[0]-var[1]+var[2]-var[3],,6h,atm,atmos,up,AUS2200,float32,132288000,65,umnsaa_pvera000,,
+mrsll,fld_s08i223 fld_s08i229,var[0]*var[1],,1h,atm,land,,AUS2200,float32,88192000,384,umnsa_slv,,
+sifllatstop,fld_s03i234 fld_s00i031,"maskSeaIce(var[0],var[1])",,1h,atm,seaIce,up,AUS2200,float32,22048000,384,umnsa_slv,,
+# these are variables that are defined with different inputs,,,,,,,,,
