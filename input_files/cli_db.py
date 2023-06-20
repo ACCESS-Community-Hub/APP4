@@ -138,17 +138,16 @@ def cmor_table(ctx, dbname, fname, alias):
     # second set is the name used in tables to distinguish different dims/freq
     # original master_maps use the second style
     cmor_vars = set(x[0] for x in results)
-    print(cmor_vars)
     #cmorids = [x for x in results]
     # read variable list from master_map file
     vlist = read_map(fname, alias)
     # extract cmip_var,units,dimensions,frequency,realm,cell_methods
     var_list = []
     for v in vlist[1:]:
-        #print(v)
         vid = (v[0], v[5], v[6])
-        #print(vid)
-        if v[0][:4] != 'fld_' and vid not in results:
+        # This was adding variables to the table just if they didn't exists in other tables
+        #if v[0][:4] != 'fld_' and vid not in results:
+        if v[0][:4] != 'fld_':
             if v[0] not in cmor_vars:
                 db_log.warning(f"Variable {v[0]} not defined in cmorvar table")
             else:

@@ -15,13 +15,13 @@ cmor:
     # HISTORY_DATA=$DATA_LOC/$EXP_TO_PROCESS/history
     # # no need of history-data
     #datadir: /g/data/hh5/tmp/zg0866/cm000_APP4_archive/cm000/history
-    datadir: /g/data/hh5/tmp/WACI-Hackathon-2023/AUS2200/flood22-barra/history/
+    datadir: /g/data/hh5/tmp/WACI-Hackathon-2023/AUS2200/flood22-barra
     # from exp_to_process: local name of experiment
     exp: flood22-barra 
     # Interval to cmorise inclusive of end_date
     # NB this will be used to select input files so they need to include
-    start_date: 20220222                        
-    end_date: 20220307                        
+    start_date: "20220222"                        
+    end_date: "20220223"                        
     # select one of: [CM2, ESM1.5, OM2[-025], AUS2200]
     access_version: AUS2200 
     # reference date for time units (set as 'default' to use start_date)
@@ -32,7 +32,7 @@ cmor:
     max_size: 8192 
     # Variables to CMORise: 
     # CMIP6 table/variable to process; default is 'all'. Or create a file listing variables to process (VAR_SUBSET[_LIST]).
-    tables: AUS2200_A6hr
+    tables: AUS2200_A1hr
     variable_to_process: cllow_mean
     # subdaily selection options - select one of: [true, false, only]
     subdaily: !!str false
@@ -46,18 +46,25 @@ cmor:
     # input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv ???
     # is this used?
     # choose here the mapping created with cli_db.py based on the actual model output
-    master_map: "input_files/master_aus2200.csv"
+    master_map: "input_files/master_flood22.csv"
     grid_file: "input_files/grids.csv"
     # use official cmip6 tables for CMIP6 mode
     #tables_path: "input_files/cmip6-cmor-tables/Tables/"
     tables_path: "input_files/custom_mode_cmor-tables/Tables/"
     history_data: ''
+    #_control_vocabulary_file: "ACDD_CV.json"
+    # somehow CMIP6_CV is hardcoded in cmor so a copy of this file
+    # will be created in the exp outpath called CMIP6_CV.json
     _control_vocabulary_file: "ACDD_CV.json"
-    _cmip6_option: ACDD 
+    # leave this empty unless is CMIP6
+    _cmip6_option:  
+    _AXIS_ENTRY_FILE: "ACDD_coordinate.json"
+    _FORMULA_VAR_FILE: "ACDD_formula_terms.json"
+    grids: "ACDD_grids.json"
   # Additional NCI information:
     # NCI project to charge compute; $PROJECT = your default project
     # NCI queue to use; hugemem is recommended
-    project: w40
+    project: w40 
 
  # this defined based on scratch/project/user
  # possibly we should define it only if user wants to choose different one

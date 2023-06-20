@@ -29,6 +29,7 @@ import glob
 import json
 import stat
 import xarray as xr
+import math
 from datetime import datetime, date
 from collections import Counter
 
@@ -308,7 +309,7 @@ def write_cmor_table(var_list, name, db_log):
     for v in var_list:
         var_dict[v[0]] = dict(zip(keys, v[1:]))
     out["variable_entry"] = var_dict
-    jfile = f"CMIP6_{name}.json"
+    jfile = f"CMOR_{name}.json"
     with open(jfile, 'w') as f:
         json.dump(out, f, indent=4)
     return
@@ -348,6 +349,63 @@ def list_files(indir, match, db_log):
     return files
 
 
+def build_umfrq(time_axs, ds, db_log):
+    """
+    """
+    umfrq = {}
+    int2frq = {'dec': 3652.0, 'yr': 365.0, 'mon': 30.0,
+               'day': 1.0, '6hr': 0.25, '3hr': 0.125,
+               '1hr': 0.041667, '10min': 0.006944}
+    for t in time_axs:
+        if len(ds[t]) > 1:
+            interval = (ds[t][1]-ds[t][0]).values
+            interval_file = (ds[t][-1] -ds[t][0]).values
+            for k,v in int2frq.items():
+                if math.isclose(interval, v, rel_tol=0.05):
+                    umfrq[t] = k
+                    break
+        else:
+            umfrq[t] = 'file'
+    # use other time_axis info to work out frq of time axis with 1 step
+    print(f"umfrq in function {umfrq}")
+    for t,frq in umfrq.items():
+        if frq == 'file':
+           for k,v in int2frq.items():
+               if math.isclose(interval_file, v, rel_tol=0.05):
+                   umfrq[t] = k
+                   break
+    return umfrq
+
+
+def get_frequency(realm, fbits, fname, ds, db_log):
+    """Return frequency based on realm and filename
+    For UM files checks if more than one time axis is present and if so
+    returns dictionary with frquency: variable list
+    """
+    frequency = 'NA'
+    if realm == 'atmos':
+        frequency = fbits[-1].replace(".nc", "")
+        time_axs = [d for d in ds.dims if 'time' in d]
+        time_axs_len = set(len(ds[d]) for d in time_axs)
+        if len(time_axs_len) == 1:
+            umfrq = {}
+        else:
+            umfrq = build_umfrq(time_axs, ds, db_log)
+    elif realm == 'ocean':
+        # if I found scalar or monthly in any of fbits 
+        if any(x in fname for x in ['scalar', 'monthly']):
+            frequency = 'mon'
+        elif 'daily' in fname:
+            frequency = 'day'
+    elif realm == 'ice':
+        if '_m.' in fname:
+            frequency = 'mon'
+        elif '_d.' in fname:
+            frequency = 'day'
+    db_log.debug(f"Frequency: {frequency}")
+    return frequency, umfrq
+
+
 def write_varlist(conn, indir, startdate, db_log):
     """Based on model output files create a variable list and save it
        to a csv file. Main attributes needed to map output are provided
@@ -359,7 +417,6 @@ def write_varlist(conn, indir, startdate, db_log):
     files = list_files(indir, sdate, db_log)
     db_log.debug(f"Found files: {files}")
     patterns = []
-    dims = {} 
     for fpath in files:
         # get first two items of filename <exp>_<group>
         fname = fpath.split("/")[-1]
@@ -375,41 +432,40 @@ def write_varlist(conn, indir, startdate, db_log):
         pattern_list = list_files(indir, f"{fpattern}*", db_log)
         nfiles = len(pattern_list) 
         db_log.debug(f"File pattern: {fpattern}")
-        #realm = [x for x in ['/atmos/', '/ocean/', '/ice/'] if x in fpath][0]
-        realm = [x for x in ['/atm/', '/ocn/', '/ice/'] if x in fpath][0]
-        realm = realm[1:-1]
-        if realm == 'atm':
-            realm = 'atmos'
-        db_log.debug(realm)
-        frequency = 'NA'
-        if realm == 'atmos':
-            frequency = fbits[-1].replace(".nc","")
-        elif realm == 'ocean':
-            # if I found scalar or monthly in any of fbits 
-            if any(x in fname for x in ['scalar', 'monthly']):
-                frequency = 'mon'
-            elif 'daily' in fname:
-                frequency = 'day'
-        elif realm == 'ice':
-            if '_m.' in fname:
-                frequency = 'mon'
-            elif '_d.' in fname:
-                frequency = 'day'
-        db_log.debug(f"Frequency: {frequency}")
         fcsv = open(f"{fpattern}.csv", 'w')
         fwriter = csv.writer(fcsv, delimiter=',')
         fwriter.writerow(["name", "cmip_var", "units", "dimensions",
                           "frequency", "realm", "cell_methods", "dtype",
                           "size", "nsteps", "file_name", "long_name",
                           "standard_name"])
-        ds = xr.open_dataset(fpath, use_cftime=True)
+        # get attributes for the file variables
+        try:
+            realm = [x for x in ['/atmos/', '/ocean/', '/ice/'] if x in fpath][0]
+        except:
+            realm = [x for x in ['/atm/', '/ocn/', '/ice/'] if x in fpath][0]
+        realm = realm[1:-1]
+        if realm == 'atm':
+            realm = 'atmos'
+        db_log.debug(realm)
+        ds = xr.open_dataset(fpath, decode_times=False)
         coords = [c for c in ds.coords] + ['latitude_longitude']
+        frequency, umfrq = get_frequency(realm, fbits, fname, ds, db_log)
+        multiple_frq = False
+        if umfrq != {}:
+            multiple_frq = True
         for vname in ds.variables:
             if vname not in coords and all(x not in vname for x in ['_bnds','_bounds']):
                 v = ds[vname]
                 # get size in bytes of grid for 1 timestep and number of timesteps
                 vsize = v[0,:].nbytes
                 nsteps = nfiles * v.shape[0]
+                # assign specific frequency if more than one is available
+                if multiple_frq:
+                    if 'time' in v.dims[0]:
+                        frequency = umfrq[v.dims[0]]
+                    else:
+                        frequency = 'NA'
+                        db_log.info(f"Could not detect frequency for variable: {v}")
                 # try to retrieve cmip name
                 cmip_var = get_cmipname(conn, vname, db_log)
                 attrs = v.attrs

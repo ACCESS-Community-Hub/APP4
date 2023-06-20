@@ -46,10 +46,13 @@ import sqlite3
 import numpy as np
 import xarray as xr
 import cftime
+import cf_units
 import cmor
 from itertools import repeat
+from functools import partial
 from app_functions import *
 from cli_functions import *
+from cli_functions import _preselect 
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -147,13 +150,15 @@ def app_bulk(ctx, app_log):
     #Load the CMIP tables into memory.
     #
     tables = []
-    tables.append(cmor.load_table(f"{ctx.obj['tables_path']}/CMIP6_grids.json"))
+    tables.append(cmor.load_table(f"{ctx.obj['tables_path']}/{ctx.obj['grids']}"))
     tables.append(cmor.load_table(f"{ctx.obj['tables_path']}/{ctx.obj['table']}.json"))
+    sys.stdout.flush()
     #
     #PP This now checks that input variables are available from listed paths if not stop execution
     # if they are all avai;able re-write infile as a sequence corresponding to invars
     all_files, ctx = find_files(app_log)
 
+    sys.stdout.flush()
     # PP FUNCTION END return all_files, extra_files
     app_log.info(f"access files from: {os.path.basename(all_files[0][0])}" +
                  f"to {os.path.basename(all_files[0][-1])}")
@@ -163,6 +168,7 @@ def app_bulk(ctx, app_log):
     # PP in my opinion this can be fully skipped, but as a start I will move it to a function
     ds = xr.open_dataset(all_files[0][0], decode_times=False)
     time_dimension, inref_time = get_time_dim(ds, app_log)
+    sys.stdout.flush()
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
     # First try to do so based on timestamp on file, if this fails
@@ -171,13 +177,20 @@ def app_bulk(ctx, app_log):
         inrange_files = check_timestamp(all_files[0], app_log) 
     except:
         inrange_files = check_in_range(all_files[0], time_dimension, app_log) 
+    sys.stdout.flush()
     #check if the requested range is covered
     if inrange_files == []:
         app_log.warning("no data exists in the requested time range")
         return 0
     # as we want to pass time as float value we don't decode time when openin files
     # if we need to decode times can be done if needed by calculation`
-    dsin = xr.open_mfdataset(inrange_files, parallel=True, use_cftime=True)
+
+    # preprocessing to select only variables we need to avoid
+    # concatenation issues with multiple coordinates
+    preselect = partial(_preselect, varlist=ctx.obj['vin'])
+    dsin = xr.open_mfdataset(inrange_files, preprocess=preselect,
+                             parallel=True, decode_times=False)
+    #dsin = xr.open_mfdataset(inrange_files, parallel=True, use_cftime=True)
     sys.stdout.flush()
     invar = dsin[ctx.obj['vin'][0]]
     #First try and get the units of the variable.
@@ -217,16 +230,17 @@ def app_bulk(ctx, app_log):
     if t_axis is not None:
         cmor_tName = get_cmorname('t')
         ctx.obj['reference_date'] = f"days since {ctx.obj['reference_date']}"
-        # this is getting more complciated, if calculation hasn't chnage dims
-        # we can simply get original bnds from dsin but if calculation has changed dims we cannot assume that's ok
-        # temporarily I will check in get_bounds that calculation='' otherwise we force recalculating bounds
-        # eventually we can be more sophisticated and add a bounds changed flag somewhere
         t_bounds = get_bounds(dsin, t_axis, cmor_tName, app_log)
-        t_axis_val = cftime.date2num(t_axis, units=ctx.obj['reference_date'])
+        #t_axis_val = cftime.date2num(t_axis, units=ctx.obj['reference_date'],
+        #        calendar=ctx.obj['attrs']['calendar'])
+        #t_axis_val = u.date2num(t_axis.astype('datetime'))
+        print(f"bnds: {t_bounds}")
         t_axis_id = cmor.axis(table_entry=cmor_tName,
             units=ctx.obj['reference_date'],
-            length=len(t_axis_val),
-            coord_vals=t_axis_val,
+           # length=len(t_axis_val),
+           # coord_vals=t_axis_val,
+            length=len(t_axis),
+            coord_vals=t_axis.values,
             cell_bounds=t_bounds,
             interval=None)
         axis_ids.append(t_axis_id)
@@ -237,7 +251,7 @@ def app_bulk(ctx, app_log):
             units=z_axis.units,
             length=len(z_axis),
             coord_vals=z_axis.values,
-            cell_bounds=z_bounds[:],
+            cell_bounds=z_bounds,
             interval=None)
         axis_ids.append(z_axis_id)
         #set up additional hybrid coordinate information
@@ -258,7 +272,7 @@ def app_bulk(ctx, app_log):
             units=j_axis.units,
             length=len(j_axis),
             coord_vals=j_axis.values,
-            cell_bounds=j_bounds[:],
+            cell_bounds=j_bounds,
             interval=None)
         axis_ids.append(j_axis_id)
     #    n_grid_pts = n_grid_pts * len(j_axis)
@@ -277,7 +291,7 @@ def app_bulk(ctx, app_log):
             units=i_axis.units,
             length=len(i_axis),
             coord_vals=np.mod(i_axis.values,360),
-            cell_bounds=i_bounds[:],
+            cell_bounds=i_bounds,
             interval=None)
         axis_ids.append(i_axis_id)
         #n_grid_pts = n_grid_pts * len(j_axis)
@@ -291,6 +305,7 @@ def app_bulk(ctx, app_log):
     if e_axis is not None:
         e_axis_id = create_axis(axm, tables[1], app_log) 
         axis_ids.append(e_axis_id)
+    print(axis_ids)
     sys.stdout.flush()
 
     #If we are on a non-cartesian grid, Define the spatial grid
@@ -314,6 +329,8 @@ def app_bulk(ctx, app_log):
     try:    
         #set positive value from input variable attribute
         #PP potentially check somewhere that variable_id is in table
+        print(ctx.obj['variable_id'])
+        sys.stdout.flush()
         variable_id = cmor.variable(table_entry=ctx.obj['variable_id'],
                     units=in_units,
                     axis_ids=axis_ids,
@@ -325,6 +342,7 @@ def app_bulk(ctx, app_log):
         raise
     app_log.info('writing...')
     # ntimes passed is optional but we might need it if time dimension is not time
+    status = None
     if time_dimension != None:
         app_log.info(f"Variable shape is {out_var.shape}")
         status = cmor.write(variable_id, out_var.values,
@@ -332,7 +350,8 @@ def app_bulk(ctx, app_log):
     else:
         status = cmor.write(variable_id, out_var.values, ntimes_passed=0)
     if status != 0:
-        app_log.error(f"E: Unable to write the CMOR variable to file {e}")
+        app_log.error(f"E: Unable to write the CMOR variable to file\n"
+                      + f"See cmor log, status: {status}")
     #
     #Close the CMOR file.
     #

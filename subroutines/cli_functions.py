@@ -37,6 +37,7 @@ import calendar
 import click
 import logging
 import cftime
+import cf_units
 
 
 def config_log(debug, path):
@@ -71,6 +72,13 @@ def config_log(debug, path):
     return logger
 
 
+def _preselect(ds, varlist):
+    varsel = [v for v in varlist if v in ds.variables]
+    varsel.extend( [v for v in ds.variables if 'bnds' in v] )
+    varsel.extend( [v for v in ds.variables if 'bounds' in v] )
+    varsel.extend( [v for v in ds.variables if 'edge' in v] )
+    return ds[varsel]
+
 @click.pass_context
 def find_files(ctx, app_log):
     """Find all the ACCESS file names which match the "glob" pattern.
@@ -93,6 +101,9 @@ def find_files(ctx, app_log):
     i = 0
     var_path = {}
     while len(missing) > 0 and i <= len(patterns):
+        print(i)
+        print(missing)
+        print(patterns)
         f = files[i][0]
         missing, found = check_vars_in_file(missing, f, app_log)
         if len(found) > 0:
@@ -221,7 +232,7 @@ def check_in_range(ctx, all_files, tdim, app_log):
     else:
         for input_file in all_files:
             try:
-                ds = xr.open_dataset(input_file, use_cftime=True)
+                ds = xr.open_dataset(input_file) #, use_cftime=True)
                 # get first and last values as date string
                 tmin = ds[tdim][0].dt.strftime('%Y%m%d')
                 tmax = ds[tdim][-1].dt.strftime('%Y%m%d')
@@ -682,6 +693,19 @@ def get_axis_dim(ctx, var, app_log):
     return t_axis, z_axis, j_axis, i_axis, p_axis, e_axis
 
 
+def check_time_bnds(bnds_val, frequency, app_log):
+    """Checks if dimension boundaries from file are wrong"""
+    approx_interval = bnds_val[0][1] - bnds_val[0][0]
+    app_log.debug(f"Time bnds approx interval: {approx_interval}")
+    frq2int = {'dec': 3650.0, 'yr': 365.0, 'mon': 30.0,
+                'day': 1.0, '6hr': 0.25, '3hr': 0.125,
+                '1hr': 0.041667, '10min': 0.006944, 'fx': 0.0}
+    interval = frq2int[frequency]
+    # add a small buffer to interval value
+    inrange = interval*0.99 < approx_interval < interval*1.01
+    return inrange
+
+
 @click.pass_context
 def get_bounds(ctx, ds, axis, cmor_name, app_log):
     """Returns bounds for input dimension, if bounds are not available
@@ -693,34 +717,48 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log):
     if ctx.obj['calculation'] != '':
         changed_bnds = True
     dim = axis.name
-    print(f"Getting bounds for axis: {dim}")
+    app_log.debug(f"Getting bounds for axis: {dim}")
     #The default bounds assume that the grid cells are centred on
     #each grid point specified by the coordinate variable.
     keys = [k for k in axis.attrs]
+    calc = False
     if 'bounds' in keys and not changed_bnds:
         dim_val_bnds = ds[axis.bounds].values
         app_log.info("using dimension bounds")
-        if 'time' in cmor_name:
-            dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'])
+        #if 'time' in cmor_name:
+            #dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'],
+            #                  calendar=ctx.obj['attrs']['calendar'])
+            #calendar=ctx.obj['attrs']['calendar'])
     elif 'edges' in keys and not changed_bnds:
         dim_val_bnds = ds[axis.edges].values
         app_log.info("using dimension edges as bounds")
     else:
-        app_log.info(f"No bounds for {dim} - creating default bounds")
-        # if time check we have units and convert dates to floats
-        if 'time' in cmor_name:
-            ax_val = cftime.date2num(axis, units=ctx.obj['reference_date'])
-        else:
-            ax_val = axis.values
+        app_log.info(f"No bounds for {dim}")
+        calc = True
+    print(cmor_name)
+    print(calc)
+    print('time' in cmor_name)
+    if 'time' in cmor_name and calc is False:
+        print('should be here')
+        inrange = check_time_bnds(dim_val_bnds, ctx.obj['frequency'], app_log)
+        if not inrange:
+            calc = True
+            app_log.info(f"Inherited bounds for {dim} are incorrect")
+    print(calc)
+    if calc is True:
+        app_log.info(f"Calculating bounds for {dim}")
+        ax_val = axis.values
         try:
             #PP using roll this way without specifying axis assume axis is 1D
             min_val = (ax_val + np.roll(ax_val, 1))/2
             min_val[0] = 1.5*ax_val[0] - 0.5*ax_val[1]
             max_val = np.roll(min_val, -1)
             max_val[-1] = 1.5*ax_val[-1] - 0.5*ax_val[-2]
+            print(f"max_val: {max_val}")
         except Exception as e:
             app_log.warning(f"dodgy bounds for dimension: {dim}")
             app_log.error(f"error: {e}")
+        print('should be here asingning values')
         dim_val_bnds = np.column_stack((min_val, max_val))
     # Take into account type of axis
     # as we are often concatenating along time axis and bnds are considered variables
@@ -856,7 +894,6 @@ def calc_monsecs(ctx, dsin, tdim, in_missing, app_log):
     monsecs = calendar.monthrange(dsin[tdim].dt.year,dsin[tdim].dt.month)[1] * 86400
     if ctx.obj['calculation'] == '':
         array = dsin[ctx.obj['vin'][0]]
-        #print(data_vals)
     else:
         app_log.info("calculating...")
         array = calculateVals(dsin, ctx.obj['vin'], ctx.obj['calculation'])
@@ -911,6 +948,8 @@ def normal_case(ctx, dsin, tdim, in_missing, app_log):
         except Exception as e:
             app_log.error(f"error evaluating calculation, {ctx.obj['calculation']}: {e}")
             raise
+
+    #PP add call to resample
 
     #convert mask to missing values
     #PP why mask???

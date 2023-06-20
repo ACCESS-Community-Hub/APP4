@@ -118,8 +118,8 @@ def find_matches(table, var, realm, frequency, varlist):
         match['resample'] = v.get('resample', '')
         match['timeshot'] = timeshot
         match['table'] = table
-        #match['file_structure'] = f"/{match['realm']}/{match['filename']}*.nc"
-        match['file_structure'] = f"/atm/netCDF/{match['filename']}*.nc"
+        match['file_structure'] = f"/{match['realm']}/{match['filename']}*.nc"
+        #match['file_structure'] = f"/atm/netCDF/{match['filename']}*.nc"
     return match
 
 
@@ -654,6 +654,9 @@ def cleanup(config):
     os.mkdir(cdict['cmor_logs'])
     os.mkdir(cdict['var_logs'])
     os.mkdir(cdict['app_logs'])
+    # copy CV file to CMIP6_CV.json
+    shutil.copyfile(f"{cdict['tables_path']}/{cdict['_control_vocabulary_file']}",
+                    f"{cdict['outpath']}/CMIP6_CV.json")
     return
 
 
@@ -775,6 +778,8 @@ def create_exp_json(config, json_cv):
             glob_attrs[k] = attrs[k]
         else:
             glob_attrs[k] = cdict.get(k, '')
+    # temporary correction until CMIP6_CV file anme is not anymore hardcoded in CMOR
+    glob_attrs['_control_vocabulary_file'] = f"{cdict['outpath']}/CMIP6_CV.json"
     # replace {} _ and / in output templates
     glob_attrs['output_path_template'] = cdict['path_template'].replace('{','<').replace('}','>').replace('/','')
     glob_attrs['output_file_template'] = cdict['file_template'].replace('}_{','><').replace('}','>').replace('{','<')
@@ -1136,10 +1141,10 @@ def main():
     config = setup_env(config)
     cdict = config['cmor']
     cleanup(config)
-    json_cv = f"{cdict['tables_path']}/{cdict['_control_vocabulary_file']}"
+    #json_cv = f"{cdict['outpath']}/{cdict['_control_vocabulary_file']}"
+    json_cv = f"{cdict['outpath']}/CMIP6_CV.json"
     fname = create_exp_json(config, json_cv)
     cdict['json_file_path'] = fname
-    #cdict['json_file_path'] = json_cv
     if cdict['mode'] == 'cmip6':
         edit_json_cv(json_cv, config['attrs'])
         cdict = dreq_map(cdict, config['attrs']['activity_id'])

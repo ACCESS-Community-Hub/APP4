@@ -62,6 +62,7 @@ cmor:
     _cmip6_option: CMIP6
     _AXIS_ENTRY_FILE: CMIP6_coordinate.json
     _FORMULA_VAR_FILE: CMIP6_formula_terms.json 
+    grids: CMIP6_grids.json
   # Additional NCI information:
     project: ui47                             # NCI project to charge compute; $PROJECT = your default project
 
@@ -132,11 +133,7 @@ attrs:
     branch_method: standard
     sub_experiment: none
     sub_experiment_id: none
+    # DO NOT REMOVE OR ALTER this if you don't know what you're doing :-)
     #CMOR will add a tracking_id if you want to define a prefix add here
     tracking_id_prefix:
-    # DO NOT REMOVE OR ALTER this if you don't know what you're doing :-)
     Conventions: "CF-1.7 CMIP-6.2" 
-    _control_vocabulary_file: "CMIP6_CV.json"
-    _cmip6_option: CMIP6
-    _AXIS_ENTRY_FILE: CMIP6_coordinate.json
-    _FORMULA_VAR_FILE: CMIP6_formula_terms.json 
