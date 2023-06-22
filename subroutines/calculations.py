@@ -10,6 +10,7 @@ import xarray as xr
 import os
 import yaml
 import numpy as np
+from scipy.interpolate import interp1d
 
 # Global Variables
 #-----------------------------------
@@ -31,7 +32,7 @@ def read_yaml(fname):
         data = yaml.safe_load(yfile)
     return data
 
-def time_resample(var, range, sample, time_coord='time'):
+def time_resample(var, trange, sample='down'):
     """
     Resamples the input variable to the specified frequency.
 
@@ -43,8 +44,6 @@ def time_resample(var, range, sample, time_coord='time'):
         The frequency to which the data should be resampled. Valid inputs are 'mon' (monthly), 'day' (daily), or 'year' (yearly).
     sample : str
         The type of resampling to perform. Valid inputs are 'up' for upsampling or 'down' for downsampling.
-    time_coord : str, optional
-        The name of the time coordinate in the input variable. Default is 'time'.
 
     Returns
     -------
@@ -59,30 +58,18 @@ def time_resample(var, range, sample, time_coord='time'):
         If the range parameter is not 'mon', 'day', or 'year'.
     ValueError
         If the sample parameter is not 'up' or 'down'.
-    ValueError
-        If the time coordinate specified does not exist in the input variable.
     """
 
     if not isinstance(var, (xr.DataArray, xr.Dataset)):
         raise ValueError("The 'var' parameter must be a valid Xarray DataArray or Dataset.")
 
     valid_ranges = ['mon', 'day', 'year']
-    if range not in valid_ranges:
+    if trange not in valid_ranges:
         raise ValueError("The 'range' parameter must be one of 'mon', 'day', or 'year'.")
 
     valid_samples = ['up', 'down']
     if sample not in valid_samples:
         raise ValueError("The 'sample' parameter must be either 'up' or 'down'.")
-
-    if time_coord not in var.coords:
-        raise ValueError(f"The time coordinate '{time_coord}' does not exist in the input variable.")
-
-    if range == 'mon':
-        r = 'M'
-    elif range == 'day':
-        r = 'D'
-    elif range == 'year':
-        r = 'Y'
 
     if sample == 'down':
         try:
@@ -800,4 +787,106 @@ def plev19():
     plev19b = np.column_stack((plev19min,plev19max))
 
     return plev19, plev19b
+
+def plevinterp(var, pmod, heavy):
+    """Interpolating var from model levels to plev19
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    var : Xarray dataset
+    pmod : Xarray dataset
+    heavy : Xarray dataset
+
+    Returns
+    -------
+    vout : Xarray dataset
+    """    
+    plev,bounds = plev19()
+
+    t, z, x, y = var.shape
+    th, zh, xh, yh = heavy.shape
+    if xh != x:
+        print('heavyside not on same grid as variable; interpolating...')
+        hout = heavy.interp(lat_v=heavy.lat_v, method='linear', kwargs={'fill_value': 'extrapolate'})
+    else:
+        hout = heavy
+
+    hout = np.where(hout > 0.5, 1, 0)
+
+    interp_var = var.interp(pmod=pmod, axis=1, method='linear', kwargs={'fill_value': 'extrapolate'})
+    vout = interp_var.interp(plev=plev)
+    vout = vout/hout
+
+    return vout
+
+def tos_degC(var):
+    """Covert temperature from K to degC.
+
+    Parameters
+    ----------
+    var : Xarray dataset
+
+    Returns
+    -------
+    vout : Xarray dataset
+    """    
+
+    if var.units == 'K':
+        print('temp in K, converting to degC')
+        vout = var - 273.15
+    return vout
+
+def landFrac(var):
+    """Calculate land fraction.
+
+    Parameters
+    ----------
+    var : Xarray dataset
+    nlat : str
+        Latitude dimension size
+
+    Returns
+    -------
+    vout : Xarray dataset
+        land fraction array
+    """    
+
+    try:
+        vout = var.fld_s03i395
+    except:
+        if var.lat.shape[0] == 145:
+            f = xr.open_dataset(f'{ancillary_path}esm_landfrac.nc')
+        elif var.lat.shape[0] == 144:
+            f = xr.open_dataset(f'{ancillary_path}cm2_landfrac.nc')
+        else:
+            print('nlat needs to be 145 or 144.')
+        vout = f.fld_s03i395
+
+    return vout
+
+def tos_3hr(var):
+    """notes
+
+    Parameters
+    ----------
+    var : Xarray dataset
+
+    Returns
+    -------
+    vout : Xarray dataset
+    """    
+
+    v = tos_degC(var)
+    landfrac = landFrac(var)
+
+
+    t,y,x = np.shape(v)
+    vout = np.ma.zeros([t,y,x])
+
+
+    for i in range(t):
+         vout[i,:,:] = np.ma.masked_where(landfrac == 1,v[i,:,:])
+    return vout
 

@@ -204,15 +204,6 @@ def calcOverturning(transList,typ):
 
     return calc   
 
-def landFrac(nlat):
-    if nlat == 145:
-        f = xr.open_dataset(f'{ancillary_path}esm_landfrac.nc')
-    if nlat == 144:
-        f = xr.open_dataset(f'{ancillary_path}cm2_landfrac.nc')
-    vals = np.float32(f.fld_s03i395[0,:,:]).filled(0)
-    f.close()
-    return vals
-
 def fracLut(var,nwd):
     #nwd (non-woody vegetation only) - tiles 6,7,9,11 only
     t,z,y,x = np.shape(var)
@@ -250,17 +241,6 @@ def fracLut(var,nwd):
     else:
         raise Exception('could not apply landFrac')
     return vout
-    
-#list of the names of the cmip6 landUse dimension
-def getlandUse():
-    landuse = ['primary_and_secondary_land','pastures','crops','urban']
-    return landuse
-    
-#list of the names of the land tiles in cable
-def cableTiles():
-    cabletiles = ['Evergreen_Needleleaf','Evergreen_Broadleaf','Deciduous_Needleleaf','Deciduous_Broadleaf','Shrub',\
-        'C3_grass','C4_grass','Tundra','C3_crop','C4_crop', 'Wetland','','','Barren','Urban','Lakes','Ice'] 
-    return cabletiles
 
 def deg_open(deg):
     '''
@@ -445,15 +425,6 @@ def basinMeridFlux(var):
     #global
     output[:,:,2] = glob[:,:]
     return output
-
-def tos_degC(var):
-    var = np.ma.asarray(var[:])
-    #PP??? shouldn't we trust units??
-    #PP in any case can be simplified
-    if var[0].mean() >= 200:
-        print('temp in K, converting to degC')
-        var = var[:] - 273.15
-    return var
     
 def tos_3hr(var):
     var = tos_degC(var)
@@ -657,33 +628,6 @@ def getdeptho(deg):
     deptho = np.float32(deg_open(deg).ht[:])
     deg_open(deg).close()
     return deptho
-    
-def plevinterp(var,pmod,heavy,lat,lat_v):
-    '''
-    Rewrote function to optimize. 
-    '''
-    plev,bounds = plev19()
-    # Using numpy's built-in shape command.
-    t, z, x, y = var.shape
-    th, zh, xh, yh = heavy.shape
-    if xh != x:
-        print('heavyside not on same grid as variable; interpolating...')
-        # Used reshape to flatten the heavy array along the last two axes and then 
-        # used interp1d with axis=-1 to interpolate over all points simultaneously, 
-        # avoiding the need for nested loops.
-        hint = interp1d(lat, heavy.reshape(th, zh, -1), kind="linear", axis=-1, fill_value="extrapolate")
-        hout = hint(lat_v).reshape(th, zh, -1, yh)
-    else:
-        hout = heavy
-    # Moved the hout <= 0.5 and hout > 0.5 operations to a single np.where 
-    # statement to avoid creating two intermediate arrays.
-    hout = np.where(hout > 0.5, 1, 0)
-    vout = np.ma.zeros([t,len(plev),x,y],dtype=np.float32)
-    print('interpolating var from model levels to plev19...')
-    # Using NumPy vectorization instead of loops.
-    interp_func = interp1d(pmod, var, kind="linear", axis=1, fill_value="extrapolate")
-    vout = interp_func(plev)
-    return vout/hout
 
 def calc_zostoga(var,depth,lat):
     '''
