@@ -146,11 +146,14 @@ def check_best_match(varlist, frequency):
     found = False
     resample_order = ['10yr', 'yr', 'mon', '10day', '7day',
             'day', '12hr', '6hr', '3hr', '1hr', '30min', '10min']
+    resample_frq = {'10yr': '10Y', 'yr': 'Y', 'mon': 'M', '10day': '10D',
+                    '7day': '7D', 'day': 'D', '12hr': '12H', '6hr': '6H',
+                    '3hr': '3H', '1hr': 'H', '10min': '10T'}
     freq_idx = resample_order.index(frequency)
     for frq in resample_order[freq_idx+1:]:
         for v in varlist:
             if v['frequency'] == frq:
-                v['resample'] = f"{frequency}"
+                v['resample'] = resample_frq(frequency)
                 found = True
                 var = v
                 break
