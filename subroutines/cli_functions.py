@@ -966,7 +966,7 @@ def normal_case(ctx, dsin, tdim, in_missing, app_log):
     #PP add call to resample
     if ctx.obj['resample'] != '':
         array = time_resample(array, trange=ctx.obj['resample'],
-                              time_coord=time_dimension)
+                              time_coord=tdim)
         array = dsin[ctx.obj['vin'][0]][:]
         app_log.debug(f"{array}")
     else:

@@ -153,7 +153,7 @@ def check_best_match(varlist, frequency):
     for frq in resample_order[freq_idx+1:]:
         for v in varlist:
             if v['frequency'] == frq:
-                v['resample'] = resample_frq(frequency)
+                v['resample'] = resample_frq[frequency]
                 found = True
                 var = v
                 break
@@ -524,14 +524,15 @@ def dreq_map(cdict, activity_id=None):
         daymonyr = False
     elif subd == 'false':
         subdaily = False
-    varsub = cdict.get('var_subset_list', '')
-    if varsub == '':
+    subset = cdict.get('var_subset_list', '')
+    if subset == '':
         priorityonly = False
-    elif varsub[-5:] != 'yaml':
-        print(f"{varsub} should be a yaml file")
+    elif subset[-4:] != '.csv':
+        print(f"{subset} should be a csv file")
         sys.exit()
     else:
-        check_file(f"{cdict['appdir']}/{varsub}")
+        subset = f"{cdict['appdir']}/{subset}"
+        check_file(subset)
         priorityonly = True
     cdict['priorityonly'] = priorityonly
 # Custom mode vars
@@ -545,11 +546,13 @@ def dreq_map(cdict, activity_id=None):
     # change to yaml file with table as a dict and vars as list under each table
     if priorityonly:
         try:
-            with open(prioritylist,'r') as p:
-                reader = csv.reader(p, delimiter=',')
-                priority_vars.append([row[0],row[1]])
+            with open(subset, 'r') as p:
+                priority_vars = csv.reader(p, delimiter=',')
+                #for row in reader:
+                #    priority_vars.append([row[0],row[1]])
+                print(priority_vars)
         except Error as e:
-            print(f"Invalid variable subset list {varsub}: {e}")
+            print(f"Invalid variable subset list {subset}: {e}")
             sys.exit()
     else:
         print(f"no priority list for local experiment '{cdict['exp']}', processing all variables")

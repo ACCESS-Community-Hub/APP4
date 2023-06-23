@@ -1093,6 +1093,25 @@
             "valid_max": "",
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
+        },
+        "ta19": {
+            "frequency": "1hrPt",
+            "modeling_realm": "atmos",
+            "standard_name": "air_temperature",
+            "units": "K",
+            "cell_methods": "area: mean time: point",
+            "cell_measures": "area: areacella",
+            "long_name": "Air Temperature",
+            "comment": "Air Temperature",
+            "dimensions": "longitude latitude plev19 time1",
+            "out_name": "ta",
+            "type": "real",
+            "positive": "",
+            "valid_min": "",
+            "valid_max": "",
+            "ok_min_mean_abs": "",
+            "ok_max_mean_abs": ""
         }
+
     }
 }

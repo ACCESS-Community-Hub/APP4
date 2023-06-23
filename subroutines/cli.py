@@ -166,6 +166,7 @@ def app_bulk(ctx, app_log):
     # PP in my opinion this can be fully skipped, but as a start I will move it to a function
     ds = xr.open_dataset(all_files[0][0], decode_times=False)
     time_dimension, inref_time = get_time_dim(ds, app_log)
+    print(time_dimension)
     sys.stdout.flush()
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
@@ -220,6 +221,8 @@ def app_bulk(ctx, app_log):
     # adding axis etc after calculation will need to extract cmor bit from calc_... etc
     app_log.info("defining axes...")
     # get axis of each dimension
+    print(out_var)
+    sys.stdout.flush()
     t_axis, z_axis, j_axis, i_axis, p_axis, e_axis= get_axis_dim(out_var, app_log)
     # should we just calculate at end??
     n_grid_pnts = 1

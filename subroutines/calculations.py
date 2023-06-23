@@ -63,9 +63,6 @@ def time_resample(var, trange, sample='down'):
     if not isinstance(var, (xr.DataArray, xr.Dataset)):
         raise ValueError("The 'var' parameter must be a valid Xarray DataArray or Dataset.")
 
-    valid_ranges = ['mon', 'day', 'year']
-    if trange not in valid_ranges:
-        raise ValueError("The 'range' parameter must be one of 'mon', 'day', or 'year'.")
 
     valid_samples = ['up', 'down']
     if sample not in valid_samples:

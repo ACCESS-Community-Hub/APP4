@@ -25,18 +25,21 @@ cmor:
     # select one of: [CM2, ESM1.5, OM2[-025], AUS2200]
     access_version: AUS2200 
     # reference date for time units (set as 'default' to use start_date)
-    reference_date: default              
+    reference_date: 1970-01-01             
     path_template: "{experiment_id}/{version}/{frequency}/"
     file_template: "{variable_id}_{source_id}_{experiment_id}_{frequency}_{date_range}"
     # maximum file size in MB: this is meant as uncompressed, compression might reduce it by 50%
     max_size: 8192 
     # Variables to CMORise: 
-    # CMIP6 table/variable to process; default is 'all'. Or create a file listing variables to process (VAR_SUBSET[_LIST]).
+    # CMOR table/variable to process; default is 'all'. 
+    # Or create a csv file listing variables to process (VAR_SUBSET[_LIST]).
+    # each line: <table,var>
     tables: AUS2200_A1hr
-    variable_to_process: tas
+    variable_to_process: hus 
     # subdaily selection options - select one of: [true, false, only]
     subdaily: !!str false
     var_subset: !!bool false
+    #var_subset_list: 'testlist.csv'
     var_subset_list: ''
     # Mappings, vocab and tables settings
     # default=input_files/dreq/cmvme_all_piControl_3_3.csv
@@ -46,7 +49,7 @@ cmor:
     # input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv ???
     # is this used?
     # choose here the mapping created with cli_db.py based on the actual model output
-    master_map: "input_files/master_flood22.csv"
+    master_map: "input_files/master_test.csv"
     grid_file: "input_files/grids.csv"
     # use official cmip6 tables for CMIP6 mode
     #tables_path: "input_files/cmip6-cmor-tables/Tables/"
