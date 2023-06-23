@@ -35,7 +35,7 @@ cmor:
     # Or create a csv file listing variables to process (VAR_SUBSET[_LIST]).
     # each line: <table,var>
     tables: AUS2200_A1hr
-    variable_to_process: hus 
+    variable_to_process: huss 
     # subdaily selection options - select one of: [true, false, only]
     subdaily: !!str false
     var_subset: !!bool false

@@ -165,8 +165,7 @@ def app_bulk(ctx, app_log):
     #PP create time_axis function
     # PP in my opinion this can be fully skipped, but as a start I will move it to a function
     ds = xr.open_dataset(all_files[0][0], decode_times=False)
-    time_dimension, inref_time = get_time_dim(ds, app_log)
-    print(time_dimension)
+    time_dim, inref_time = get_time_dim(ds, app_log)
     sys.stdout.flush()
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
@@ -175,7 +174,7 @@ def app_bulk(ctx, app_log):
     try:
         inrange_files = check_timestamp(all_files[0], app_log) 
     except:
-        inrange_files = check_in_range(all_files[0], time_dimension, app_log) 
+        inrange_files = check_in_range(all_files[0], time_dim, app_log) 
     sys.stdout.flush()
     #check if the requested range is covered
     if inrange_files == []:
@@ -188,9 +187,7 @@ def app_bulk(ctx, app_log):
     # concatenation issues with multiple coordinates
     preselect = partial(_preselect, varlist=ctx.obj['vin'])
     dsin = xr.open_mfdataset(inrange_files, preprocess=preselect,
-                             parallel=True, decode_times=False)
-    #dsin = xr.open_mfdataset(inrange_files, parallel=True, use_cftime=True)
-    sys.stdout.flush()
+                             parallel=True, use_cftime=True) #, decode_times=False)
     invar = dsin[ctx.obj['vin'][0]]
     #First try and get the units of the variable.
     #
@@ -199,17 +196,18 @@ def app_bulk(ctx, app_log):
     #PP swapped around the order: calculate first and then worry about cmor
     app_log.info("writing data, and calculating if needed...")
     app_log.info(f"calculation: {ctx.obj['calculation']}")
+    print(invar['time'][0:3], invar['time'][-3:])
     sys.stdout.flush()
     #
     #PP start from standard case and add modification when possible to cover other cases 
     if 'A10dayPt' in ctx.obj['table']:
         app_log.info('ONLY 1st, 11th, 21st days to be used')
-        dsin = dsin.where(dsin[time_dimension].dt.day.isin([1, 11, 21]),
+        dsin = dsin.where(dsin[time_dim].dt.day.isin([1, 11, 21]),
                           drop=True)
     
     # Perform the calculation:
     try:
-        out_var = normal_case(dsin, time_dimension, in_missing, app_log)
+        out_var = normal_case(dsin, time_dim, in_missing, app_log)
         app_log.info("Calculation completed!")
     except Exception as e:
         app_log.error(f"E: Unable to run calculation because: {e}")
@@ -221,7 +219,7 @@ def app_bulk(ctx, app_log):
     # adding axis etc after calculation will need to extract cmor bit from calc_... etc
     app_log.info("defining axes...")
     # get axis of each dimension
-    print(out_var)
+    print(f"out-var: {out_var}")
     sys.stdout.flush()
     t_axis, z_axis, j_axis, i_axis, p_axis, e_axis= get_axis_dim(out_var, app_log)
     # should we just calculate at end??
@@ -230,9 +228,10 @@ def app_bulk(ctx, app_log):
     axis_ids = []
     if t_axis is not None:
         cmor_tName = get_cmorname('t')
-        t_bounds = get_bounds(dsin, t_axis, cmor_tName, app_log)
-        ctx, t_axis_val, t_bounds = get_time(t_axis, t_bounds,
-            inref_time, cmor_tName, app_log)
+        ctx.obj['reference_date'] = f"days since {ctx.obj['reference_date']}"
+        t_axis_val = cftime.date2num(t_axis, units=ctx.obj['reference_date'],
+            calendar=ctx.obj['attrs']['calendar'])
+        t_bounds = get_bounds(dsin, t_axis, cmor_tName, app_log, ax_val=t_axis_val)
         t_axis_id = cmor.axis(table_entry=cmor_tName,
             units=ctx.obj['reference_date'],
             length=len(t_axis),
@@ -343,10 +342,10 @@ def app_bulk(ctx, app_log):
     app_log.info('writing...')
     # ntimes passed is optional but we might need it if time dimension is not time
     status = None
-    if time_dimension != None:
+    if time_dim != None:
         app_log.info(f"Variable shape is {out_var.shape}")
         status = cmor.write(variable_id, out_var.values,
-                ntimes_passed=out_var[time_dimension].size)
+                ntimes_passed=out_var[time_dim].size)
     else:
         status = cmor.write(variable_id, out_var.values, ntimes_passed=0)
     if status != 0:

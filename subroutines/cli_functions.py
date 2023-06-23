@@ -134,27 +134,27 @@ def check_vars_in_file(invars, fname, app_log):
 def get_time_dim(ctx, ds, app_log):
     """Find time info: time axis, reference time and set tstart and tend
     """
-    ##PP changed most of this as it doesn't make sense setting time_dimension to None and then trying to access variable None in file
-    time_dimension = None
+    ##PP changed most of this as it doesn't make sense setting time_dim to None and then trying to access variable None in file
+    time_dim = None
     varname = [ctx.obj['vin'][0]]
     #    
     app_log.debug(f" check time var dims: {ds[varname].dims}")
     if 'fx' in ctx.obj['table']:
         print("fx variable, no time axis")
         refString = f"days since {ctx.obj['reference_date'][:4]}-01-01"
-        time_dimension = None    
+        time_dim = None    
         units = None
         inrange_files = all_files
     else:
         for var_dim in ds[varname].dims:
             if 'time' in var_dim or ds[var_dim].axis == 'T':
-                time_dimension = var_dim
+                time_dim = var_dim
                 units = ds[var_dim].units
-                app_log.debug(f"first attempt to tdim: {time_dimension}")
-    app_log.info(f"time var is: {time_dimension}")
+                app_log.debug(f"first attempt to tdim: {time_dim}")
+    app_log.info(f"time var is: {time_dim}")
     app_log.info(f"Reference time is: {units}")
     del ds 
-    return time_dimension, units
+    return time_dim, units
 
 
 @click.pass_context
@@ -707,36 +707,39 @@ def check_time_bnds(bnds_val, frequency, app_log):
 
 
 @click.pass_context
-def get_time(ctx, t_axis, t_bounds, inref_time, cmor_tName, app_log):
+def get_time(ctx, t_axis, cmor_tName, app_log):
     """
     """
     ctx.obj['reference_date'] = f"days since {ctx.obj['reference_date']}"
-    if ctx.obj['reference_date'] != inref_time:
-        newaxis = cftime.num2date(t_axis, units=inref_time,
-            calendar=ctx.obj['attrs']['calendar'])
-        t_axis_val = cftime.date2num(t_axis, units=ctx.obj['reference_date'],
-            calendar=ctx.obj['attrs']['calendar'])
-        t_bounds = cftime.num2date(t_bounds, units=inref_time,
-            calendar=ctx.obj['attrs']['calendar'])
-        t_bounds = cftime.date2num(t_t_bounds, units=ctx.obj['reference_date'],
-            calendar=ctx.obj['attrs']['calendar'])
-    else:
-        t_axis_val = t_axis.values
+    #if ctx.obj['reference_date'] != inref_time:
+        #newaxis = cftime.num2date(t_axis, units=inref_time,
+        #    calendar=ctx.obj['attrs']['calendar'])
+    t_axis_val = cftime.date2num(t_axis, units=ctx.obj['reference_date'],
+        calendar=ctx.obj['attrs']['calendar'])
+    t_bounds = get_bounds(dsin, t_axis_val, cmor_tName, app_log)
+        #t_bounds = cftime.num2date(t_bounds, units=inref_time,
+        #    calendar=ctx.obj['attrs']['calendar'])
+    #t_bounds = cftime.date2num(t_bounds, units=ctx.obj['reference_date'],
+    #    calendar=ctx.obj['attrs']['calendar'])
+    #else:
+    #    t_axis_val = t_axis.values
     return ctx, t_axis_val, t_bounds
 
 
 @click.pass_context
-def get_bounds(ctx, ds, axis, cmor_name, app_log):
+def get_bounds(ctx, ds, axis, cmor_name, app_log, ax_val=None):
     """Returns bounds for input dimension, if bounds are not available
        uses edges or tries to calculate them.
        If variable goes through calculation potentially bounds are different from
        input file and forces re-calculating them
     """
-    changed_bnds = False
-    if ctx.obj['calculation'] != '':
-        changed_bnds = True
     dim = axis.name
     app_log.debug(f"Getting bounds for axis: {dim}")
+    changed_bnds = False
+    if 'time' in dim and ctx.obj['resample'] != '':
+        changed_bnds = True
+    if ctx.obj['calculation'] != '':
+        changed_bnds = True
     #The default bounds assume that the grid cells are centred on
     #each grid point specified by the coordinate variable.
     keys = [k for k in axis.attrs]
@@ -744,10 +747,6 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log):
     if 'bounds' in keys and not changed_bnds:
         dim_val_bnds = ds[axis.bounds].values
         app_log.info("using dimension bounds")
-        #if 'time' in cmor_name:
-            #dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'],
-            #                  calendar=ctx.obj['attrs']['calendar'])
-            #calendar=ctx.obj['attrs']['calendar'])
     elif 'edges' in keys and not changed_bnds:
         dim_val_bnds = ds[axis.edges].values
         app_log.info("using dimension edges as bounds")
@@ -755,23 +754,26 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log):
         app_log.info(f"No bounds for {dim}")
         calc = True
     if 'time' in cmor_name and calc is False:
+        dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'],
+            calendar=ctx.obj['attrs']['calendar'])
         inrange = check_time_bnds(dim_val_bnds, ctx.obj['frequency'], app_log)
         if not inrange:
             calc = True
             app_log.info(f"Inherited bounds for {dim} are incorrect")
     if calc is True:
         app_log.info(f"Calculating bounds for {dim}")
-        ax_val = axis.values
+        if ax_val is None:
+            ax_val = axis.values
         try:
             #PP using roll this way without specifying axis assume axis is 1D
             min_val = (ax_val + np.roll(ax_val, 1))/2
             min_val[0] = 1.5*ax_val[0] - 0.5*ax_val[1]
             max_val = np.roll(min_val, -1)
             max_val[-1] = 1.5*ax_val[-1] - 0.5*ax_val[-2]
+            dim_val_bnds = np.column_stack((min_val, max_val))
         except Exception as e:
             app_log.warning(f"dodgy bounds for dimension: {dim}")
             app_log.error(f"error: {e}")
-        dim_val_bnds = np.column_stack((min_val, max_val))
         if 'time' in cmor_name:
             inrange = check_time_bnds(dim_val_bnds, ctx.obj['frequency'], app_log)
             app_log.error(f"Boundaries for {cmor_name} are wrong even after calculation")
@@ -841,7 +843,7 @@ def axm_t_integral(ctx, invar, dsin, variable_id, app_log):
     #for input_file in inrange_files:
     #If the data is a climatology, store the values in a running sum
 
-    t = invar[time_dimension]
+    t = invar[time_dim]
     # need to look ofr xarray correspondent of daysInMonth (cdms2)
     tbox = daysInMonth(t)
     varout = np.float32(var[:,0]*tbox[:]*24).cumsum(0) + run
@@ -921,7 +923,7 @@ def calc_monsecs(ctx, dsin, tdim, in_missing, app_log):
         pass 
     #app_log.info("writing with cmor...")
     #try:
-    #    if time_dimension != None:
+    #    if time_dim != None:
     #        #assuming time is the first dimension
     #        app_log.info(np.shape(data_vals))
     #        cmor.write(variable_id, data_vals.values,
@@ -965,9 +967,7 @@ def normal_case(ctx, dsin, tdim, in_missing, app_log):
 
     #PP add call to resample
     if ctx.obj['resample'] != '':
-        array = time_resample(array, trange=ctx.obj['resample'],
-                              time_coord=tdim)
-        array = dsin[ctx.obj['vin'][0]][:]
+        array = time_resample(array, ctx.obj['resample'], tdim)
         app_log.debug(f"{array}")
     else:
         var = []

@@ -32,7 +32,7 @@ def read_yaml(fname):
         data = yaml.safe_load(yfile)
     return data
 
-def time_resample(var, trange, sample='down'):
+def time_resample(var, trange, tdim, sample='down'):
     """
     Resamples the input variable to the specified frequency.
 
@@ -42,6 +42,8 @@ def time_resample(var, trange, sample='down'):
         Variable from Xarray dataset.
     range : str
         The frequency to which the data should be resampled. Valid inputs are 'mon' (monthly), 'day' (daily), or 'year' (yearly).
+    tdim: str
+        The name of the time dimension
     sample : str
         The type of resampling to perform. Valid inputs are 'up' for upsampling or 'down' for downsampling.
 
@@ -54,8 +56,6 @@ def time_resample(var, trange, sample='down'):
     ------
     ValueError
         If the input variable is not a valid Xarray object.
-    ValueError
-        If the range parameter is not 'mon', 'day', or 'year'.
     ValueError
         If the sample parameter is not 'up' or 'down'.
     """
@@ -70,14 +70,14 @@ def time_resample(var, trange, sample='down'):
 
     if sample == 'down':
         try:
-            vout = var.resample(time=f"{r}").mean()
+            vout = var.resample({tdim: trange}, origin='end_day').mean()
     
         except Exception as e:
             print(f'{e}')
 
     elif sample == 'up':
         try:
-            vout = var.resample(time=f"{r}").interpolate("linear")
+            vout = var.resample({tdim: trange}).interpolate("linear")
     
         except Exception as e:
             print(f'{e}')
