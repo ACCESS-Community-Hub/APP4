@@ -838,34 +838,6 @@ def tos_degC(var):
         vout = var - 273.15
     return vout
 
-def landFrac(var):
-    """Calculate land fraction.
-
-    Parameters
-    ----------
-    var : Xarray dataset
-    nlat : str
-        Latitude dimension size
-
-    Returns
-    -------
-    vout : Xarray dataset
-        land fraction array
-    """    
-
-    try:
-        vout = var.fld_s03i395
-    except:
-        if var.lat.shape[0] == 145:
-            f = xr.open_dataset(f'{ancillary_path}esm_landfrac.nc')
-        elif var.lat.shape[0] == 144:
-            f = xr.open_dataset(f'{ancillary_path}cm2_landfrac.nc')
-        else:
-            print('nlat needs to be 145 or 144.')
-        vout = f.fld_s03i395
-
-    return vout
-
 def tos_3hr(var):
     """notes
 
@@ -890,3 +862,78 @@ def tos_3hr(var):
          vout[i,:,:] = np.ma.masked_where(landfrac == 1,v[i,:,:])
     return vout
 
+def landFrac(var, landfrac):
+    """Calculate land fraction.
+
+    Parameters
+    ----------
+    var : Xarray dataset
+    nlat : str
+        Latitude dimension size
+
+    Returns
+    -------
+    vout : Xarray dataset
+        land fraction array
+    """    
+
+    try:
+        vout = landfrac
+    except:
+        if var.lat.shape[0] == 145:
+            f = xr.open_dataset(f'{ancillary_path}esm_landfrac.nc')
+        elif var.lat.shape[0] == 144:
+            f = xr.open_dataset(f'{ancillary_path}cm2_landfrac.nc')
+        else:
+            print('nlat needs to be 145 or 144.')
+        vout = f.fld_s03i395 
+
+    return vout
+
+def apply_landfrac(vout, landfrac):
+    '''
+    Apply the landfrac to the variable array.
+    '''
+    landfrac = landFrac(vout, landfrac)
+
+    vout = vout * landfrac
+
+    return vout
+
+def tileFracExtract(tileFrac, tilenum):
+    """tileFracExtract _summary_
+
+    _extended_summary_
+
+    Parameters
+    ----------
+    tileFrac : _type_
+        _description_
+    tilenum : _type_
+        _description_
+
+    Returns
+    -------
+    vout : Xarray dataset
+        SURFACE TILE FRACTIONS
+
+    Raises
+    ------
+    Exception
+        _description_
+    """    
+    t,z,y,x = tileFrac.shape
+    vout = np.ma.zeros([t,y,x])
+
+    if isinstance(tilenum, int) == 1:
+        n = tilenum-1
+        vout += tileFrac[:,n,:,:]
+    elif isinstance(tilenum, list):
+        for i,t in enumerate(tilenum):
+            n = t-1
+            vout += tileFrac[:,n,:,:]
+    else:
+        raise Exception('E: tile number must be integer or list')
+    
+    vout = apply_landfrac(vout)
+    return vout
