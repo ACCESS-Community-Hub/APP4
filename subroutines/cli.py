@@ -45,8 +45,6 @@ import click
 import sqlite3
 import numpy as np
 import xarray as xr
-import cftime
-import cf_units
 import cmor
 from itertools import repeat
 from functools import partial
@@ -168,6 +166,7 @@ def app_bulk(ctx, app_log):
     # PP in my opinion this can be fully skipped, but as a start I will move it to a function
     ds = xr.open_dataset(all_files[0][0], decode_times=False)
     time_dimension, inref_time = get_time_dim(ds, app_log)
+    print(time_dimension)
     sys.stdout.flush()
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
@@ -222,6 +221,8 @@ def app_bulk(ctx, app_log):
     # adding axis etc after calculation will need to extract cmor bit from calc_... etc
     app_log.info("defining axes...")
     # get axis of each dimension
+    print(out_var)
+    sys.stdout.flush()
     t_axis, z_axis, j_axis, i_axis, p_axis, e_axis= get_axis_dim(out_var, app_log)
     # should we just calculate at end??
     n_grid_pnts = 1
@@ -229,23 +230,19 @@ def app_bulk(ctx, app_log):
     axis_ids = []
     if t_axis is not None:
         cmor_tName = get_cmorname('t')
-        ctx.obj['reference_date'] = f"days since {ctx.obj['reference_date']}"
         t_bounds = get_bounds(dsin, t_axis, cmor_tName, app_log)
-        #t_axis_val = cftime.date2num(t_axis, units=ctx.obj['reference_date'],
-        #        calendar=ctx.obj['attrs']['calendar'])
-        #t_axis_val = u.date2num(t_axis.astype('datetime'))
-        print(f"bnds: {t_bounds}")
+        ctx, t_axis_val, t_bounds = get_time(t_axis, t_bounds,
+            inref_time, cmor_tName, app_log)
         t_axis_id = cmor.axis(table_entry=cmor_tName,
             units=ctx.obj['reference_date'],
-           # length=len(t_axis_val),
-           # coord_vals=t_axis_val,
             length=len(t_axis),
-            coord_vals=t_axis.values,
+            coord_vals=t_axis_val,
             cell_bounds=t_bounds,
             interval=None)
         axis_ids.append(t_axis_id)
     if z_axis is not None:
         cmor_zName = get_cmorname('z')
+        print(cmor_zName)
         z_bounds = get_bounds(dsin, z_axis, cmor_zName, app_log)
         z_axis_id = cmor.axis(table_entry=cmor_zName,
             units=z_axis.units,
@@ -267,6 +264,7 @@ def app_bulk(ctx, app_log):
        #             n_grid_pts=len(dim_values)
     else:
         cmor_jName = get_cmorname('j')
+        print(cmor_jName)
         j_bounds = get_bounds(dsin, j_axis, cmor_jName, app_log)
         j_axis_id = cmor.axis(table_entry=cmor_jName,
             units=j_axis.units,
@@ -286,6 +284,7 @@ def app_bulk(ctx, app_log):
     else:
         setgrid = False
         cmor_iName = get_cmorname('i')
+        print(cmor_iName)
         i_bounds = get_bounds(dsin, i_axis, cmor_iName, app_log)
         i_axis_id = cmor.axis(table_entry=cmor_iName,
             units=i_axis.units,
@@ -329,9 +328,10 @@ def app_bulk(ctx, app_log):
     try:    
         #set positive value from input variable attribute
         #PP potentially check somewhere that variable_id is in table
-        print(ctx.obj['variable_id'])
+        cmor.set_table(tables[1])
+        var_id = ctx.obj['variable_id'].replace('_','-')
         sys.stdout.flush()
-        variable_id = cmor.variable(table_entry=ctx.obj['variable_id'],
+        variable_id = cmor.variable(table_entry=var_id,
                     units=in_units,
                     axis_ids=axis_ids,
                     data_type='f',
@@ -455,7 +455,7 @@ def process_row(ctx, row):
                     #    msg = f"{msg},plot_fail: "
                     #    traceback.print_exc()
                 else :
-                    print("expected file: {expected_file}")
+                    print(f"expected file: {expected_file}")
                     print("expected and cmor file paths do not match")
                     msg = f"\nproduced but file name does not match expected {var_msg}\n"
                     #PP temporarily commenting this

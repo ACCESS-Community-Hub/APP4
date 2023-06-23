@@ -26,7 +26,6 @@ PP - datetime assumes Gregorian calendar
 import numpy as np
 import glob
 import re
-from app_functions import *
 import os,sys
 import stat
 import xarray as xr
@@ -38,6 +37,8 @@ import click
 import logging
 import cftime
 import cf_units
+import itertools
+from calculations import *
 
 
 def config_log(debug, path):
@@ -67,17 +68,18 @@ def config_log(debug, path):
     flog.setLevel(logging.INFO)
     flog.setFormatter(formatter)
     logger.addHandler(flog)
-
     # return the logger object
     return logger
 
 
 def _preselect(ds, varlist):
     varsel = [v for v in varlist if v in ds.variables]
-    varsel.extend( [v for v in ds.variables if 'bnds' in v] )
-    varsel.extend( [v for v in ds.variables if 'bounds' in v] )
-    varsel.extend( [v for v in ds.variables if 'edge' in v] )
+    dims = ds[varsel].dims
+    bnds = ['bnds', 'bounds', 'edges']
+    pot_bnds = [f"{x[0]}_{x[1]}" for x in itertools.product(dims, bnds)]
+    varsel.extend( [v for v in ds.variables if v in pot_bnds] )
     return ds[varsel]
+
 
 @click.pass_context
 def find_files(ctx, app_log):
@@ -101,9 +103,6 @@ def find_files(ctx, app_log):
     i = 0
     var_path = {}
     while len(missing) > 0 and i <= len(patterns):
-        print(i)
-        print(missing)
-        print(patterns)
         f = files[i][0]
         missing, found = check_vars_in_file(missing, f, app_log)
         if len(found) > 0:
@@ -312,6 +311,7 @@ def get_cmorname(ctx, axis_name, z_len=None):
     #PP temporary patch to run this until we removed all axes-modifiers
     ctx.obj['axes_modifier'] = []
     if axis_name == 't':
+        print(ctx.obj['timeshot'])
         timeshot = ctx.obj['timeshot']
         if 'mean' in timeshot:
             cmor_name = 'time'
@@ -695,15 +695,34 @@ def get_axis_dim(ctx, var, app_log):
 
 def check_time_bnds(bnds_val, frequency, app_log):
     """Checks if dimension boundaries from file are wrong"""
-    approx_interval = bnds_val[0][1] - bnds_val[0][0]
+    approx_interval = bnds_val[:,1] - bnds_val[:,0]
     app_log.debug(f"Time bnds approx interval: {approx_interval}")
     frq2int = {'dec': 3650.0, 'yr': 365.0, 'mon': 30.0,
                 'day': 1.0, '6hr': 0.25, '3hr': 0.125,
                 '1hr': 0.041667, '10min': 0.006944, 'fx': 0.0}
     interval = frq2int[frequency]
     # add a small buffer to interval value
-    inrange = interval*0.99 < approx_interval < interval*1.01
+    inrange = all(interval*0.99 < x < interval*1.01 for x in approx_interval)
     return inrange
+
+
+@click.pass_context
+def get_time(ctx, t_axis, t_bounds, inref_time, cmor_tName, app_log):
+    """
+    """
+    ctx.obj['reference_date'] = f"days since {ctx.obj['reference_date']}"
+    if ctx.obj['reference_date'] != inref_time:
+        newaxis = cftime.num2date(t_axis, units=inref_time,
+            calendar=ctx.obj['attrs']['calendar'])
+        t_axis_val = cftime.date2num(t_axis, units=ctx.obj['reference_date'],
+            calendar=ctx.obj['attrs']['calendar'])
+        t_bounds = cftime.num2date(t_bounds, units=inref_time,
+            calendar=ctx.obj['attrs']['calendar'])
+        t_bounds = cftime.date2num(t_t_bounds, units=ctx.obj['reference_date'],
+            calendar=ctx.obj['attrs']['calendar'])
+    else:
+        t_axis_val = t_axis.values
+    return ctx, t_axis_val, t_bounds
 
 
 @click.pass_context
@@ -735,16 +754,11 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log):
     else:
         app_log.info(f"No bounds for {dim}")
         calc = True
-    print(cmor_name)
-    print(calc)
-    print('time' in cmor_name)
     if 'time' in cmor_name and calc is False:
-        print('should be here')
         inrange = check_time_bnds(dim_val_bnds, ctx.obj['frequency'], app_log)
         if not inrange:
             calc = True
             app_log.info(f"Inherited bounds for {dim} are incorrect")
-    print(calc)
     if calc is True:
         app_log.info(f"Calculating bounds for {dim}")
         ax_val = axis.values
@@ -754,12 +768,13 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log):
             min_val[0] = 1.5*ax_val[0] - 0.5*ax_val[1]
             max_val = np.roll(min_val, -1)
             max_val[-1] = 1.5*ax_val[-1] - 0.5*ax_val[-2]
-            print(f"max_val: {max_val}")
         except Exception as e:
             app_log.warning(f"dodgy bounds for dimension: {dim}")
             app_log.error(f"error: {e}")
-        print('should be here asingning values')
         dim_val_bnds = np.column_stack((min_val, max_val))
+        if 'time' in cmor_name:
+            inrange = check_time_bnds(dim_val_bnds, ctx.obj['frequency'], app_log)
+            app_log.error(f"Boundaries for {cmor_name} are wrong even after calculation")
     # Take into account type of axis
     # as we are often concatenating along time axis and bnds are considered variables
     # they will also be concatenated along time axis and we need only 1st timestep
@@ -929,7 +944,6 @@ def normal_case(ctx, dsin, tdim, in_missing, app_log):
     if ctx.obj['calculation'] == '':
         array = dsin[ctx.obj['vin'][0]][:]
         app_log.debug(f"{array}")
-        print(array)
     else:
         var = []
         app_log.info("Adding variables to var list")
@@ -950,11 +964,18 @@ def normal_case(ctx, dsin, tdim, in_missing, app_log):
             raise
 
     #PP add call to resample
+    if ctx.obj['resample'] != '':
+        array = time_resample(array, trange=ctx.obj['resample'],
+                              time_coord=tdim)
+        array = dsin[ctx.obj['vin'][0]][:]
+        app_log.debug(f"{array}")
+    else:
+        var = []
+        app_log.info("Adding variables to var list")
 
     #convert mask to missing values
     #PP why mask???
     #SG: Yeh not sure this is needed.
-    print(in_missing)
     array = array.fillna(in_missing)
     app_log.debug(f"{array}")
      

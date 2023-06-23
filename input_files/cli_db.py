@@ -154,7 +154,8 @@ def cmor_table(ctx, dbname, fname, alias):
                 sql = f"SELECT * FROM cmorvar WHERE out_name='{v[0]}'"
                 record = query(conn, sql,(), first=True)
                 definition = list(record)
-                definition[0] = f"{v[0]}-{alias}"
+                #definition[0] = f"{v[0]}-{alias}"
+                definition[0] = v[0].replace('_', '-')
                 definition[1] = v[5]
                 definition[2] = v[6]
                 # if units are different print warning!

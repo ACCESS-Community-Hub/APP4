@@ -25,18 +25,21 @@ cmor:
     # select one of: [CM2, ESM1.5, OM2[-025], AUS2200]
     access_version: AUS2200 
     # reference date for time units (set as 'default' to use start_date)
-    reference_date: default              
-    path_template: "{local_exp_id}/{version}/{table_id}/"
-    file_template: "{variable_id}_{source_id}_{local_exp_id}_{table_id}_{date_range}"
+    reference_date: 1970-01-01             
+    path_template: "{experiment_id}/{version}/{frequency}/"
+    file_template: "{variable_id}_{source_id}_{experiment_id}_{frequency}_{date_range}"
     # maximum file size in MB: this is meant as uncompressed, compression might reduce it by 50%
     max_size: 8192 
     # Variables to CMORise: 
-    # CMIP6 table/variable to process; default is 'all'. Or create a file listing variables to process (VAR_SUBSET[_LIST]).
+    # CMOR table/variable to process; default is 'all'. 
+    # Or create a csv file listing variables to process (VAR_SUBSET[_LIST]).
+    # each line: <table,var>
     tables: AUS2200_A1hr
-    variable_to_process: cllow_mean
+    variable_to_process: hus 
     # subdaily selection options - select one of: [true, false, only]
     subdaily: !!str false
     var_subset: !!bool false
+    #var_subset_list: 'testlist.csv'
     var_subset_list: ''
     # Mappings, vocab and tables settings
     # default=input_files/dreq/cmvme_all_piControl_3_3.csv
@@ -46,7 +49,7 @@ cmor:
     # input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv ???
     # is this used?
     # choose here the mapping created with cli_db.py based on the actual model output
-    master_map: "input_files/master_flood22.csv"
+    master_map: "input_files/master_test.csv"
     grid_file: "input_files/grids.csv"
     # use official cmip6 tables for CMIP6 mode
     #tables_path: "input_files/cmip6-cmor-tables/Tables/"
@@ -87,6 +90,7 @@ cmor:
 attrs:
     Conventions: "CF-1.7, ACDD-1.3"
     title: "AUS2200 UM amip simulation of 2022 Brisbane floods"
+    experiment_id: flood22-barra
     # Use to provide a short description of the experiment. It will be written to file as "summary" 
     # exp_description:
     exp_description: "A limited area model study of the entire Australian continent at 2.2 km resolution, using the UM atmospheric model. BARRA reanalysis data was used to provide intial and boundary conditions. The study covers the time period of 2022-02-22 to 2022-03-7 including high rainfall events"
@@ -109,15 +113,15 @@ attrs:
     references: "" 
     # contact email of person running post-processing or author
     contact: paola.petrelli@utas.edu.au                
-    creator_name: Zoe Gillet
-    creator_email: zoe.gillet@unsw.edu.au
+    creator_name: Dale Roberts
+    creator_email: dsroberts@unimelb.edu.au
     # not required details of any contributor including who run post processing
     # if different from creator. If more than one spearate with commas
     # see here for datacite contributor role definitions:
     # https://datacite-metadata-schema.readthedocs.io/en/4.5_draft/properties/recommended_optional/property_contributor.html#a-contributortype
-    contributor_name: Paola Petrelli
-    contributor_role: data_curator 
-    contributor_email: paola.petrelli@utas.edu.au
+    contributor_name: Paola Petrelli, Sam Green
+    contributor_role: data_curator, data_curator 
+    contributor_email: paola.petrelli@utas.edu.au, sam.green@unsw.edu.au
     # Not required use if publishing, otherwise comment out
     #publisher_name:
     #publisher_email:

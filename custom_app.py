@@ -146,11 +146,14 @@ def check_best_match(varlist, frequency):
     found = False
     resample_order = ['10yr', 'yr', 'mon', '10day', '7day',
             'day', '12hr', '6hr', '3hr', '1hr', '30min', '10min']
+    resample_frq = {'10yr': '10Y', 'yr': 'Y', 'mon': 'M', '10day': '10D',
+                    '7day': '7D', 'day': 'D', '12hr': '12H', '6hr': '6H',
+                    '3hr': '3H', '1hr': 'H', '10min': '10T'}
     freq_idx = resample_order.index(frequency)
     for frq in resample_order[freq_idx+1:]:
         for v in varlist:
             if v['frequency'] == frq:
-                v['resample'] = f"{frequency}"
+                v['resample'] = resample_frq[frequency]
                 found = True
                 var = v
                 break
@@ -521,14 +524,15 @@ def dreq_map(cdict, activity_id=None):
         daymonyr = False
     elif subd == 'false':
         subdaily = False
-    varsub = cdict.get('var_subset_list', '')
-    if varsub == '':
+    subset = cdict.get('var_subset_list', '')
+    if subset == '':
         priorityonly = False
-    elif varsub[-5:] != 'yaml':
-        print(f"{varsub} should be a yaml file")
+    elif subset[-4:] != '.csv':
+        print(f"{subset} should be a csv file")
         sys.exit()
     else:
-        check_file(f"{cdict['appdir']}/{varsub}")
+        subset = f"{cdict['appdir']}/{subset}"
+        check_file(subset)
         priorityonly = True
     cdict['priorityonly'] = priorityonly
 # Custom mode vars
@@ -542,11 +546,13 @@ def dreq_map(cdict, activity_id=None):
     # change to yaml file with table as a dict and vars as list under each table
     if priorityonly:
         try:
-            with open(prioritylist,'r') as p:
-                reader = csv.reader(p, delimiter=',')
-                priority_vars.append([row[0],row[1]])
+            with open(subset, 'r') as p:
+                priority_vars = csv.reader(p, delimiter=',')
+                #for row in reader:
+                #    priority_vars.append([row[0],row[1]])
+                print(priority_vars)
         except Error as e:
-            print(f"Invalid variable subset list {varsub}: {e}")
+            print(f"Invalid variable subset list {subset}: {e}")
             sys.exit()
     else:
         print(f"no priority list for local experiment '{cdict['exp']}', processing all variables")

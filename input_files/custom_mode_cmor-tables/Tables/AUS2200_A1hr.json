@@ -271,11 +271,11 @@
             "modeling_realm": "atmos",
             "standard_name": "air_temperature",
             "units": "K",
-            "cell_methods": "area: mean time: point",
+            "cell_methods": "area: mean time: mean",
             "cell_measures": "area: areacella",
             "long_name": "Near-Surface Air Temperature",
-            "comment": "near-surface (usually, 2 meter) air temperature",
-            "dimensions": "longitude latitude time1 height2m",
+            "comment": "near-surface (for access 1.5 meters) air temperature",
+            "dimensions": "longitude latitude time height1.5m",
             "out_name": "tas",
             "type": "real",
             "positive": "",
@@ -293,7 +293,7 @@
             "cell_measures": "area: areacella",
             "long_name": "Near-Surface Relative Humidity",
             "comment": "The relative humidity with respect to liquid water for T> 0 C, and with respect to ice for T<0 C.",
-            "dimensions": "longitude latitude time height2m",
+            "dimensions": "longitude latitude time height1.5m",
             "out_name": "hurs",
             "type": "real",
             "positive": "",
@@ -410,7 +410,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "cllow_mean": {
+        "cllow-mean": {
             "frequency": "1hr",
             "modeling_realm": "atmos",
             "standard_name": "low_type_cloud_area_fraction",
@@ -446,7 +446,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "clmed_mean": {
+        "clmed-mean": {
             "frequency": "1hr",
             "modeling_realm": "atmos",
             "standard_name": "medium_type_cloud_area_fraction",
@@ -482,7 +482,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "clhigh_mean": {
+        "clhigh-mean": {
             "frequency": "1hr",
             "modeling_realm": "atmos",
             "standard_name": "medium_type_cloud_area_fraction",
@@ -922,8 +922,8 @@
             "cell_methods": "area: mean time: minimum within days time: mean over days",
             "cell_measures": "area: areacella",
             "long_name": "Daily Minimum Near-Surface Air Temperature",
-            "comment": "minimum near-surface (usually, 2 meter) air temperature (add cell_method attribute 'time: min')",
-            "dimensions": "longitude latitude time height2m",
+            "comment": "minimum near-surface (for access 1.5 meter) air temperature (add cell_method attribute 'time: min')",
+            "dimensions": "longitude latitude time height1.5m",
             "out_name": "tasmin",
             "type": "real",
             "positive": "",
@@ -940,8 +940,8 @@
             "cell_methods": "area: mean time: maximum within days time: mean over days",
             "cell_measures": "area: areacella",
             "long_name": "Daily Maximum Near-Surface Air Temperature",
-            "comment": "maximum near-surface (usually, 2 meter) air temperature (add cell_method attribute 'time: max')",
-            "dimensions": "longitude latitude time height2m",
+            "comment": "maximum near-surface (for access 1.5 meter) air temperature (add cell_method attribute 'time: max')",
+            "dimensions": "longitude latitude time height1.5m",
             "out_name": "tasmax",
             "type": "real",
             "positive": "",
@@ -955,11 +955,11 @@
             "modeling_realm": "atmos",
             "standard_name": "specific_humidity",
             "units": "1",
-            "cell_methods": "area: mean time: point",
+            "cell_methods": "area: mean time: mean",
             "cell_measures": "area: areacella",
             "long_name": "Near-Surface Specific Humidity",
-            "comment": "Near-surface (usually, 2 meter) specific humidity.",
-            "dimensions": "longitude latitude time1 height2m",
+            "comment": "Near-surface (for access 1.5 meter) specific humidity.",
+            "dimensions": "longitude latitude time height1.5m",
             "out_name": "huss",
             "type": "real",
             "positive": "",
@@ -1093,6 +1093,25 @@
             "valid_max": "",
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
+        },
+        "ta19": {
+            "frequency": "1hrPt",
+            "modeling_realm": "atmos",
+            "standard_name": "air_temperature",
+            "units": "K",
+            "cell_methods": "area: mean time: point",
+            "cell_measures": "area: areacella",
+            "long_name": "Air Temperature",
+            "comment": "Air Temperature",
+            "dimensions": "longitude latitude plev19 time1",
+            "out_name": "ta",
+            "type": "real",
+            "positive": "",
+            "valid_min": "",
+            "valid_max": "",
+            "ok_min_mean_abs": "",
+            "ok_max_mean_abs": ""
         }
+
     }
 }
