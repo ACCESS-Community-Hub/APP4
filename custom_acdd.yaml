@@ -26,34 +26,34 @@ cmor:
     access_version: AUS2200 
     # reference date for time units (set as 'default' to use start_date)
     reference_date: 1970-01-01             
-    path_template: "{experiment_id}/{version}/{frequency}/"
+    path_template: "v{version}/{frequency}/"
     file_template: "{variable_id}_{source_id}_{experiment_id}_{frequency}_{date_range}"
     # maximum file size in MB: this is meant as uncompressed, compression might reduce it by 50%
     max_size: 8192 
     # Variables to CMORise: 
     # CMOR table/variable to process; default is 'all'. 
-    # Or create a csv file listing variables to process (VAR_SUBSET[_LIST]).
-    # each line: <table,var>
+    # Or create a yaml file listing variables to process (VAR_SUBSET[_LIST]).
+    # each line: <table: [var1, var2, var3 ..]>
     tables: AUS2200_A1hr
     variable_to_process: huss 
     # subdaily selection options - select one of: [true, false, only]
     subdaily: !!str false
-    var_subset: !!bool false
-    #var_subset_list: 'testlist.csv'
-    var_subset_list: ''
+    var_subset: !!bool true
+    var_subset_list: testlist.yaml
+    #var_subset_list: ''
     # Mappings, vocab and tables settings
-    # default=input_files/dreq/cmvme_all_piControl_3_3.csv
+    # default=data/dreq/cmvme_all_piControl_3_3.csv
     dreq: default
     force_dreq: !!bool False
     dreq_years: !!bool False
-    # input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv ???
+    # data/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv ???
     # is this used?
     # choose here the mapping created with cli_db.py based on the actual model output
-    master_map: "input_files/master_test.csv"
-    grid_file: "input_files/grids.csv"
+    master_map: "data/master_test.csv"
+    #grid_file: "data/grids.csv"
     # use official cmip6 tables for CMIP6 mode
-    #tables_path: "input_files/cmip6-cmor-tables/Tables/"
-    tables_path: "input_files/custom_mode_cmor-tables/Tables/"
+    #tables_path: "data/cmip6-cmor-tables/Tables/"
+    tables_path: "data/custom-cmor-tables/Tables/"
     history_data: ''
     #_control_vocabulary_file: "ACDD_CV.json"
     # somehow CMIP6_CV is hardcoded in cmor so a copy of this file
@@ -84,7 +84,7 @@ cmor:
 #
 # Global attributes: these will be added to each files comment unwanted ones
 # Using ACDD CV vocab to check validity of global attributes
-# see input_files/custom_mode_cmor-tables/Tables/CMIP6_CV.json
+# see data/custom-cmor-tables/Tables/CMIP6_CV.json
 # For CMIP6 global attributes explanation:
 # https://docs.google.com/document/d/1h0r8RZr_f3-8egBMMh7aqLwy3snpD6_MrDz1q8n5XUk/edit
 attrs:

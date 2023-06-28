@@ -1,7 +1,7 @@
 '''
 This script is a collection of functions that perform special calulations.
 
-Everythng here is from app_functions.py but has been modfied to work with Xarray data
+Everything here is from app_functions.py but has been modfied to work with Xarray data
 more eficiently and optimized inn general; i.e. reduced number of For and If statements.
 
 '''
@@ -70,7 +70,8 @@ def time_resample(var, trange, tdim, sample='down'):
 
     if sample == 'down':
         try:
-            vout = var.resample({tdim: trange}, origin='end_day').mean()
+            vout = var.resample({tdim: trange}, origin='start_day',
+                                closed='right').mean()
     
         except Exception as e:
             print(f'{e}')
@@ -785,38 +786,41 @@ def plev19():
 
     return plev19, plev19b
 
-def plevinterp(var, pmod, heavy):
+def plevinterp(var, pmod, heavy=None):
     """Interpolating var from model levels to plev19
 
     _extended_summary_
 
     Parameters
     ----------
-    var : Xarray dataset
-    pmod : Xarray dataset
-    heavy : Xarray dataset
+    var : Xarray DataArray 
+    pmod : Xarray DataArray
+    heavy : Xarray DataArray
 
     Returns
     -------
     vout : Xarray dataset
     """    
-    plev,bounds = plev19()
+    plev, bounds = plev19()
 
-    t, z, x, y = var.shape
-    th, zh, xh, yh = heavy.shape
-    if xh != x:
-        print('heavyside not on same grid as variable; interpolating...')
-        hout = heavy.interp(lat_v=heavy.lat_v, method='linear', kwargs={'fill_value': 'extrapolate'})
-    else:
-        hout = heavy
+    if heavy is not None:
+        t, z, x, y = var.shape
+        th, zh, xh, yh = heavy.shape
+        if xh != x:
+            print('heavyside not on same grid as variable; interpolating...')
+            hout = heavy.interp(lat_v=heavy.lat_v, method='linear',
+                                kwargs={'fill_value': 'extrapolate'})
+        else:
+            hout = heavy
 
-    hout = np.where(hout > 0.5, 1, 0)
+        hout = np.where(hout > 0.5, 1, 0)
 
     interp_var = var.interp(pmod=pmod, axis=1, method='linear', kwargs={'fill_value': 'extrapolate'})
     vout = interp_var.interp(plev=plev)
-    vout = vout/hout
-
+    if heavy is not None:
+        vout = vout/hout
     return vout
+
 
 def tos_degC(var):
     """Covert temperature from K to degC.

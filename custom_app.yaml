@@ -45,17 +45,17 @@ cmor:
     var_subset: !!bool false                             # use a sub-set list of variables to process, as defined by 'VAR_SUBSET_LIST'
     var_subset_list: '' 
     # Mappings, vocab and tables settings
-    dreq: default                                 # default=input_files/dreq/cmvme_all_piControl_3_3.csv
+    # default=data/dreq/cmvme_all_piControl_3_3.csv
+    dreq: default                                 
     force_dreq: !!bool True
     dreq_years: !!bool False
-    # input_files/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv ???
-    # is this used?
+    # data/dreq/cm2/cmvme_cm.fa.om.rf.sc.si_piControl_1_2.csv ???
     # choose here the mapping created with cli_db.py based on the actual model output
-    master_map: "input_files/master_cm000.csv"
-    grid_file: "input_files/grids.csv"
+    master_map: "data/master_cm000.csv"
+    #grid_file: "data/grids.csv"
     # use official cmip6 tables for CMIP6 mode
-    tables_path: "input_files/cmip6-cmor-tables/Tables"
-    #tables_path: "input_files/custom_mode_cmor-tables/Tables"
+    tables_path: "data/cmip6-cmor-tables/Tables"
+    #tables_path: "data/custom-cmor-tables/Tables"
     history_data: ''
     # DO NOT REMOVE OR ALTER this if you don't what what ypu're doing :-)
     _control_vocabulary_file: "CMIP6_CV.json"
@@ -80,7 +80,7 @@ cmor:
 # Global attributes: these will be added to each files comment unwanted ones
 # the labels CMIP6/ACDD indicates which ones are necessary to comply with respective standards
 # If CMIP6 for model information use CV vocab
-# see input_files/custom_mode_cmor-tables/Tables/CMIP6_CV.json
+# see data/custom-cmor-tables/Tables/CMIP6_CV.json
 attrs:
     # contact email of person running post-processing
     # if following ACDD this is 

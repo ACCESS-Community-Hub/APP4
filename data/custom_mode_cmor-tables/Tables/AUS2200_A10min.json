@@ -14,16 +14,16 @@
         "Conventions": "CF-1.7 ACDD1.3"
     },
     "variable_entry": {
-        "hus-10min": {
+        "huss": {
             "frequency": "10min",
             "modeling_realm": "atmos",
-            "standard_name": "specific_humidity",
+            "standard_name": "surface_specific_humidity",
             "units": "1",
             "cell_methods": "area: mean time: point",
             "cell_measures": "area: areacella",
             "long_name": "Specific Humidity",
             "comment": "Specific humidity is the mass fraction of water vapor in (moist) air.",
-            "dimensions": "longitude latitude alevel time1",
+            "dimensions": "longitude latitude time1",
             "out_name": "hus",
             "type": "real",
             "positive": "",
@@ -32,7 +32,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "ts-10min": {
+        "ts": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "surface_temperature",
@@ -50,7 +50,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "zmla-10min": {
+        "zmla": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "atmosphere_boundary_layer_thickness",
@@ -68,16 +68,16 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "pfull-10min": {
+        "pfull": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "air_pressure",
             "units": "Pa",
             "cell_methods": "area: mean time: point",
             "cell_measures": "area: areacella",
-            "long_name": "Pressure at Model Full-Levels",
-            "comment": "Air pressure on model levels",
-            "dimensions": "longitude latitude alevel time1",
+            "long_name": "Pressure at Model surface level",
+            "comment": "Air pressure on surface model level",
+            "dimensions": "longitude latitude time1",
             "out_name": "pfull",
             "type": "real",
             "positive": "",
@@ -86,7 +86,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "ps-10min": {
+        "ps": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "surface_air_pressure",
@@ -104,7 +104,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "uas-10min": {
+        "uas": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "eastward_wind",
@@ -122,7 +122,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "vas-10min": {
+        "vas": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "northward_wind",
@@ -140,7 +140,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "tas-10min": {
+        "tas": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "air_temperature",
@@ -158,7 +158,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "huss-10min": {
+        "hus1.5m": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "specific_humidity",
@@ -176,16 +176,16 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "tdps-10min": {
+        "tdps": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "dew_point_temperature",
             "units": "K",
             "cell_methods": "area: time: mean",
             "cell_measures": "area: areacella",
-            "long_name": "2m Dewpoint Temperature",
+            "long_name": "1.5m Dewpoint Temperature",
             "comment": "Dew point temperature is the temperature at which a parcel of air reaches saturation upon being cooled at constant pressure and specific humidity.",
-            "dimensions": "longitude latitude time",
+            "dimensions": "longitude latitude height1.5m time",
             "out_name": "tdps",
             "type": "real",
             "positive": "",
@@ -194,7 +194,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "wsgmax10m-10min": {
+        "wsgmax10m": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "wind_speed_of_gust",
@@ -212,7 +212,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "reflmax-10min": {
+        "reflmax": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "",
@@ -230,7 +230,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "pralsprof-10min": {
+        "pralsprof": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "stratiform_rainfall_amount",
@@ -248,7 +248,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "pralsns-10min": {
+        "pralsns": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "stratiform_snowfall_amount",
@@ -266,7 +266,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "cllow-10min": {
+        "cllow": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "low_type_cloud_area_fraction",
@@ -284,7 +284,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "clmed-10min": {
+        "clmed": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "medium_type_cloud_area_fraction",
@@ -302,7 +302,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "clhigh-10min": {
+        "clhigh": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "high_type_cloud_area_fraction",
@@ -320,7 +320,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "psl-10min": {
+        "psl": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "air_pressure_at_mean_sea_level",
@@ -338,7 +338,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "flashrate-10min": {
+        "flashrate": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "frequency_of_lightning_flashes_per_unit_area",
@@ -356,7 +356,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "storm-10min": {
+        "storm": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "",
@@ -374,7 +374,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "nflash-10min": {
+        "nflash": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "",
@@ -392,7 +392,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "lwp-10min": {
+        "lwp": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "atmosphere_mass_content_of_cloud_liquid_water",
@@ -410,7 +410,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "clivi-10min": {
+        "clivi": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "atmosphere_mass_content_of_cloud_ice",
@@ -428,7 +428,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "prw-10min": {
+        "prw": {
             "frequency": "10min",
             "modeling_realm": "atmos",
             "standard_name": "atmosphere_mass_content_of_water_vapor",

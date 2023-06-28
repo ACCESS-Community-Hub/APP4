@@ -14,7 +14,7 @@
         "Conventions": "CF-1.7 ACDD1.3"
     },
     "variable_entry": {
-        "zmla-3hr": {
+        "zmla": {
             "frequency": "3hr",
             "modeling_realm": "atmos",
             "standard_name": "atmosphere_boundary_layer_thickness",
@@ -32,7 +32,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "ps-3hr": {
+        "ps": {
             "frequency": "3hr",
             "modeling_realm": "atmos",
             "standard_name": "surface_air_pressure",
@@ -50,7 +50,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "lwp-3hr": {
+        "lwp": {
             "frequency": "3hr",
             "modeling_realm": "atmos",
             "standard_name": "atmosphere_mass_content_of_cloud_liquid_water",
@@ -68,7 +68,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "clivi-3hr": {
+        "clivi": {
             "frequency": "3hr",
             "modeling_realm": "atmos",
             "standard_name": "atmosphere_mass_content_of_cloud_ice",
@@ -86,7 +86,7 @@
             "ok_min_mean_abs": "",
             "ok_max_mean_abs": ""
         },
-        "prw-3hr": {
+        "prw": {
             "frequency": "3hr",
             "modeling_realm": "atmos",
             "standard_name": "atmosphere_mass_content_of_water_vapor",

@@ -322,7 +322,7 @@ def find_cmip_tables(dreq):
     """
     tables=[]
     with open(dreq, 'r') as f:
-        reader=csv.reader(f, delimiter='\t')
+        reader = csv.reader(f, delimiter='\t')
         for row in reader:
             if not row[0] in tables:
                 if (row[0] != 'Notes') and (row[0] != 'MIP table') and (row[0] != '0'):
@@ -459,7 +459,8 @@ def read_dreq_vars2(cdict, table_id, activity_id):
     return dreq_variables
 
 
-def create_variable_map(cdict, table, masters, activity_id=None):
+def create_variable_map(cdict, table, masters, activity_id=None, 
+                        selection=None):
     """Create a mapping file for this specific experiment based on 
     model ouptut mappings, variables listed in table/s passed by config.
 
@@ -470,19 +471,21 @@ def create_variable_map(cdict, table, masters, activity_id=None):
     -------
     """
     matches = []
-    #PP open table json files and get variable list
-    #fpath = glob.glob(f"{cdict['tables_path']}/*_{table}.json")
     fpath = f"{cdict['tables_path']}/{table}.json"
     table_id = table.split('_')[1]
     with open(fpath, 'r') as fj:
          vardict = json.load(fj)
     row_dict = vardict['variable_entry']
     all_vars = [v for v in row_dict.keys()]
+    print(f"all_vars: {all_vars}")
     # work out which variables you want to process
     select = all_vars 
-    if cdict['variable_to_process'] != 'all':
+    if selection is not None:
+        select = [v for v in all_vars if v in selection]
+        print(f"select: {select}")
+    elif cdict['variable_to_process'] != 'all':
         select = [cdict['variable_to_process']]
-    if cdict['force_dreq'] is True:
+    elif cdict['force_dreq'] is True:
         dreq_years = read_dreq_vars2(cdict, table_id, activity_id)
         all_dreq = [v for v in dreq_years.keys()]
         select = set(select).intersection(all_dreq) 
@@ -502,6 +505,7 @@ def create_variable_map(cdict, table, masters, activity_id=None):
     if matches == []:
         print(f"{table}:  no matching variables found")
     else:
+        print(matches)
         write_variable_map(cdict['variable_maps'], table, matches)
     return
 
@@ -527,37 +531,18 @@ def dreq_map(cdict, activity_id=None):
     subset = cdict.get('var_subset_list', '')
     if subset == '':
         priorityonly = False
-    elif subset[-4:] != '.csv':
-        print(f"{subset} should be a csv file")
+    elif subset[-5:] != '.yaml':
+        print(f"{subset} should be a yaml file")
         sys.exit()
     else:
         subset = f"{cdict['appdir']}/{subset}"
         check_file(subset)
         priorityonly = True
-    cdict['priorityonly'] = priorityonly
 # Custom mode vars
     if cdict['mode'].lower() == 'custom':
         access_version = cdict['access_version']
         start_year = int(cdict['start_date'])
         end_year = int(cdict['end_date'])
-    #
-    priority_vars=[]
-    # look slike yaml file would be better!!
-    # change to yaml file with table as a dict and vars as list under each table
-    if priorityonly:
-        try:
-            with open(subset, 'r') as p:
-                priority_vars = csv.reader(p, delimiter=',')
-                #for row in reader:
-                #    priority_vars.append([row[0],row[1]])
-                print(priority_vars)
-        except Error as e:
-            print(f"Invalid variable subset list {subset}: {e}")
-            sys.exit()
-    else:
-        print(f"no priority list for local experiment '{cdict['exp']}', processing all variables")
-    #PP we don't really need this as we're doing a similar process in dreq_map???
-    #check_table(cdict['tables'])
     # probably no need to check this!!
     check_path(cdict['variable_maps'])
     if cdict['force_dreq'] is True:
@@ -572,7 +557,16 @@ def dreq_map(cdict, activity_id=None):
     # this is removing .csv files from variable_maps, is it necessary???
     check_output_directory(cdict['variable_maps'])
     print(f"beginning creation of variable maps in directory '{cdict['variable_maps']}'")
-    if tables.lower() == 'all':
+    if priorityonly:
+        selection = read_yaml(subset)
+        tables = [t for t in selection.keys()] 
+        for table in tables:
+            print(f"\n{table}:")
+            create_variable_map(cdict, table, masters,
+                selection=selection[table])
+
+    elif tables.lower() == 'all':
+        print(f"no priority list for local experiment '{cdict['exp']}', processing all variables")
         if cdict['force_dreq'] == True:
             tables = find_cmip_tables(cdict['dreq'])
         else:
@@ -581,8 +575,7 @@ def dreq_map(cdict, activity_id=None):
             print(f"\n{table}:")
             create_variable_map(cdict, table, masters, activity_id)
     else:
-        table = tables
-        create_variable_map(cdict, table, masters, activity_id)
+        create_variable_map(cdict, tables, masters)
     return cdict
 
 
