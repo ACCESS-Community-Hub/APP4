@@ -5,7 +5,7 @@
 # USER OPTIONS
 # Setting to manage cmorisation and set tables/variables to process
 cmor:
-    appdir:  /g/data/ua8/Working/packages/APP4 
+    appdir:  /g/data/ua8/Working/packages/APP4/mopper 
     # output directory for all generated data (CMORISED files & logs)
     # if default it is set to /scratch/$project/$user/APP5_OUTPUT<exp>
     maindir: default

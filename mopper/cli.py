@@ -48,7 +48,6 @@ import xarray as xr
 import cmor
 from itertools import repeat
 from functools import partial
-from app_functions import *
 from cli_functions import *
 from cli_functions import _preselect 
 
@@ -180,6 +179,7 @@ def app_bulk(ctx, app_log):
     if inrange_files == []:
         app_log.warning("no data exists in the requested time range")
         return 0
+    print(inrange_files)
     # as we want to pass time as float value we don't decode time when openin files
     # if we need to decode times can be done if needed by calculation`
 
@@ -196,7 +196,6 @@ def app_bulk(ctx, app_log):
     #PP swapped around the order: calculate first and then worry about cmor
     app_log.info("writing data, and calculating if needed...")
     app_log.info(f"calculation: {ctx.obj['calculation']}")
-    print(invar['time'][0:3], invar['time'][-3:])
     sys.stdout.flush()
     #
     #PP start from standard case and add modification when possible to cover other cases 

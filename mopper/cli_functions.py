@@ -95,6 +95,7 @@ def find_files(ctx, app_log):
     patterns = ctx.obj['infile'].split()
     #set normal set of files
     files = []
+    print(patterns)
     for i,p in enumerate(patterns):
         files.append(glob.glob(p))
         files[i].sort()

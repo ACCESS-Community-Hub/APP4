@@ -90,14 +90,6 @@ def find_matches(table, var, realm, frequency, varlist):
     near_matches = []
     found = False
     match = None
-    if 'Pt' in frequency:
-        timeshot = 'inst'
-        frequency = str(frequency)[:-2]
-    elif frequency == 'monC':
-        timeshot = 'clim'
-        frequency = 'mon'
-    else:
-        timeshot = 'mean'
     for v in varlist:
         if v['cmip_var'].startswith('#'):
             pass
@@ -115,9 +107,18 @@ def find_matches(table, var, realm, frequency, varlist):
         else:
             print(f"could not find match for {table}-{var}-{frequency}")
     if found:
+        if 'Pt' in frequency:
+            timeshot = 'inst'
+            frequency = str(frequency)[:-2]
+        elif frequency == 'monC':
+            timeshot = 'clim'
+            frequency = 'mon'
+        else:
+            timeshot = 'mean'
         match['resample'] = v.get('resample', '')
         match['timeshot'] = timeshot
         match['table'] = table
+        match['frequency'] = frequency
         match['file_structure'] = f"/{match['realm']}/{match['filename']}*.nc"
         #match['file_structure'] = f"/atm/netCDF/{match['filename']}*.nc"
     return match
@@ -152,7 +153,8 @@ def check_best_match(varlist, frequency):
     freq_idx = resample_order.index(frequency)
     for frq in resample_order[freq_idx+1:]:
         for v in varlist:
-            if v['frequency'] == frq:
+            vfrq = v['frequency'].replace('Pt','').replace('C','')
+            if vfrq == frq:
                 v['resample'] = resample_frq[frequency]
                 found = True
                 var = v
@@ -211,13 +213,12 @@ def setup_env(config):
     #PP not sure it ever get used
     cdict['outpath'] = f"{cdict['maindir']}/APP_job_files/{cdict['exp']}"
     # just making sure that custom_py is not in subroutines
-    cdict['appdir'] = cdict['appdir'].replace('/subroutines','')
+    # cdict['appdir'] = cdict['appdir'].replace('/subroutines','')
     cdict['master_map'] = f"{cdict['appdir']}/{cdict['master_map']}"
-    cdict['grid_file'] = f"{cdict['appdir']}/{cdict['grid_file']}"
     cdict['tables_path'] = f"{cdict['appdir']}/{cdict['tables_path']}"
     # we probably don't need this??? just transfer to custom_app.yaml
     # dreq file is the only field that wasn't yet present!
-    #cdict['exps_table'] = f"{cdict['appdir']}/input_files/experiments.csv" 
+    #cdict['exps_table'] = f"{cdict['appdir']}/data/experiments.csv" 
     # Output subdirectories
     cdict['variable_maps'] = f"{cdict['outpath']}/variable_maps"
     cdict['success_lists'] = f"{cdict['outpath']}/success_lists"
@@ -231,7 +232,6 @@ def setup_env(config):
     # reference_date
     if cdict['reference_date'] == 'default':
         cdict['reference_date'] = f"{cdict['start_date'][:4]}-{cdict['start_date'][4:6]}-{cdict['start_date'][6:8]}"
-        print('should be here')
         print(cdict['reference_date'])
     config['cmor'] = cdict
     # if parent False set parent attrs to 'no parent'
@@ -463,6 +463,7 @@ def create_variable_map(cdict, table, masters, activity_id=None,
                         selection=None):
     """Create a mapping file for this specific experiment based on 
     model ouptut mappings, variables listed in table/s passed by config.
+    Called by var_map
 
     Parameters
     ----------
@@ -477,22 +478,20 @@ def create_variable_map(cdict, table, masters, activity_id=None,
          vardict = json.load(fj)
     row_dict = vardict['variable_entry']
     all_vars = [v for v in row_dict.keys()]
-    print(f"all_vars: {all_vars}")
     # work out which variables you want to process
     select = all_vars 
     if selection is not None:
         select = [v for v in all_vars if v in selection]
-        print(f"select: {select}")
     elif cdict['variable_to_process'] != 'all':
         select = [cdict['variable_to_process']]
     elif cdict['force_dreq'] is True:
         dreq_years = read_dreq_vars2(cdict, table_id, activity_id)
         all_dreq = [v for v in dreq_years.keys()]
         select = set(select).intersection(all_dreq) 
-    for name,row in row_dict.items():
-        var = row['out_name']
+    for var,row in row_dict.items():
+        #var = row['cmor_name']
         if var not in select:
-                    continue
+            continue
         frequency = row['frequency']
         realm = row['modeling_realm']
         years = 'all'
@@ -513,7 +512,7 @@ def create_variable_map(cdict, table, masters, activity_id=None,
 #PP this is where dreq process start it can probably be simplified
 # if we can read dreq as any other variable list
 # and change year start end according to experiment
-def dreq_map(cdict, activity_id=None):
+def var_map(cdict, activity_id=None):
     """
     """
     tables = cdict.get('tables', 'all')
@@ -547,13 +546,13 @@ def dreq_map(cdict, activity_id=None):
     check_path(cdict['variable_maps'])
     if cdict['force_dreq'] is True:
         if cdict['dreq'] == 'default':
-            cdict['dreq'] = 'input_files/dreq/cmvme_all_piControl_3_3.csv'
+            cdict['dreq'] = 'data/dreq/cmvme_all_piControl_3_3.csv'
         check_file(cdict['dreq'])
     check_file(cdict['master_map'])
-    with open(cdict['master_map'],'r') as g:
-        reader = csv.DictReader(g)
+    with open(cdict['master_map'],'r') as f:
+        reader = csv.DictReader(f)
         masters = list(reader)
-    g.close()
+    f.close()
     # this is removing .csv files from variable_maps, is it necessary???
     check_output_directory(cdict['variable_maps'])
     print(f"beginning creation of variable maps in directory '{cdict['variable_maps']}'")
@@ -640,7 +639,6 @@ def cleanup(config):
     # If outpath doesn't exists or we just deleted
     # Get a list of all the file paths that ends with .txt from in specified directory
     toremove = glob.glob("./*.pyc'")
-    toremove.extend(glob.glob("./subroutines/*.pyc"))
     for fpath in toremove:
         try:
             os.remove(filePath)
@@ -694,7 +692,7 @@ EXP_TO_PROCESS={cdict['exp']}
 OUTPUT_LOC={cdict['maindir']}
 MODE={cdict['mode']}
 # main
-python {cdict['appdir']}/subroutines/cli.py --debug -i {cdict['exp']}_config.yaml wrapper 
+python {cdict['appdir']}/cli.py --debug -i {cdict['exp']}_config.yaml wrapper 
 # post
 #python {cdict['outpath']}/database_updater.py
 sort {cdict['success_lists']}/{cdict['exp']}_success.csv \
@@ -1054,7 +1052,7 @@ def populate_rows(rows, cdict, opts, cursor):
     Returns
     -------
     """
-    tableToFreq = read_yaml(f"input_files/table2freq.yaml")
+    tableToFreq = read_yaml(f"data/table2freq.yaml")
     for champ in rows:
         #from champions table:
         table_id = champ['table'].split('_')[1]
@@ -1146,9 +1144,9 @@ def main():
     cdict['json_file_path'] = fname
     if cdict['mode'] == 'cmip6':
         edit_json_cv(json_cv, config['attrs'])
-        cdict = dreq_map(cdict, config['attrs']['activity_id'])
+        cdict = var_map(cdict, config['attrs']['activity_id'])
     else:
-        cdict = dreq_map(cdict)
+        cdict = var_map(cdict)
     #database_manager
     database = cdict['database']
     print(f"creating & using database: {database}")
