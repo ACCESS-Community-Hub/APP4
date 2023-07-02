@@ -1,20 +1,17 @@
-# APP4-1 
+# ACCESS MOPPeR 
 
-This is the ACCESS Post-Processor (APP), version 4.1
+This is the ACCESS Model Output Post-Processor (MOPPeR), version 1.0
 
-Initially created by Peter Uhe for CMIP5, and further developed for CMIP6-era by Chloe Mackallah.  
+This code is derived from the APP4, initially created by Peter Uhe for CMIP5, and further developed for CMIP6-era by Chloe Mackallah.  
 CSIRO, O&A Aspendale.
 
-This repository was iniated from the orginal (and no-longer active) NCI GitLab repo https://git.nci.org.au/cm2704/APP4 on 9 March, 2023.  
-For the authoritative version of this code as used for the post-production of ACCESS datasets for CMIP6 (stored in fs38 on NCI's Gadi), see https://doi.org/10.5281/zenodo.7703469.  
-CSIRO DAP record: http://hdl.handle.net/102.100.100/437645?index=1
 
 ---
 
-The APP4 is a CMORisation tool designed to convert [ACCESS](https://research.csiro.au/access/) model output to [ESGF](https://esgf-node.llnl.gov/)-compliant formats, primarily for publication to [CMIP6](https://www.wcrp-climate.org/wgcm-cmip/wgcm-cmip6). The code was originally built for CMIP5, and was further developed for CMIP6-era activities.  
-Uses [CMOR3](https://cmor.llnl.gov/) and files created with the [CMIP6 data request](https://github.com/cmip6dr/dreqPy) to generate CF-compliant files according to the [CMIP6 data standards](https://docs.google.com/document/d/1os9rZ11U0ajY7F8FWtgU4B49KcB59aFlBVGfLC4ahXs/edit). The APP4 runs in a Python2.7 environment.
+The MOPPeR is a CMORisation tool designed to post-process [ACCESS](https://research.csiro.au/access/) model output. The original APP4 main use was to produce [ESGF](https://esgf-node.llnl.gov/)-compliant formats, primarily for publication to [CMIP6](https://www.wcrp-climate.org/wgcm-cmip/wgcm-cmip6). The code was originally built for CMIP5, and was further developed for CMIP6-era activities.  
+It used [CMOR3](https://cmor.llnl.gov/) and files created with the [CMIP6 data request](https://github.com/cmip6dr/dreqPy) to generate CF-compliant files according to the [CMIP6 data standards](https://docs.google.com/document/d/1os9rZ11U0ajY7F8FWtgU4B49KcB59aFlBVGfLC4ahXs/edit).The APP4 also had a custom mode option to allow users to post-process output without strict adherence to the ESGF standards. MOPPeR was developed to extend the custom mode as much as it is allowed by the CMOR tool, it can be used to produce CMIP6 compliant data but other standards can also be defined.
+MOPPeR started as an attempt to upgrade the APP4 to python3 and the latest CMOR3 version. Obsolete packages were removed and eventually new functionalities to allow a user to create more easily configurations files and mappings were introduced. 
 
-Supported versions are CM2 (coupled, amip & chem versions), ESM1.5 (script & payu versions), OM2[-025]. 
 For use on NCI's [Gadi](https://opus.nci.org.au/display/Help/Gadi+User+Guide) system only. 
 Designed for use on ACCESS model output that has been archived using the ACCESS Archiver tool.
 
@@ -55,75 +52,4 @@ In production mode, the standard [CMIP6 Controlled Vocabulary](https://github.co
 
 Details of each experiment must be included in the Experiments table (*input_files/experiments.csv*), and a experiment-specific metadata json file created (see input_files/json; this is done automatically in custom mode) for each experiment and ensemble member. This is to ensure the reliable recreation of data and a self-contained record of officially-produced datasets.  
 
-***multiwrap_app4.sh***  
-A simple wrapper that can be used for batches of simulations. It will overwrite the declared *EXP_TO_PROCESS* in *production_app4.sh* (the main APP4 control script) and *production_qc4.sh* (the QC tool), and can also call the simple checker *check_app4.sh* for job summaries.
 
-***production_app4.sh***  
-The main control file for the APP4 in production mode. It can used to processed a single experiment (declare *EXP_TO_PROCESS* here), or called with the script *multiwrap_app4.sh*. 
-The main information that is declared in this script is:  
-- The variable(s) to process and generate. These can be set either by declaring a MIP Table (e.g., Amon, SIday, etc.) and variable (CMIP6 names), or by creating a file-based list of variables (*VAR_SUBSET_LIST*) to read in. You can also contol the processing of subdaily data with the *SUBDAILY* flag, which can be set to 'true', 'false' and 'only' (thus ignoring non-subdaily variables).  
-The default mode is such that *TABLE_TO_PROCESS* and *VARIABLE_TO_PROCESS* are set to 'all', *VAR_SUBSET* is false, and *SUBDAILY* is true. This tells the APP to process all variables in the data request file (which can be overwritten with *FORCE_DREQ* to include every CMIP6 variable that has set up for the APP4).   
-- NCI job information, including the intended write location of CMORised data and job files, and declaring job details (compute project, job queue (hugemem is recommended), and cpu/memory usage).
-- The *mode* variable can be used to process data for official CMIP6-related activities; currently only CCMI2022 is setup in the APP.
-
-***production_qc4.sh***  
-The controller for APP's quality checking (QC) tool. It is used to perform ESFG compliance checks on the data using CMOR's PrePARE, and can automatically create default plots to aid in manual data QC (location of plots set by *QC_DIR*). The plots are also setup in a web-viewable directory in p66, set using *ONLINE_PLOT_DIR* and viewable at accessdev.nci.org.au/p66.  
-Note: this tool does not automatically check the actual data in any way).  
-The compliance step will move the data from the APP's output location (defined in the metadata json files) to a secondary location defined by the variable *PUB_DIR*, however this process can be switched off with *PUBLISH=false*.  
-Other controls in this script are as in *production_app4.sh*.
-
-## Input files
-
-***input_files/experiments.csv***  
-Details of each simulation are delared in this file, including local experiment name, location of model output, the metadata json file specific to the simulation, the data request file (generated using [dreqPy](https://github.com/cmip6dr/dreqPy)) to be used, the processing start and end years, the reference year (used in the netCDF attribute *time_units*), and the version of ACCESS (CM2, CM2-Chem, ESM, OM2, OM2-025).
-
-***input_files/json/${EXP_TO_PROCESS}.json***  
-These json files are built from CMIP6-defined templates, and are ready by CMOR. They define the global metadata that is written into each generated dataset, including CMIP6 experiment and MIP names, parent experiment details, ensemble member values, branching times, model information, and the location of the output for the final datasets.  
-Templates for each model are also included here (*input_files/json/default_[cm2,esm,om2,om2-025,cm2-chem]*).
-
-***input_files/master_map.csv***  
-This is the heart of the APP's ability to create CMIP6-compliant variables from ACCESS model output. For each CMIP6 variable, it defines the field as it exists in ACCESS model output files (assuming that the model output has been archived using the [ACCESS Archiver](https://git.nci.org.au/cm2704/ACCESS-Archiver)), calculations required (either through simple arithmetic equations, or by calling fuctions from *subroutines/app_functions.py*), units of the input data, and flags such as dimension adjustments.  
-There are two variations of this file, *input_files/master_map_om2.csv* (for the OM2 models) and *input_files/master_map_ccmi2022.csv* (for the CM2-Chem model).
-
-## Subroutines
-
-***subroutines/setup_env.sh***  
-Declares several inputs and outputs used in the APP4, and is the first subroutine run.  
-It includes the CMIP6 controlled vocabulary files for CMOR, the experiments table and master variable map, ancillary files for ACCESS (such as land-sea masks), and the format and naming of job logs and temporary files ('APP_job_files', declared with *OUT_DIR* and related variables).  
-The Python Conda environment built for the APP4 is also activated in this file, along with the default contact email (access_csiro@csiro.au) and some extra control options (such as overwriting existing output data and restricing the years a variable is processed for according to the data request file).
-
-***subroutines/cleanup.sh***  
-Performs a simple check of the 'APP_job_files' directory (containing temporary files and job logs), and requests confirmation of deletion. Also cleans the top directory of the APP4 of temporary files.  
-This is run directly after *subroutines/setup_env.sh* and prior to all main tasks. Can also be run manually.
-
-***subroutines/custom_json_editor.sh***  
-For use in 'custom mode'. Creates a metadata json file (stored in 'APP_job_files') and edits a version of the CMOR tables (controlled vocabulary) to insert the experiment-level metadata defined in *custom_app4.sh*.  
-Without this script, CMOR will reject any non-CMIP6 experiment details.
-
-***subroutines/dreq_mapping.py***  
-For each variable to be processed, this Python script prepares a detailed map ('APP_job_files/variable_maps') using information from *input_files/master_map.csv* and the data request file.  
-Due to the complexity of CMIP6, some specific variable map variations/alterations are hard coded here in the fuction 'special_cases'.
-
-***subroutines/database_manager.py***  
-Variable information is further sorted by this Python script, which created an SQL database, in which each row corresponds to a single output file (many variables are split into yearly/decadal chunks).  
-The file *input_files/grids[om2,om2-025].csv* is called in this script, which defined how to split each variable/dataset.
-
-***subroutines/app_wrapper.py***  
-The SQL database is read and the rows processed in parallel (using Python's [multiprocessing](https://docs.python.org/3/library/multiprocessing.html) package).  
-Each row is passed to *subroutines/app.py*, and the results of the task recorded in 'APP_job_files' (variable_logs/, success_lists/).
-
-***subroutines/app.py***  
-The main processing Python script of the APP. It extracts data from the model output, performs calculations and adjustments according to the relevant variable map, defines the axes, and CMORises the data.  
-It is at this stage that CMOR will block any data or metadata that is not contained within the CMIP6 controlled vocabulary (unless in custom mode).
-
-***subroutines/app_functions.py***  
-Non-trivial calculations and data transformations are defined in this Python script.  
-These are referred to in *input_files/master_map.csv* and called in *subroutines/app.py*.
-
-***subroutines/completion_check.py***  
-A simple job output checking script for easy job summaries; reads logs and temporary files from 'APP_job_files'.  
-Called by *check_app4.sh* and *production_qc4.sh*.
-
-***subroutines/quality_check.py***  
-Performs compliance checks (and moves data to the publication directory if passed) and can create automated timeseries and QC plots.  
-Called by *production_qc4.sh*.
