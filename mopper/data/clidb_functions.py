@@ -239,19 +239,25 @@ def get_columns(conn, table):
     return columns
 
 
-def get_cmipname(conn, varname, db_log):
+def get_cmipname(conn, varname, version, db_log):
     """Queries mapping table for cmip name given variable name as output
        by the model
     """
-    sql = f"SELECT cmip_var FROM mapping WHERE input_vars='{varname}' and calculation=''" 
+    sql = f"SELECT cmip_var,model FROM mapping WHERE input_vars='{varname}' and calculation=''" 
     results = query(conn, sql,(), first=False)
-    cmip_name = list(set(x[0] for x in results)) 
-    if len(cmip_name) > 1:
-        db_log.warning(f"Found more than 1 definition for {varname}:\n" +
-                       f"{cmip_name}")
-    elif len(cmip_name) == 0:
+    names = list(set(x[0] for x in results)) 
+    cmip_name = names[0]
+    if len(names) > 1:
+        db_log.debug(f"Found more than 1 definition for {varname}:\n" +
+                       f"{names}")
+        for r in results:
+            if r[1] == version:
+                cmip_name = r[0]
+                break
+    elif len(names) == 0:
         cmip_name = ['']
-    return cmip_name[0]
+    return cmip_name
+
 
 def cmor_table_header(name, realm, frequency):
     """
@@ -367,7 +373,7 @@ def build_umfrq(time_axs, ds, db_log):
         else:
             umfrq[t] = 'file'
     # use other time_axis info to work out frq of time axis with 1 step
-    print(f"umfrq in function {umfrq}")
+    db_log.debug(f"umfrq in function {umfrq}")
     for t,frq in umfrq.items():
         if frq == 'file':
            for k,v in int2frq.items():
@@ -405,8 +411,25 @@ def get_frequency(realm, fbits, fname, ds, db_log):
     db_log.debug(f"Frequency: {frequency}")
     return frequency, umfrq
 
+def get_cell_methods(attrs, dims):
+    """Get cell_methods from variable attributes.
+       If cell_methods is not defined assumes values are instantaneous
+       `time: point`
+       If `area` not specified is added at start of string as `area: `
+    """
+    val = attrs.get('cell_methods', "") 
+    if 'area' not in val: 
+        val = 'area: ' + val
+    time_axs = [d for d in dims if 'time' in d]
+    if len(time_axs) == 1:
+        if 'time' not in val:
+            val += "time: point"
+        else:
+            val = val.replace(time_axs[0], 'time')
+    return val
 
-def write_varlist(conn, indir, startdate, db_log):
+
+def write_varlist(conn, indir, startdate, version, db_log):
     """Based on model output files create a variable list and save it
        to a csv file. Main attributes needed to map output are provided
        for each variable
@@ -446,6 +469,8 @@ def write_varlist(conn, indir, startdate, db_log):
         realm = realm[1:-1]
         if realm == 'atm':
             realm = 'atmos'
+        elif realm == 'ocn':
+            realm = 'ocean'
         db_log.debug(realm)
         ds = xr.open_dataset(fpath, decode_times=False)
         coords = [c for c in ds.coords] + ['latitude_longitude']
@@ -467,12 +492,12 @@ def write_varlist(conn, indir, startdate, db_log):
                         frequency = 'NA'
                         db_log.info(f"Could not detect frequency for variable: {v}")
                 # try to retrieve cmip name
-                cmip_var = get_cmipname(conn, vname, db_log)
+                cmip_var = get_cmipname(conn, vname, version, db_log)
                 attrs = v.attrs
+                cell_methods = get_cell_methods(attrs, v.dims)
                 line = [v.name, cmip_var, attrs.get('units', ""),
                         " ".join(v.dims), frequency, realm, 
-                        attrs.get('cell_methods', ""), 
-                        v.dtype, vsize, nsteps, fpattern,
+                        cell_methods, v.dtype, vsize, nsteps, fpattern,
                         attrs.get('long_name', ""), 
                         attrs.get('standard_name', "")]
                 fwriter.writerow(line)

@@ -114,12 +114,15 @@ def check_cmor(ctx, dbname):
 
 @dbapp.command(name='table')
 @db_args
+@click.option('--label', '-l', required=False, default='CMIP6',
+    type=click.Choice(['CMIP6', 'AUS2200']), show_default=True,
+    help='Label indicating origin of CMOR variable definitions. Currently only CMIP6, AUS2200')
 @click.pass_context
-def cmor_table(ctx, dbname, fname, alias):
+def cmor_table(ctx, dbname, fname, alias, label):
     """Create CMIP style table containing new variable definitions
     fname master_map from output to extract cmip_var, frequency, realm 
-    if these var/freq/realm/dims combs don't exist in cmorvar add var to table
-    alias here act as the new table name
+    If these var/freq/realm/dims combs don't exist in cmorvar add var to table.
+    `alias` here act as the new table name.
 
     Parameters
     ----------
@@ -127,12 +130,14 @@ def cmor_table(ctx, dbname, fname, alias):
         Click context object
     dbname : str
         Database name (default is access.db)
+    label : str
+        Label indicating preferred cmor variable definitions 
     """
     db_log = ctx.obj['log']
     # connect to db, this will create one if not existing
     conn = db_connect(dbname, db_log)
     # get list of variables already in db
-    sql = 'SELECT out_name, frequency, modeling_realm FROM cmorvar'
+    sql = "SELECT out_name, frequency, modeling_realm FROM cmorvar"
     results = query(conn, sql,(), first=False)
     # first set is the actual cmip variable name 
     # second set is the name used in tables to distinguish different dims/freq
@@ -151,8 +156,15 @@ def cmor_table(ctx, dbname, fname, alias):
             if v[0] not in cmor_vars:
                 db_log.warning(f"Variable {v[0]} not defined in cmorvar table")
             else:
+                
                 sql = f"SELECT * FROM cmorvar WHERE out_name='{v[0]}'"
-                record = query(conn, sql,(), first=True)
+                records = query(conn, sql,(), first=False)
+                record = records[0]
+                if len(records) > 1:
+                    for r in records:
+                        if f"-{label}_" in r[0]:
+                            record = r
+                            break
                 definition = list(record)
                 #definition[0] = f"{v[0]}-{alias}"
                 definition[0] = v[0].replace('_', '-')
@@ -176,6 +188,7 @@ def cmor_table(ctx, dbname, fname, alias):
 def update_cmor(ctx, dbname, fname, alias):
     """Open/create database and create/update cmorvar table. Table is 
     populated with data passed via input json file.
+    Input json file is written in same style as CMOR CMIP6 tables.
 
     Parameters
     ----------
@@ -239,11 +252,11 @@ def update_cmor(ctx, dbname, fname, alias):
 
 @dbapp.command(name='template')
 @db_args
-@click.option('--access_version', '-v', required=True,
+@click.option('--version', '-v', required=True,
     type=click.Choice(['ESM1.5', 'CM2', 'AUS2200', 'OM2']), show_default=True,
     help='ACCESS version currently only CM2, ESM1.5, AUS2200, OM2')
 @click.pass_context
-def list_var(ctx, dbname, fname, alias, access_version):
+def list_var(ctx, dbname, fname, alias, version):
     """Open database and check if variables passed as input are present in
        mapping database. Then attempt to create a template file with specific 
        mapping based on model output itself
@@ -259,7 +272,7 @@ def list_var(ctx, dbname, fname, alias, access_version):
     alias : str
         Indicates origin of records to add, if None csv filename
         base is used instead
-    access_version : str
+    version : str
         Version of ACCESS model used to generate variables
 
     Returns
@@ -285,7 +298,7 @@ def list_var(ctx, dbname, fname, alias, access_version):
     #    db_log.warning(f"Variables already defined but with different calculation: {different}")
     # prepare template
     different = []
-    write_map_template(vars_list, different, pot_vars, alias, access_version, db_log)
+    write_map_template(vars_list, different, pot_vars, alias, version, db_log)
     return
 
 
@@ -340,8 +353,11 @@ def update_map(ctx, dbname, fname, alias):
     help='Start date of model run as YYYYMMDD')
 @click.option('--dbname', type=str, required=False, default='access.db',
     help='Database name if not passed default to access.db ')
+@click.option('--version', '-v', required=False, default='CM2',
+    type=click.Choice(['ESM1.5', 'CM2', 'AUS2200', 'OM2']), show_default=True,
+    help='ACCESS version currently only CM2, ESM1.5, AUS2200, OM2')
 @click.pass_context
-def model_vars(ctx, indir, startdate, dbname):
+def model_vars(ctx, indir, startdate, dbname, version):
     """Read variables from model output
        opens one file for each kind, save variable list as csv file
        alias is not used so far
@@ -356,6 +372,8 @@ def model_vars(ctx, indir, startdate, dbname):
         Date or other string to match to individuate one file per type
     dbname : str
         Database name (default is access.db)
+    version : str
+        Version of ACCESS model to use as preferred mapping
 
     Returns
     -------
@@ -363,7 +381,7 @@ def model_vars(ctx, indir, startdate, dbname):
     db_log = ctx.obj['log']
     # connect to db, this will create one if not existing
     conn = db_connect(dbname, db_log)
-    write_varlist(conn, indir, startdate, db_log)
+    write_varlist(conn, indir, startdate, version, db_log)
     return
 
 

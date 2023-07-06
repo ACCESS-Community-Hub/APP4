@@ -10,6 +10,7 @@ import xarray as xr
 import os
 import yaml
 import numpy as np
+#import cf
 from scipy.interpolate import interp1d
 
 # Global Variables
@@ -32,7 +33,7 @@ def read_yaml(fname):
         data = yaml.safe_load(yfile)
     return data
 
-def time_resample(var, trange, tdim, sample='down'):
+def time_resample(var, trange, tdim, sample='down', stats='mean'):
     """
     Resamples the input variable to the specified frequency.
 
@@ -64,14 +65,22 @@ def time_resample(var, trange, tdim, sample='down'):
         raise ValueError("The 'var' parameter must be a valid Xarray DataArray or Dataset.")
 
 
-    valid_samples = ['up', 'down']
-    if sample not in valid_samples:
-        raise ValueError("The 'sample' parameter must be either 'up' or 'down'.")
+    valid_stats = ['mean', 'min', 'max', 'sum']
+    if stats not in valid_stats:
+        raise ValueError(f"The 'stats' parameter must be one of {valid_stats}.")
+
+    offset = {'30m': [15, 'T'], 'H': [30, 'T'], '3H': [90, 'T'], '6H': [3, 'H'],
+              '12H': [6, 'H'], 'D': [12, 'H'], '7D': [84, 'H'], '10D': [5, 'D'],
+              'M': [15, 'D'], 'Y': [6, 'M'], '10Y': [5, 'Y']}
 
     if sample == 'down':
         try:
             vout = var.resample({tdim: trange}, origin='start_day',
-                                closed='right').mean()
+                                closed='right')
+            method = getattr(vout, stats)
+            vout = method()
+            half, tunit = offset[trange][:]
+            vout = vout.assign_coords({tdim: xr.CFTimeIndex(vout[tdim].values).shift(half, tunit)})
     
         except Exception as e:
             print(f'{e}')
@@ -815,7 +824,7 @@ def plevinterp(var, pmod, heavy=None):
 
         hout = np.where(hout > 0.5, 1, 0)
 
-    interp_var = var.interp(pmod=pmod, axis=1, method='linear', kwargs={'fill_value': 'extrapolate'})
+    interp_var = var.interp_like(pmod, method='linear', kwargs={'fill_value': 'extrapolate'})
     vout = interp_var.interp(plev=plev)
     if heavy is not None:
         vout = vout/hout

@@ -61,6 +61,34 @@ def write_variable_map(outpath, table, matches):
     fjson.close()
 
 
+def define_timeshot(frequency, resample, cell_methods):
+    """Returns timeshot based on frequency, cell_methods and resample.
+    It also fixes and returns frequency for pressure levels and
+    climatology data.
+    If data will be resample timeshot is mean/max/min
+    """
+    if 'time:' in cell_methods:
+        bits = cell_methods.split()
+        timeshot = bits[bits.index('time:') + 1]
+    else:
+        timeshot = ''
+    if 'Pt' in frequency:
+        timeshot = 'point'
+        frequency = str(frequency)[:-2]
+    elif frequency == 'monC':
+        timeshot = 'clim'
+        frequency = 'mon'
+    # if timeshot is maximum/minimum/sum then leave it unalterated
+    # otherwise resampled values is mean
+    # for maximum, minimum pass timeshot as the resample method
+    if resample != '':
+        if timeshot in ['mean', 'point', '']:
+            timeshot = 'mean'
+        elif timeshot in ['maximum', 'minimum']:
+            timeshot = timeshot[:3]
+    return timeshot, frequency
+
+
 def find_matches(table, var, realm, frequency, varlist):
     """Finds variable matching constraints given by table and config
     settings and returns a dictionary with the variable specifications. 
@@ -99,27 +127,27 @@ def find_matches(table, var, realm, frequency, varlist):
             found = True
         elif v['cmip_var'] == var and v['realm'] == realm:
             near_matches.append(v)
-    if not found:
+    if found is False:
         v = check_best_match(near_matches, frequency)
         if v is not None:
             match = v
             found = True
         else:
             print(f"could not find match for {table}-{var}-{frequency}")
-    if found:
-        if 'Pt' in frequency:
-            timeshot = 'inst'
-            frequency = str(frequency)[:-2]
-        elif frequency == 'monC':
-            timeshot = 'clim'
-            frequency = 'mon'
-        else:
-            timeshot = 'mean'
-        match['resample'] = v.get('resample', '')
+    if found is True:
+        #PP should we review this approach? shouldn't be anything with time is inst time_0 is mean etc?
+        resample = match.get('resample', '')
+        timeshot, frequency = define_timeshot(frequency, resample,
+            match['cell_methods'])
+        match['resample'] = resample
         match['timeshot'] = timeshot
         match['table'] = table
         match['frequency'] = frequency
-        match['file_structure'] = f"/{match['realm']}/{match['filename']}*.nc"
+        if match['realm'] == 'land':
+            realmdir = 'atmos'
+        else:
+            realmdir = match['realm']
+        match['file_structure'] = f"/{realmdir}/{match['filename']}*.nc"
         #match['file_structure'] = f"/atm/netCDF/{match['filename']}*.nc"
     return match
 
@@ -504,7 +532,6 @@ def create_variable_map(cdict, table, masters, activity_id=None,
     if matches == []:
         print(f"{table}:  no matching variables found")
     else:
-        print(matches)
         write_variable_map(cdict['variable_maps'], table, matches)
     return
 
@@ -685,14 +712,9 @@ source activate /g/data/ua8/Working/packages/envs/newcmor
 
 module list
 python -V
-# possibly I don't need to set this env vars
-set -a
-# pre
-EXP_TO_PROCESS={cdict['exp']}
-OUTPUT_LOC={cdict['maindir']}
-MODE={cdict['mode']}
 # main
-python {cdict['appdir']}/cli.py --debug -i {cdict['exp']}_config.yaml wrapper 
+cd {cdict['appdir']}
+python cli.py --debug -i {cdict['exp']}_config.yaml wrapper 
 # post
 #python {cdict['outpath']}/database_updater.py
 sort {cdict['success_lists']}/{cdict['exp']}_success.csv \

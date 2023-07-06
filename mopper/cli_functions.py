@@ -95,7 +95,6 @@ def find_files(ctx, app_log):
     patterns = ctx.obj['infile'].split()
     #set normal set of files
     files = []
-    print(patterns)
     for i,p in enumerate(patterns):
         files.append(glob.glob(p))
         files[i].sort()
@@ -312,11 +311,10 @@ def get_cmorname(ctx, axis_name, z_len=None):
     #PP temporary patch to run this until we removed all axes-modifiers
     ctx.obj['axes_modifier'] = []
     if axis_name == 't':
-        print(ctx.obj['timeshot'])
         timeshot = ctx.obj['timeshot']
-        if 'mean' in timeshot:
+        if any(x in timeshot for x in ['mean', 'min', 'max', 'sum']):
             cmor_name = 'time'
-        elif 'inst' in timeshot:
+        elif 'point' in timeshot:
             cmor_name = 'time1'
         elif 'clim' in timeshot:
             cmor_name = 'time2'
@@ -966,9 +964,10 @@ def normal_case(ctx, dsin, tdim, in_missing, app_log):
             app_log.error(f"error evaluating calculation, {ctx.obj['calculation']}: {e}")
             raise
 
-    #PP add call to resample
+    #Call to resample operation is deifned based on timeshot
     if ctx.obj['resample'] != '':
-        array = time_resample(array, ctx.obj['resample'], tdim)
+        array = time_resample(array, ctx.obj['resample'], tdim,
+            stats=ctx.obj['timeshot'])
         app_log.debug(f"{array}")
     else:
         var = []

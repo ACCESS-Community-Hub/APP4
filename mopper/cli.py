@@ -100,7 +100,6 @@ def app_wrapper(ctx):
     """
     #open database    
     conn=sqlite3.connect(ctx.obj['database'], timeout=200.0)
-    print(ctx.obj['database'])
     conn.text_factory = str
     cursor = conn.cursor()
 
@@ -149,7 +148,6 @@ def app_bulk(ctx, app_log):
     tables = []
     tables.append(cmor.load_table(f"{ctx.obj['tables_path']}/{ctx.obj['grids']}"))
     tables.append(cmor.load_table(f"{ctx.obj['tables_path']}/{ctx.obj['table']}.json"))
-    sys.stdout.flush()
     #
     #PP This now checks that input variables are available from listed paths if not stop execution
     # if they are all avai;able re-write infile as a sequence corresponding to invars
@@ -179,7 +177,6 @@ def app_bulk(ctx, app_log):
     if inrange_files == []:
         app_log.warning("no data exists in the requested time range")
         return 0
-    print(inrange_files)
     # as we want to pass time as float value we don't decode time when openin files
     # if we need to decode times can be done if needed by calculation`
 

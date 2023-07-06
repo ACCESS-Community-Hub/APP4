@@ -11,6 +11,7 @@ CSIRO, O&A Aspendale.
 The MOPPeR is a CMORisation tool designed to post-process [ACCESS](https://research.csiro.au/access/) model output. The original APP4 main use was to produce [ESGF](https://esgf-node.llnl.gov/)-compliant formats, primarily for publication to [CMIP6](https://www.wcrp-climate.org/wgcm-cmip/wgcm-cmip6). The code was originally built for CMIP5, and was further developed for CMIP6-era activities.  
 It used [CMOR3](https://cmor.llnl.gov/) and files created with the [CMIP6 data request](https://github.com/cmip6dr/dreqPy) to generate CF-compliant files according to the [CMIP6 data standards](https://docs.google.com/document/d/1os9rZ11U0ajY7F8FWtgU4B49KcB59aFlBVGfLC4ahXs/edit).The APP4 also had a custom mode option to allow users to post-process output without strict adherence to the ESGF standards. MOPPeR was developed to extend the custom mode as much as it is allowed by the CMOR tool, it can be used to produce CMIP6 compliant data but other standards can also be defined.
 MOPPeR started as an attempt to upgrade the APP4 to python3 and the latest CMOR3 version. Obsolete packages were removed and eventually new functionalities to allow a user to create more easily configurations files and mappings were introduced. 
+CMOR historically used CMIP6 Controlled Vocabularies as a metadata constraints. This has an effect on how the data is written in the files, variables' names, directory structure structure and filenames, and global attributes. To make this approach more flexible we introduced a new tool that helps the users create their own CV and any related files, as tables to defined variab;les, grids and mappings between the modeloutput and the CMOR style data.
 
 For use on NCI's [Gadi](https://opus.nci.org.au/display/Help/Gadi+User+Guide) system only. 
 Designed for use on ACCESS model output that has been archived using the ACCESS Archiver tool.
@@ -27,9 +28,16 @@ Contents:
 
 ## Custom Mode
 
-In custom mode, the APP4 can process non-CMIP6 experiments, allowing the user to create CMORise using custom metadata (experiment ids, MIP names, etc) rather than requiring the use of the CMIP6 Controlled Vocabulary. However, only [CMIP6 variables](http://clipc-services.ceda.ac.uk/dreq/index.html) can be generated (CCMI2022 also included for CM2-Chem model).
+MOPPeR uses CMOR to write the files and manage the metadata as the APP4 did, however, it allows the use of a custom Controlled Vocabulary.
+It is important to understand what CMOR expects and how it uses these tables.  
 
-***custom_app4.sh***  
+***Control Vocabulary***
+
+***CMOR Tables***
+
+*** ***
+
+***custom_app.py***  
 This is main control script for the APP4 in custom mode. Once all variables have been set, simply run the script with ./custom_app4.sh to create the necessary files (job script, variable maps, etc) and submit the task to the job queue.  
 Here you define:  
 - Details about the experiment you wish to process, including the location of the archived data (see https://git.nci.org.au/cm2704/ACCESS-Archiver) and version of ACCESS.
