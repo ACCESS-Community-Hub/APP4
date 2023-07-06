@@ -1,0 +1,57 @@
+1) To populate cmorvar
+
+for f in $(ls cmip6-cmor-tables/Tables/CMIP6_*.json); do python cli_db.py cmor -f ${f}; done
+for f in $(ls custom-cmor-tables/Tables/AUS2200_A*.json); do python cli_db.py cmor -f ${f}; done
+
+This should be done before populating mapping!
+
+2) To get list of model output variables
+
+python cli_db.py varlist -i <output-path> -d <start-date> 
+this will create for each file output a list of variables with useful attributes
+
+3) These can be concatenated into one, plus filled in empty fields (as cmip_var names if not yet in database mapping)
+
+4) Create/update database mapping table
+  
+python cli_db.py map -f master_map.csv -a app4
+python cli_db.py map -f master_map_om2.csv -a app4
+as a start to add existing old style master files
+
+5) To create a mapping file starting from variable list
+python cli_db.py template  -f <varlist-out> -v <access-version> 
+This will create a master_<exp>.csv file partly using, if available, info in mapping table.
+Again fill in missing information, check calculations are correct
+then this is ready to run post-processing
+We should add to this a match of the cmip6 table
+
+Any new master_map file can then be added to database mapping table repeating step 4
+python cli_db.py map -f master_aus2200.csv -a aus2200
+In this way info retrieve creating template can be re-used
+
+Similarly if cmor variable doesn't include something you want to define
+You can fake a CMIP table to provide completely new variables definitions
+{ "Header": {},
+  "variable_entry": {
+   <var1>: {...},
+   <var2>: {...},
+}}
+and repeat step1)
+we've done:
+python cli_db.py cmor -f aus2200_variables.json
+
+6) To check which variables aren't yet defined
+python cli_db.py check #  currently is comparing mapping and cmorvar not an inpout file  
+
+This should be necessary only if variable aren't defined for any frequency realm, if you just want to add exisitng variables but with new frequency/realm combination you can simply create a bespoke table using the "table" command and adding variable from cmorvar table but modifying the frequency/realm fields.
+You can then load this table as usual
+
+
+7) To create new fake CMIP6 table
+python cli_db.py table -f <master_map> -a <newtable name>
+
+This should always be final steps once you know if you need to add a completely new definition, have updated mapping database and create a master_map for your own simulation.
+This then will add one or more new tables that includes all variable definitions not yet present in available CMIP tables. Each variables have to be defined for the required frequency.
+This will also create the final master_map which includes the name of CMIP table to use for a specific variablesas we cannot imply that from realm and frequency alone
+
+All of these commands will get --dbname or -d <database-name> if you don't want to use default access.db
