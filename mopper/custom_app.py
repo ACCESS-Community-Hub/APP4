@@ -705,18 +705,13 @@ def define_template(cdict, flag, nrows):
 #PBS -N custom_app4_{cdict['exp']}
 
 module use /g/data/hh5/public/modules
-module use ~access/modules
-module load conda
-PATH=${{PATH}}:/g/data/ua8/Working/packages/envs/newcmor/bin:/g/data/hh5/public/apps/miniconda3/bin
-source activate /g/data/ua8/Working/packages/envs/newcmor
+module load conda/analysis3-23.04
 
-module list
-python -V
 # main
 cd {cdict['appdir']}
 python cli.py --debug -i {cdict['exp']}_config.yaml wrapper 
+
 # post
-#python {cdict['outpath']}/database_updater.py
 sort {cdict['success_lists']}/{cdict['exp']}_success.csv \
     > {cdict['success_lists']}/{cdict['exp']}_success_sorted.csv
 mv {cdict['success_lists']}/{cdict['exp']}_success_sorted.csv \
