@@ -27,6 +27,10 @@ PP - complete restructure: now cli.py with cli_functions.py include functionalit
      I'm not yet sure if click is best used here, currently not using the args either (except for debug) but I'm leaving them in just in case
      Still using pool, app_bulk() contains most of the all app() function, however I generate many "subfunctions" mostly in cli_functions.py to avoid having a huge one. What stayed here is the cmor settings and writing
      using xarray to open all files, passing sometimes dataset sometime variables this is surely not consistent yet with app_functions
+
+07/07/23 using logging for var_logs
+To flush var_log explicitly:
+    #var_log.handlers[0].flush()
      
 '''
 
@@ -84,6 +88,7 @@ def app(ctx, infile, debug):
     ctx.obj['attrs'] = cfg['attrs']
     # set up main app4 log
     ctx.obj['log'] = config_log(debug, ctx.obj['app_logs'])
+    ctx.obj['debug'] = debug
     app_log = ctx.obj['log']
     app_log.info("\nstarting app_wrapper...")
 
@@ -98,6 +103,7 @@ def app(ctx, infile, debug):
 def app_wrapper(ctx):
     """Main method to select and process variables
     """
+    app_log = ctx.obj['log']
     #open database    
     conn=sqlite3.connect(ctx.obj['database'], timeout=200.0)
     conn.text_factory = str
@@ -110,22 +116,22 @@ def app_wrapper(ctx):
     try:
        rows = cursor.fetchall()
     except:
-       print("no more rows to process")
+       app_log.info("no more rows to process")
     conn.commit()
     #process rows
-    print(f"number of rows: {len(rows)}")
+    app_log.info(f"number of rows: {len(rows)}")
     results = pool_handler(rows, ctx.obj['ncpus'])
-    print("app_wrapper finished!\n")
+    app_log.info("app_wrapper finished!\n")
     #summarise what was processed:
-    print("RESULTS:")
+    app_log.info("RESULTS:")
     for r in results:
-        print(r)
+        app_log.info(r)
 
 
 @click.pass_context
-def app_bulk(ctx, app_log):
+def app_bulk(ctx, app_log, var_log):
     start_time = timetime.time()
-    print("starting main app function...")
+    var_log.info("starting main app function...")
     default_cal = "gregorian"
     #
     cmor.setup(inpath=ctx.obj['tables_path'],
@@ -151,31 +157,29 @@ def app_bulk(ctx, app_log):
     #
     #PP This now checks that input variables are available from listed paths if not stop execution
     # if they are all avai;able re-write infile as a sequence corresponding to invars
-    all_files, ctx = find_files(app_log)
+    all_files, ctx = find_files(var_log)
 
-    sys.stdout.flush()
     # PP FUNCTION END return all_files, extra_files
-    app_log.info(f"access files from: {os.path.basename(all_files[0][0])}" +
+    var_log.debug(f"access files from: {os.path.basename(all_files[0][0])}" +
                  f"to {os.path.basename(all_files[0][-1])}")
-    app_log.info(f"first file: {all_files[0][0]}")
+    var_log.debug(f"first file: {all_files[0][0]}")
     #
     #PP create time_axis function
     # PP in my opinion this can be fully skipped, but as a start I will move it to a function
     ds = xr.open_dataset(all_files[0][0], decode_times=False)
-    time_dim, inref_time = get_time_dim(ds, app_log)
-    sys.stdout.flush()
+    time_dim, inref_time = get_time_dim(ds, var_log)
     #
     #Now find all the ACCESS files in the desired time range (and neglect files outside this range).
     # First try to do so based on timestamp on file, if this fails
     # open files and read time axis
     try:
-        inrange_files = check_timestamp(all_files[0], app_log) 
+        inrange_files = check_timestamp(all_files[0], var_log) 
     except:
-        inrange_files = check_in_range(all_files[0], time_dim, app_log) 
-    sys.stdout.flush()
+        inrange_files = check_in_range(all_files[0], time_dim, var_log) 
     #check if the requested range is covered
     if inrange_files == []:
-        app_log.warning("no data exists in the requested time range")
+        app_log.warning(f"no data in requested time range for: {ctx.obj['file_name']}")
+        var_log.warning(f"no data in requested time range for: {ctx.obj['file_name']}")
         return 0
     # as we want to pass time as float value we don't decode time when openin files
     # if we need to decode times can be done if needed by calculation`
@@ -188,46 +192,47 @@ def app_bulk(ctx, app_log):
     invar = dsin[ctx.obj['vin'][0]]
     #First try and get the units of the variable.
     #
-    in_units, in_missing, positive = get_attrs(invar, app_log) 
+    in_units, in_missing, positive = get_attrs(invar, var_log) 
 
     #PP swapped around the order: calculate first and then worry about cmor
-    app_log.info("writing data, and calculating if needed...")
-    app_log.info(f"calculation: {ctx.obj['calculation']}")
-    sys.stdout.flush()
+    var_log.info("writing data, and calculating if needed...")
+    var_log.info(f"calculation: {ctx.obj['calculation']}")
     #
     #PP start from standard case and add modification when possible to cover other cases 
     if 'A10dayPt' in ctx.obj['table']:
-        app_log.info('ONLY 1st, 11th, 21st days to be used')
+        var_log.info("ONLY 1st, 11th, 21st days to be used")
         dsin = dsin.where(dsin[time_dim].dt.day.isin([1, 11, 21]),
                           drop=True)
     
     # Perform the calculation:
     try:
-        out_var = normal_case(dsin, time_dim, in_missing, app_log)
-        app_log.info("Calculation completed!")
+        out_var = normal_case(dsin, time_dim, in_missing, app_log, var_log)
+        var_log.info("Calculation completed!")
     except Exception as e:
-        app_log.error(f"E: Unable to run calculation because: {e}")
+        app_log.error(f"E: Unable to run calculation for {ctx.obj['file_name']}")
+        var_log.error(f"E: Unable to run calculation because: {e}")
     # Now define axis, variable etc before writing to CMOR
 
 
     #calculate time integral of the first variable (possibly adding a second variable to each time)
     # PP I removed all the extra special calculations
     # adding axis etc after calculation will need to extract cmor bit from calc_... etc
-    app_log.info("defining axes...")
+    var_log.info("defining axes...")
     # get axis of each dimension
-    print(f"out-var: {out_var}")
-    sys.stdout.flush()
-    t_axis, z_axis, j_axis, i_axis, p_axis, e_axis= get_axis_dim(out_var, app_log)
+    var_log.debug(f"Var after calculation: {out_var}")
+    t_axis, z_axis, j_axis, i_axis, p_axis, e_axis = get_axis_dim(
+        out_var, var_log)
     # should we just calculate at end??
+    # PP not sure if we use this anymore
     n_grid_pnts = 1
     cmor.set_table(tables[1])
     axis_ids = []
     if t_axis is not None:
-        cmor_tName = get_cmorname('t')
+        cmor_tName = get_cmorname('t', var_log)
         ctx.obj['reference_date'] = f"days since {ctx.obj['reference_date']}"
         t_axis_val = cftime.date2num(t_axis, units=ctx.obj['reference_date'],
             calendar=ctx.obj['attrs']['calendar'])
-        t_bounds = get_bounds(dsin, t_axis, cmor_tName, app_log, ax_val=t_axis_val)
+        t_bounds = get_bounds(dsin, t_axis, cmor_tName, var_log, ax_val=t_axis_val)
         t_axis_id = cmor.axis(table_entry=cmor_tName,
             units=ctx.obj['reference_date'],
             length=len(t_axis),
@@ -236,9 +241,9 @@ def app_bulk(ctx, app_log):
             interval=None)
         axis_ids.append(t_axis_id)
     if z_axis is not None:
-        cmor_zName = get_cmorname('z')
-        print(cmor_zName)
-        z_bounds = get_bounds(dsin, z_axis, cmor_zName, app_log)
+        cmor_zName = get_cmorname('z', var_log)
+        var_log.debug(cmor_zName)
+        z_bounds = get_bounds(dsin, z_axis, cmor_zName, var_log)
         z_axis_id = cmor.axis(table_entry=cmor_zName,
             units=z_axis.units,
             length=len(z_axis),
@@ -248,7 +253,7 @@ def app_bulk(ctx, app_log):
         axis_ids.append(z_axis_id)
         #set up additional hybrid coordinate information
         if cmor_zName in ['hybrid_height', 'hybrid_height_half']:
-            zfactor_b_id, zfactor_orog_id = hybrid_axis(lev_name, app_log)
+            zfactor_b_id, zfactor_orog_id = hybrid_axis(lev_name, var_log)
     if j_axis is None or i_axis.ndim == 2:
            #cmor.set_table(tables[0])
            j_axis_id = cmor.axis(table=tables[0],
@@ -258,9 +263,9 @@ def app_bulk(ctx, app_log):
            axis_ids.append(j_axis_id)
        #             n_grid_pts=len(dim_values)
     else:
-        cmor_jName = get_cmorname('j')
-        print(cmor_jName)
-        j_bounds = get_bounds(dsin, j_axis, cmor_jName, app_log)
+        cmor_jName = get_cmorname('j', var_log)
+        var_log.debug(cmor_jName)
+        j_bounds = get_bounds(dsin, j_axis, cmor_jName, var_log)
         j_axis_id = cmor.axis(table_entry=cmor_jName,
             units=j_axis.units,
             length=len(j_axis),
@@ -278,9 +283,9 @@ def app_bulk(ctx, app_log):
         axis_ids.append(i_axis_id)
     else:
         setgrid = False
-        cmor_iName = get_cmorname('i')
-        print(cmor_iName)
-        i_bounds = get_bounds(dsin, i_axis, cmor_iName, app_log)
+        cmor_iName = get_cmorname('i', var_log)
+        var_log.debug(cmor_iName)
+        i_bounds = get_bounds(dsin, i_axis, cmor_iName, var_log)
         i_axis_id = cmor.axis(table_entry=cmor_iName,
             units=i_axis.units,
             length=len(i_axis),
@@ -297,35 +302,33 @@ def app_bulk(ctx, app_log):
             coord_vals=p_vals)
         axis_ids.append(p_axis_id)
     if e_axis is not None:
-        e_axis_id = create_axis(axm, tables[1], app_log) 
+        e_axis_id = create_axis(axm, tables[1], var_log) 
         axis_ids.append(e_axis_id)
-    print(axis_ids)
-    sys.stdout.flush()
+    var_log.debug(axis_ids)
 
     #If we are on a non-cartesian grid, Define the spatial grid
     if setgrid:
-        grid_id = define_grid(i_axis_id, i_axis, j_axis_id, j_axis, tables[0], app_log)
+        grid_id = define_grid(i_axis_id, i_axis, j_axis_id, j_axis, tables[0], var_log)
     #PP need to find a different way to make this happens
     #create oline, siline, basin axis
     #for axm in ['oline', 'siline', 'basin']:
     #    if axm in ctx.obj['axes_modifier']:
-    #        axis_id = create_axis(axm, tables[1], app_log)
+    #        axis_id = create_axis(axm, tables[1], var_log)
     #        axis_ids.append(axis_id)
 
     #
     #Define the CMOR variable.
     #
-    app_log.info(f"cmor axis variables: {axis_ids}")
+    var_log.info(f"cmor axis variables: {axis_ids}")
     #
     #Define the CMOR variable, taking account of possible direction information.
     #
-    app_log.info("defining cmor variable...")
+    var_log.info("defining cmor variable...")
     try:    
         #set positive value from input variable attribute
         #PP potentially check somewhere that variable_id is in table
         cmor.set_table(tables[1])
         var_id = ctx.obj['variable_id'].replace('_','-')
-        sys.stdout.flush()
         variable_id = cmor.variable(table_entry=var_id,
                     units=in_units,
                     axis_ids=axis_ids,
@@ -333,24 +336,26 @@ def app_bulk(ctx, app_log):
                     missing_value=in_missing,
                     positive=positive)
     except Exception as e:
-        app_log.error(f"E: Unable to define the CMOR variable {e}")
+        app_log.error(f"Unable to define the CMOR variable {ctx.obj['file_name']}")
+        var_log.error(f"Unable to define the CMOR variable {e}")
         raise
-    app_log.info('writing...')
+    var_log.info('writing...')
     # ntimes passed is optional but we might need it if time dimension is not time
     status = None
     if time_dim != None:
-        app_log.info(f"Variable shape is {out_var.shape}")
+        var_log.info(f"Variable shape is {out_var.shape}")
         status = cmor.write(variable_id, out_var.values,
                 ntimes_passed=out_var[time_dim].size)
     else:
         status = cmor.write(variable_id, out_var.values, ntimes_passed=0)
     if status != 0:
-        app_log.error(f"E: Unable to write the CMOR variable to file\n"
+        app_log.error(f"Unable to write the CMOR variable: {ctx.obj['file_name']}\n")
+        var_log.error(f"Unable to write the CMOR variable to file\n"
                       + f"See cmor log, status: {status}")
     #
     #Close the CMOR file.
     #
-    app_log.info(f"finished writing @ {timetime.time()-start_time}")
+    var_log.info(f"finished writing @ {timetime.time()-start_time}")
     path = cmor.close(variable_id, file_name=True)
     return path
 
@@ -361,7 +366,7 @@ def app_bulk(ctx, app_log):
 #
 #PP not sure if better passing dreq_years with context or as argument
 @click.pass_context
-def process_row(ctx, row):
+def process_row(ctx, row, var_log):
     app_log = ctx.obj['log']
     #set version number
     #set location of cmor tables
@@ -370,17 +375,19 @@ def process_row(ctx, row):
     row['vin'] = row['vin'].split()
     # check that calculation is defined if more than one variable is passed as input
     if len(row['vin'])>1 and row['calculation'] == '':
-        app_log.error("error: multiple input variables are given without a description of the calculation")
+        app_log.error("Multiple input variables are given without a "
+            + "description of the calculation: {ctx.obj['file_name']}")
+        var_log.error("Multiple input variables are given without a "
+            + "description of the calculation")
         return -1
     row['notes'] = f"Local exp ID: {row['local_exp_id']}; Variable: {row['variable_id']} ({row['vin']})"
     row['exp_description'] = ctx.obj['attrs']['exp_description']
     #
-    print("\n#---------------#---------------#---------------#---------------#\nprocessing row with details:\n")
+    var_log.info("\n#---------------#---------------#---------------#---------------#\nprocessing row with details:\n")
     for k,v in row.items():
         ctx.obj[k] = v
-        print(f"{k}= {v}")
+        var_log.info(f"{k}= {v}")
     #
-    sys.stdout.flush()
     try:
         #Do the processing:
         #
@@ -392,12 +399,12 @@ def process_row(ctx, row):
             #
             #version_number = f"v{version}"
             #process the file,
-            ret = app_bulk(app_log)
+            ret = app_bulk(app_log, var_log)
             try:
                 os.chmod(ret,0o644)
             except:
                 pass
-            print("\nreturning to app_wrapper...")
+            var_log.info("\nreturning to app_wrapper...")
             #
             #check different return codes from the APP. 
             #
@@ -424,7 +431,7 @@ def process_row(ctx, row):
                             pass
                     if insuccesslist == 0:
                         c.write(f"{var_msg},{ret}\n")
-                        print(f"added \'{var_msg},...\'" +
+                        app_log.info(f"added \'{var_msg},...\'" +
                               f"to {successlists}/{ctx.obj['exp']}_success.csv")
                     else:
                         pass
@@ -432,9 +439,9 @@ def process_row(ctx, row):
                 #Assume processing has been successful
                 #Check if output file matches what we expect
                 #
-                print(f"output file:   {ret}")
+                app_log.info(f"output file:   {ret}")
                 if ret == expected_file:
-                    print(f"expected and cmor file paths match")
+                    app_log.info(f"expected and cmor file paths match")
                     msg = f"\nsuccessfully processed variable: {var_msg}\n"
                     #modify file permissions to globally readable
                     #oos.chmod(ret, 0o493)
@@ -450,8 +457,8 @@ def process_row(ctx, row):
                     #    msg = f"{msg},plot_fail: "
                     #    traceback.print_exc()
                 else :
-                    print(f"expected file: {expected_file}")
-                    print("expected and cmor file paths do not match")
+                    app_log.info(f"expected file: {expected_file}")
+                    app_log.info("expected and cmor file paths do not match")
                     msg = f"\nproduced but file name does not match expected {var_msg}\n"
                     #PP temporarily commenting this
                     #with open(ctx.obj['database_updater'],'a+') as dbu:
@@ -462,13 +469,13 @@ def process_row(ctx, row):
             #we are not processing because the file already exists.     
             #
             msg = f"\nskipping because file already exists for variable: {var_msg}\n"
-            print(f"file: {expected_file}")
+            app_log.info(f"file: {expected_file}")
             #PP temporarily commenting this
             #with open(ctx.obj['database_updater'],'a+') as dbu:
             #    dbu.write(f"setStatus('processed',{rowid})\n")
             #dbu.close()
     except Exception as e: #something has gone wrong in the processing
-        print(e)
+        app_log.error(e)
         traceback.print_exc()
         infailedlist = 0
         with open(f"{successlists}/{ctx.obj['exp']}_failed.csv",'a+') as c:
@@ -481,7 +488,7 @@ def process_row(ctx, row):
                     pass
             if infailedlist == 0:
                 c.write(f"{var_msg}\n")
-                print(f"added '{var_msg}' to {successlists}/{ctx.obj['exp']}_failed.csv")
+                app_log.info(f"added '{var_msg}' to {successlists}/{ctx.obj['exp']}_failed.csv")
             else:
                 pass
         c.close()
@@ -490,7 +497,7 @@ def process_row(ctx, row):
         #with open(ctx.obj['database_updater'],'a+') as dbu:
         #    dbu.write(f"setStatus('processing_failed',{rowid})\n")
         #dbu.close()
-    print(msg)
+    app_log.info(msg)
     return msg
 
 
@@ -506,17 +513,20 @@ def process_experiment(ctx, row):
     for i,val in enumerate(header):
         record[val] = row[i]
     table = record['table'].split('_')[1]
-    varlogfile = (f"{ctx.obj['var_logs']}/varlog_{table}"
+    # call logging 
+    varlog_file = (f"{ctx.obj['var_logs']}/varlog_{table}"
                  + f"_{record['variable_id']}_{record['tstart']}-"
                  + f"{record['tend']}.txt")
-    sys.stdout = open(varlogfile, 'w')
-    sys.stderr = open(varlogfile, 'w')
-    print(f"process: {mp.Process()}")
+    var_log = config_varlog(ctx.obj['debug'], varlog_file) 
+    #sys.stdout = open(varlogfile, 'w')
+    #sys.stderr = open(varlogfile, 'w')
+    var_log.info(f"process: {mp.Process()}")
     t1=timetime.time()
-    print(f"start time: {timetime.time()-t1}")
-    print(f"processing row:")
-    msg = process_row(record)
-    print(f"end time: {timetime.time()-t1}")
+    var_log.info(f"start time: {timetime.time()-t1}")
+    var_log.info(f"processing row:")
+    msg = process_row(record, var_log)
+    var_log.info(f"end time: {timetime.time()-t1}")
+    var_log.handlers[0].close()
     return msg
 
 

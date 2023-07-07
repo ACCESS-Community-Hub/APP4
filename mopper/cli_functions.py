@@ -42,13 +42,13 @@ from calculations import *
 
 
 def config_log(debug, path):
-    ''' configure log file to keep track of users queries '''
+    """Configure log file for main process and errors from variable processes"""
     # start a logger
     logger = logging.getLogger('app_log')
     # set a formatter to manage the output format of our handler
     formatter = logging.Formatter('%(asctime)s; %(message)s',"%Y-%m-%d %H:%M:%S")
     # set the level for the logger, has to be logging.LEVEL not a string
-    # until we do so cleflog doesn't have a level and inherits the root logger level:WARNING
+    # until we do so applog doesn't have a level and inherits the root logger level:WARNING
     logger.setLevel(logging.INFO)
 
     # add a handler to send WARNING level messages to console
@@ -58,7 +58,6 @@ def config_log(debug, path):
 
     # add a handler to send INFO level messages to file
     # the messagges will be appended to the same file
-    # create a new log file every month
     logname = f"{path}/app4_log.txt"
     flog = logging.FileHandler(logname)
     try:
@@ -72,6 +71,22 @@ def config_log(debug, path):
     return logger
 
 
+def config_varlog(debug, logname):
+    """Configure varlog file: use this for specific var information"""
+    logger = logging.getLogger('var_log')
+    formatter = logging.Formatter('%(asctime)s; %(message)s',"%Y-%m-%d %H:%M:%S")
+    logger.setLevel(logging.INFO)
+    flog = logging.FileHandler(logname)
+    try:
+        os.chmod(logname, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO);
+    except OSError:
+        pass
+    flog.setLevel(logging.INFO)
+    flog.setFormatter(formatter)
+    logger.addHandler(flog)
+    return logger
+
+
 def _preselect(ds, varlist):
     varsel = [v for v in varlist if v in ds.variables]
     dims = ds[varsel].dims
@@ -82,7 +97,7 @@ def _preselect(ds, varlist):
 
 
 @click.pass_context
-def find_files(ctx, app_log):
+def find_files(ctx, var_log):
     """Find all the ACCESS file names which match the "glob" pattern.
     Sort the filenames, assuming that the sorted filenames will
     be in chronological order because there is usually some sort of date
@@ -90,7 +105,7 @@ def find_files(ctx, app_log):
     Check that all needed variable are in file, otherwise add extra file pattern
     """
     
-    app_log.info(f"input file structure: {ctx.obj['infile']}")
+    var_log.info(f"input file structure: {ctx.obj['infile']}")
     invars = ctx.obj['vin']
     patterns = ctx.obj['infile'].split()
     #set normal set of files
@@ -104,14 +119,15 @@ def find_files(ctx, app_log):
     var_path = {}
     while len(missing) > 0 and i <= len(patterns):
         f = files[i][0]
-        missing, found = check_vars_in_file(missing, f, app_log)
+        missing, found = check_vars_in_file(missing, f, var_log)
         if len(found) > 0:
             for v in found:
                 var_path[v] = patterns[i]
         i+=1
     # if we couldn't find a variables check other files in same directory
     if len(missing) > 0:
-        app_log.error(f"Input vars: {missing} not in files {ctx.obj['infile']}")
+        var_log.error(f"Input vars: {missing} not in files {ctx.obj['infile']}")
+        raise
     elif len(invars) > 1 and len(patterns) > 1: 
         new_infile = ''
         for v in input_vars:
@@ -120,7 +136,7 @@ def find_files(ctx, app_log):
     return files, ctx
 
 
-def check_vars_in_file(invars, fname, app_log):
+def check_vars_in_file(invars, fname, var_log):
     """Check that all variables needed for calculation are in file
     else return extra filenames
     """
@@ -131,16 +147,16 @@ def check_vars_in_file(invars, fname, app_log):
 
 
 @click.pass_context
-def get_time_dim(ctx, ds, app_log):
+def get_time_dim(ctx, ds, var_log):
     """Find time info: time axis, reference time and set tstart and tend
     """
     ##PP changed most of this as it doesn't make sense setting time_dim to None and then trying to access variable None in file
     time_dim = None
     varname = [ctx.obj['vin'][0]]
     #    
-    app_log.debug(f" check time var dims: {ds[varname].dims}")
+    var_log.debug(f" check time var dims: {ds[varname].dims}")
     if 'fx' in ctx.obj['table']:
-        print("fx variable, no time axis")
+        var_log.info("fx variable, no time axis")
         refString = f"days since {ctx.obj['reference_date'][:4]}-01-01"
         time_dim = None    
         units = None
@@ -150,22 +166,22 @@ def get_time_dim(ctx, ds, app_log):
             if 'time' in var_dim or ds[var_dim].axis == 'T':
                 time_dim = var_dim
                 units = ds[var_dim].units
-                app_log.debug(f"first attempt to tdim: {time_dim}")
-    app_log.info(f"time var is: {time_dim}")
-    app_log.info(f"Reference time is: {units}")
+                var_log.debug(f"first attempt to tdim: {time_dim}")
+    var_log.info(f"time var is: {time_dim}")
+    var_log.info(f"Reference time is: {units}")
     del ds 
     return time_dim, units
 
 
 @click.pass_context
-def check_timestamp(ctx, all_files, app_log):
+def check_timestamp(ctx, all_files, var_log):
     """This function tries to guess the time coverage of a file based on its timestamp
        and return the files in range. At the moment it does a lot of checks based on the realm and real examples
        eventually it would make sense to make sure all files generated are consistent in naming
     """
     inrange_files = []
     realm = ctx.obj['realm']
-    app_log.info("checking files timestamp ...")
+    var_log.info("checking files timestamp ...")
     tstart = ctx.obj['tstart'].replace('-','')
     tend = ctx.obj['tend'].replace('-','')
     #if we are using a time invariant parameter, just use a file with vin
@@ -209,21 +225,21 @@ def check_timestamp(ctx, all_files, app_log):
                 elif len(tstamp) == 6:
                     tstamp += '01'
             # get first and last values as date string
-            app_log.debug(f"tstamp for {inf}: {tstamp}")
+            var_log.debug(f"tstamp for {inf}: {tstamp}")
             if tstart <= tstamp <= tend:
                 inrange_files.append(infile)
     return inrange_files
 
  
 @click.pass_context
-def check_in_range(ctx, all_files, tdim, app_log):
+def check_in_range(ctx, all_files, tdim, var_log):
     """Return a list of files in time range
        Open each file and check based on time axis
        Use this function only if check_timestamp fails
     """
     inrange_files = []
-    app_log.info("loading files...")
-    app_log.info(f"time dimension: {tdim}")
+    var_log.info("loading files...")
+    var_log.info(f"time dimension: {tdim}")
     sys.stdout.flush()
     #if we are using a time invariant parameter, just use a file with vin
     if ctx.obj['table'].find('fx') != -1:
@@ -235,29 +251,28 @@ def check_in_range(ctx, all_files, tdim, app_log):
                 # get first and last values as date string
                 tmin = ds[tdim][0].dt.strftime('%Y%m%d')
                 tmax = ds[tdim][-1].dt.strftime('%Y%m%d')
-                app_log.debug(f"tmax from time dim: {tmax}")
-                app_log.debug(f"tend from opts: {ctx.obj['tend']}")
+                var_log.debug(f"tmax from time dim: {tmax}")
+                var_log.debug(f"tend from opts: {ctx.obj['tend']}")
                 #if int(tmin) > ctx.obj['tend'] or int(tmax) < ctx.obj['tstart']:
                 if tmin > ctx.obj['tend'] or tmax < ctx.obj['tstart']:
                     inrange_files.append(input_file)
                 del ds
             except Exception as e:
-                app_log.error(f"Cannot open file: {e}")
-    app_log.debug(f"Number of files in time range: {len(inrange_files)}")
-    app_log.info("Found all the files...")
+                var_log.error(f"Cannot open file: {e}")
+    var_log.debug(f"Number of files in time range: {len(inrange_files)}")
+    var_log.info("Found all the files...")
     return inrange_files
 
  
 @click.pass_context
-def check_axis(ctx, ds, inrange_files, ancil_path, app_log):
+def check_axis(ctx, ds, inrange_files, ancil_path, var_log):
     """
     """
     try:
         array = ds[ctx.obj['vin'][0]]
-        print("shape of data: {np.shape(data_vals)}")
+        var_log.info("shape of data: {np.shape(data_vals)}")
     except Exception as e:
-        print("E: Unable to read {ctx.obj['vin'][0]} from ACCESS file")
-        raise
+        var_log.error("E: Unable to read {ctx.obj['vin'][0]} from ACCESS file")
     try:
         coords = array.coords
         coords.extend(array.dims)
@@ -266,7 +281,7 @@ def check_axis(ctx, ds, inrange_files, ancil_path, app_log):
     lon_name = None
     lat_name = None
     #search for strings 'lat' or 'lon' in coordinate names
-    app_log.info(coords)
+    var_log.debug(coords)
     for coord in coords:
         if 'lon' in coord.lower():
             lon_name = coord
@@ -298,14 +313,14 @@ def check_axis(ctx, ds, inrange_files, ancil_path, app_log):
         #if lat in file then re-read it from file
         try:
             lat_vals = ds[lat_name]
-            app_log.info('lat from file')
+            var_log.info('lat from file')
         except:
-            app_log.info('lat from ancil')
+            var_log.info('lat from ancil')
     return data_vals, lon_name, lat_name, lon_vals, lat_vals
 
 
 @click.pass_context
-def get_cmorname(ctx, axis_name, z_len=None):
+def get_cmorname(ctx, axis_name, var_log, z_len=None):
     """Get time cmor name based on timeshot option
     """
     #PP temporary patch to run this until we removed all axes-modifiers
@@ -320,7 +335,7 @@ def get_cmorname(ctx, axis_name, z_len=None):
             cmor_name = 'time2'
         else:
             #assume timeshot is mean
-            app_log.warning("timeshot unknown or incorrectly specified")
+            var_log.warning("timeshot unknown or incorrectly specified")
             cmor_name = 'time'
     elif axis_name == 'j':
         if 'gridlat' in ctx.obj['axes_modifier']:
@@ -517,21 +532,24 @@ def set_plev(ctx, data_vals, app_log):
 #PP this should eventually just be generated directly by defining the dimension using the same terms 
 # in related calculation 
 @click.pass_context
-def pseudo_axis(axis):
+def pseudo_axis(axis, var_log):
     """coordinates with axis_identifier other than X,Y,Z,T
     PP not sure if axis can be used to remove axes_mod
     """
     cmor_name = None
     p_vals = None
     p_len = None
+    #PP still need to work on this to eleiminate axes-modifier!
     if 'dropLev' in ctx.obj['axes_modifier']:
-        print("variable on tiles, setting pseudo levels...")
+        var_log.info("variable on tiles, setting pseudo levels...")
         #z_len=len(dim_values)
         for mod in ctx.obj['axes_modifier']:
             if 'type' in mod:
                 cmor_name = mod
             if cmor_name is None:
-                raise Exception('could not determine land type, check variable dimensions and axes_modifiers')
+                var_log.error('could not determine land type, check '
+                    + 'variable dimensions and calculations')
+                raise
             #PP check if we can just return list from det_landtype
         p_vals = list( det_landtype(cmor_name) )
     if 'landUse' in ctx.obj['axes_modifier']:
@@ -547,10 +565,10 @@ def pseudo_axis(axis):
 
 #PP this should eventually just be generated directly by defining the dimension using the same terms 
 # in calculation for meridional overturning
-def create_axis(name, table, app_log):
+def create_axis(name, table, var_log):
     """
     """
-    app_log.info("creating {name} axis...")
+    var_log.info("creating {name} axis...")
     func_dict = {'oline': getTransportLines(),
                  'siline': geticeTransportLines(),
                  'basin': np.array(['atlantic_arctic_ocean','indian_pacific_ocean','global_ocean'])}
@@ -560,11 +578,11 @@ def create_axis(name, table, app_log):
                         units='',
                         length=len(result),
                         coord_vals=result)
-    app_log.info(f"setup of {name} axis complete")
+    var_log.info(f"setup of {name} axis complete")
     return axis_id
 
 
-def hybrid_axis(lev, app_log):
+def hybrid_axis(lev, var_log):
     """
     """
     hybrid_dict = {'hybrid_height': 'b',
@@ -588,16 +606,16 @@ def hybrid_axis(lev, app_log):
 
 @click.pass_context
 def define_grid(ctx, i_axis_id, i_axis, j_axis_id, j_axis,
-                tables, app_log):
+                tables, var_log):
     """If we are on a non-cartesian grid, Define the spatial grid
     """
 
     grid_id=None
     if i_axis_id != None and i_axis.ndim == 2:
-        app_log.info("setting grid vertices...")
+        var_log.info("setting grid vertices...")
         #ensure longitudes are in the 0-360 range.
         if ctx.obj['access_version'] == 'OM2-025':
-            app_log.info('1/4 degree grid')
+            var_log.info('1/4 degree grid')
             lon_vals_360 = np.mod(i_axis.values,360)
             lon_vertices = np.ma.asarray(np.mod(get_vertices_025(i_axis.name),360)).filled()
             #lat_vals_360=np.mod(lat_vals[:],300)
@@ -607,12 +625,12 @@ def define_grid(ctx, i_axis_id, i_axis, j_axis_id, j_axis,
             lon_vals_360 = np.mod(i_axis[:],360)
             lat_vertices = get_vertices(j_axis.name)
             lon_vertices = np.mod(get_vertices(i_axis.name),360)
-        app_log.info(f"{j_axis.name}")
-        app_log.debug(f"lat vertices type and value: {type(lat_vertices)},{lat_vertices[0]}")
-        app_log.info(f"{i_axis.name}")
-        app_log.debug(f"lon vertices type and value: {type(lon_vertices)},{lon_vertices[0]}")
-        app_log.info(f"grid shape: {lat_vertices.shape} {lon_vertices.shape}")
-        app_log.info("setup of vertices complete")
+        var_log.info(f"{j_axis.name}")
+        var_log.debug(f"lat vertices type and value: {type(lat_vertices)},{lat_vertices[0]}")
+        var_log.info(f"{i_axis.name}")
+        var_log.debug(f"lon vertices type and value: {type(lon_vertices)},{lon_vertices[0]}")
+        var_log.info(f"grid shape: {lat_vertices.shape} {lon_vertices.shape}")
+        var_log.info("setup of vertices complete")
         try:
             #Set grid id and append to axis and z ids
             cmor.set_table(table)
@@ -622,14 +640,14 @@ def define_grid(ctx, i_axis_id, i_axis, j_axis_id, j_axis,
                     latitude_vertices=lat_vertices[:],
                     longitude_vertices=lon_vertices[:])
                 #replace i,j axis ids with the grid_id
-            app_log.info("setup of lat,lon grid complete")
+            var_log.info("setup of lat,lon grid complete")
         except Exception as e:
-            app_log.error(f"E: Grid setup failed {e}")
+            var_log.error(f"E: Grid setup failed {e}")
     return grid_id
 
 
 @click.pass_context
-def cmor_var(ctx, app_log, positive=None):
+def cmor_var(ctx, var_log, positive=None):
     """
     """
     variable_id = cmor.variable(table_entry=ctx.obj['vcmip'],
@@ -638,12 +656,12 @@ def cmor_var(ctx, app_log, positive=None):
                     data_type='f',
                     missing_value=in_missing,
                     positive=positive)
-    app_log.info(f"positive: {positive}")
+    var_log.info(f"positive: {positive}")
     return variable_id
 
 
 @click.pass_context
-def get_axis_dim(ctx, var, app_log):
+def get_axis_dim(ctx, var, var_log):
     """
     """
     t_axis = None
@@ -655,14 +673,14 @@ def get_axis_dim(ctx, var, app_log):
     e_axis = None
     # Check variable dimensions
     dims = var.dims
-    app_log.info(f"list of dimensions: {dims}")
+    var_log.debug(f"list of dimensions: {dims}")
 
     # make sure axis are correctly defined
     for dim in dims:
         try:
             axis = var[dim]
         except:
-            app_log.warning(f"No coordinate variable associated with the dimension {dim}")
+            var_log.warning(f"No coordinate variable associated with the dimension {dim}")
             axis = None
         # need to file to give a value then???
         if axis is not None:
@@ -688,14 +706,14 @@ def get_axis_dim(ctx, var, app_log):
                 e_axis = dim
             else:
                 #axis_name = 'unknown'
-                print(f"Unknown axis: {axis_name}")
+                var_log.info(f"Unknown axis: {axis_name}")
     return t_axis, z_axis, j_axis, i_axis, p_axis, e_axis
 
 
-def check_time_bnds(bnds_val, frequency, app_log):
+def check_time_bnds(bnds_val, frequency, var_log):
     """Checks if dimension boundaries from file are wrong"""
     approx_interval = bnds_val[:,1] - bnds_val[:,0]
-    app_log.debug(f"Time bnds approx interval: {approx_interval}")
+    var_log.debug(f"Time bnds approx interval: {approx_interval}")
     frq2int = {'dec': 3650.0, 'yr': 365.0, 'mon': 30.0,
                 'day': 1.0, '6hr': 0.25, '3hr': 0.125,
                 '1hr': 0.041667, '10min': 0.006944, 'fx': 0.0}
@@ -706,34 +724,25 @@ def check_time_bnds(bnds_val, frequency, app_log):
 
 
 @click.pass_context
-def get_time(ctx, t_axis, cmor_tName, app_log):
+def get_time(ctx, t_axis, cmor_tName, var_log):
     """
     """
     ctx.obj['reference_date'] = f"days since {ctx.obj['reference_date']}"
-    #if ctx.obj['reference_date'] != inref_time:
-        #newaxis = cftime.num2date(t_axis, units=inref_time,
-        #    calendar=ctx.obj['attrs']['calendar'])
     t_axis_val = cftime.date2num(t_axis, units=ctx.obj['reference_date'],
         calendar=ctx.obj['attrs']['calendar'])
-    t_bounds = get_bounds(dsin, t_axis_val, cmor_tName, app_log)
-        #t_bounds = cftime.num2date(t_bounds, units=inref_time,
-        #    calendar=ctx.obj['attrs']['calendar'])
-    #t_bounds = cftime.date2num(t_bounds, units=ctx.obj['reference_date'],
-    #    calendar=ctx.obj['attrs']['calendar'])
-    #else:
-    #    t_axis_val = t_axis.values
+    t_bounds = get_bounds(dsin, t_axis_val, cmor_tName, var_log)
     return ctx, t_axis_val, t_bounds
 
 
 @click.pass_context
-def get_bounds(ctx, ds, axis, cmor_name, app_log, ax_val=None):
+def get_bounds(ctx, ds, axis, cmor_name, var_log, ax_val=None):
     """Returns bounds for input dimension, if bounds are not available
        uses edges or tries to calculate them.
        If variable goes through calculation potentially bounds are different from
        input file and forces re-calculating them
     """
     dim = axis.name
-    app_log.debug(f"Getting bounds for axis: {dim}")
+    var_log.info(f"Getting bounds for axis: {dim}")
     changed_bnds = False
     if 'time' in dim and ctx.obj['resample'] != '':
         changed_bnds = True
@@ -745,22 +754,22 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log, ax_val=None):
     calc = False
     if 'bounds' in keys and not changed_bnds:
         dim_val_bnds = ds[axis.bounds].values
-        app_log.info("using dimension bounds")
+        var_log.info("using dimension bounds")
     elif 'edges' in keys and not changed_bnds:
         dim_val_bnds = ds[axis.edges].values
-        app_log.info("using dimension edges as bounds")
+        var_log.info("using dimension edges as bounds")
     else:
-        app_log.info(f"No bounds for {dim}")
+        var_log.info(f"No bounds for {dim}")
         calc = True
     if 'time' in cmor_name and calc is False:
         dim_val_bnds = cftime.date2num(dim_val_bnds, units=ctx.obj['reference_date'],
             calendar=ctx.obj['attrs']['calendar'])
-        inrange = check_time_bnds(dim_val_bnds, ctx.obj['frequency'], app_log)
+        inrange = check_time_bnds(dim_val_bnds, ctx.obj['frequency'], var_log)
         if not inrange:
             calc = True
-            app_log.info(f"Inherited bounds for {dim} are incorrect")
+            var_log.info(f"Inherited bounds for {dim} are incorrect")
     if calc is True:
-        app_log.info(f"Calculating bounds for {dim}")
+        var_log.info(f"Calculating bounds for {dim}")
         if ax_val is None:
             ax_val = axis.values
         try:
@@ -771,11 +780,12 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log, ax_val=None):
             max_val[-1] = 1.5*ax_val[-1] - 0.5*ax_val[-2]
             dim_val_bnds = np.column_stack((min_val, max_val))
         except Exception as e:
-            app_log.warning(f"dodgy bounds for dimension: {dim}")
-            app_log.error(f"error: {e}")
+            var_log.warning(f"dodgy bounds for dimension: {dim}")
+            var_log.error(f"error: {e}")
         if 'time' in cmor_name:
-            inrange = check_time_bnds(dim_val_bnds, ctx.obj['frequency'], app_log)
-            app_log.error(f"Boundaries for {cmor_name} are wrong even after calculation")
+            inrange = check_time_bnds(dim_val_bnds, ctx.obj['frequency'], var_log)
+            var_log.error(f"Boundaries for {cmor_name} are wrong even after calculation")
+            raise
     # Take into account type of axis
     # as we are often concatenating along time axis and bnds are considered variables
     # they will also be concatenated along time axis and we need only 1st timestep
@@ -789,10 +799,10 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log, ax_val=None):
         #force the bounds back to the poles if necessary
         if dim_val_bnds[0,0] < -90.0:
             dim_val_bnds[0,0] = -90.0
-            print("setting minimum latitude bound to -90")
+            var_log.info("setting minimum latitude bound to -90")
         if dim_val_bnds[-1,-1] > 90.0:
             dim_val_bnds[-1,-1] = 90.0
-            print("setting maximum latitude bound to 90")
+            var_log.info("setting maximum latitude bound to 90")
     elif cmor_name == 'depth':
         if 'OM2' in ctx.obj['access_version'] and dim == 'sw_ocean':
             dim_val_bnds[-1] = axis[-1]
@@ -800,7 +810,7 @@ def get_bounds(ctx, ds, axis, cmor_name, app_log, ax_val=None):
 
 
 @click.pass_context
-def get_attrs(ctx, invar, app_log):
+def get_attrs(ctx, invar, var_log):
     """
     """
     var_attrs = invar.attrs 
@@ -811,7 +821,7 @@ def get_attrs(ctx, invar, app_log):
     in_missing = var_attrs.get('missing_value', in_missing)
     in_missing = float(in_missing)
     if all(x not in var_attrs.keys() for x in ['_FillValue', 'missing_value']):
-        app_log.info("trying fillValue as missing value")
+        var_log.info("trying fillValue as missing value")
         
     #Now try and work out if there is a vertical direction associated with the variable
     #(for example radiation variables).
@@ -830,7 +840,7 @@ def get_attrs(ctx, invar, app_log):
 
 
 @click.pass_context
-def axm_t_integral(ctx, invar, dsin, variable_id, app_log):
+def axm_t_integral(ctx, invar, dsin, variable_id, var_log):
     """I couldn't find anywhere in mappings where this is used
     so I'm keeping it exactly as it is it's not worth it to adapt it
     still some cdms2 options and we're now passing all files at one time but this code assumes more than one file
@@ -855,7 +865,7 @@ def axm_t_integral(ctx, invar, dsin, variable_id, app_log):
 
 
 @click.pass_context
-def axm_timeshot(ctx, dsin, variable_id, app_log):
+def axm_timeshot(ctx, dsin, variable_id, var_log):
     """
         #Set var to be sum of variables in 'vin' (can modify to use calculation if needed)
     """
@@ -863,7 +873,7 @@ def axm_timeshot(ctx, dsin, variable_id, app_log):
     for v in ctx.obj['vin']:
         try:        
             var += (dsin[v])
-            app_log.info("added extra variable")
+            var_log.info("added extra variable")
         #PP I'm not sure this makes sense, if sum on next variable fails then I restart from that variable??
         except:        
             var = dsin[v][:]
@@ -874,33 +884,16 @@ def axm_timeshot(ctx, dsin, variable_id, app_log):
         tmp = var[0,:].shape
         out_shape = (12,) + tmp
         vals_wsum = np.ma.zeros(out_shape,dtype=np.float32)
-        app_log.info(f"first time, data shape: {np.shape(vals_wsum)}")
+        var_log.info(f"first time, data shape: {np.shape(vals_wsum)}")
         clim_days = np.zeros([12],dtype=int)#sum of number of days in the month
         vals_wsum,clim_days = monthClim(var,t,vals_wsum,clim_days)
     #calculate the climatological average for each month from the running sum (vals_wsum)
     #and the total number of days for each month (clim_days)
     for j in range(12):
-        app_log.info(f"month: {j+1}, sum of days: {clim_days[j]}")
+        var_log.info(f"month: {j+1}, sum of days: {clim_days[j]}")
         #average vals_wsum using the total number of days summed for each month
         vals_wsum[j,:] = vals_wsum[j,:] / clim_days[j]
     cmor.write(variable_id, (vals_wsum), ntimes_passed=12)
-
-
-@click.pass_context
-def axm_mon2yr(ctx, invar, dsin, variable_id, app_log):
-    """A lot of the original code was tryiong to get the year from eiother the input filename 
-       or from the timestap. With xarray we can just calculate this with resample and datetime accessor
-    """
-    if ctx.obj['calculation'] != '':
-            #PP I really do not udnerstand what calculateVals does aside from extracting variable
-            # the axis needed by calculation and executing calculation 
-        data = calculateVals(dsin, ctx.obj['vin'], ctx.obj['calculation'])
-    vshape = np.shape(data)
-    app_log.debug(vshape)
-    vyr = data.groupby('year').mean()
-    app_log.info("writing with cmor...")
-    cmor.write(variable_id, vyr.values, ntimes_passed=1)
-    return
 
 
 @click.pass_context
@@ -935,7 +928,7 @@ def calc_monsecs(ctx, dsin, tdim, in_missing, app_log):
     return array
 
 @click.pass_context
-def normal_case(ctx, dsin, tdim, in_missing, app_log):
+def normal_case(ctx, dsin, tdim, in_missing, app_log, var_log):
     """
     This function pulls the required variables from the Xarray dataset.
     If a calculation isn't needed then it just returns the variables to be saved.
@@ -944,40 +937,36 @@ def normal_case(ctx, dsin, tdim, in_missing, app_log):
     # Save the variables
     if ctx.obj['calculation'] == '':
         array = dsin[ctx.obj['vin'][0]][:]
-        app_log.debug(f"{array}")
+        var_log.debug(f"{array}")
     else:
         var = []
-        app_log.info("Adding variables to var list")
+        var_log.info("Adding variables to var list")
         for v in ctx.obj['vin']:
             try:
                 var.append(dsin[v][:])
             except Exception as e:
-                app_log.error(f"Error appending variable, {v}: {e}")
-                raise
+                var_log.error(f"Error appending variable, {v}: {e}")
 
-        app_log.info("Finished adding variables to var list")
+        var_log.info("Finished adding variables to var list")
 
         # Now try to perform the required calculation
         try:
             array = eval(ctx.obj['calculation'])
         except Exception as e:
-            app_log.error(f"error evaluating calculation, {ctx.obj['calculation']}: {e}")
-            raise
+            app_log.info(f"error evaluating calculation, {ctx.obj['file_name']}")
+            var_log.error(f"error evaluating calculation, {ctx.obj['calculation']}: {e}")
 
     #Call to resample operation is deifned based on timeshot
     if ctx.obj['resample'] != '':
         array = time_resample(array, ctx.obj['resample'], tdim,
             stats=ctx.obj['timeshot'])
-        app_log.debug(f"{array}")
-    else:
-        var = []
-        app_log.info("Adding variables to var list")
+        var_log.debug(f"{array}")
 
     #convert mask to missing values
     #PP why mask???
     #SG: Yeh not sure this is needed.
     array = array.fillna(in_missing)
-    app_log.debug(f"{array}")
+    var_log.debug(f"array after fillna: {array}")
      
     #PP temporarily ignore this exception
     #if 'depth100' in ctx.obj['axes_modifier']:
